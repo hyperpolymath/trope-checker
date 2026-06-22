@@ -1,0 +1,109 @@
+// SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= The Trope IR — normative interchange spec
+:revnumber: 0.1
+:revdate: 2026-06-22
+:toc: macro
+:sectnums:
+
+[abstract]
+This document specifies the *Trope IR*: the language-neutral interchange the
+tropechecker consumes. It is normative for the wire format and the grade algebra;
+the underlying type discipline is the calculus (`spec/calculus.adoc`), which this
+document references rather than restates. The canonical wire format is the
+JSON-Schema-validated document `schemas/trope-ir.schema.json` (the *prevent*
+profile). The key words MUST/MUST NOT/SHOULD/MAY are per RFC 2119/8174.
+
+toc::[]
+
+== The document
+
+A Trope IR document is a JSON object with `version` (`"0.1"`), `profile`
+(`"prevent"`), `nodes`, `edges`, and a `use_model`. An optional `$comment` carries
+the SPDX header. The schema is authoritative; this prose explains intent.
+
+== Nodes — property-instances
+
+A *node* is a property-instance carrying its `type` tag and (for tropes) its
+field-presence over Φ = {quality, bearer, context, record}:
+
+* `Trope` — a property-instance over a field-presence subset (`present`).
+* `FloatingQuality` — a quality severed from its bearer; it MUST NOT list
+  `bearer` in `present` (the severance is structurally visible, calculus §3.2).
+* `Codomain` — a collapse target (e.g. `Bool`); a non-trope, carrying `codomain`.
+
+== Edges — graded effect applications
+
+An *edge* carries an `effect`, `inputs` (node ids), an `output` node, and a
+`grade`. The six writable effects are `preserve`, `project`, `collapse`,
+`detach`, `attenuate` (single-instance) and `fuse` (two-instance). The deceptive
+trio (falsify, misbind, conflate) and any untagged merge are *not* writable
+(HC-3) and cannot appear as a well-formed effect.
+
+== The grade — a dependent record (HC-4)
+
+A grade is `Σ(fate : Φ → Fate). Bond(fate.bearer) × Merge`. The schema encodes the
+dependency so incoherent grades are *unrepresentable*:
+
+[cols="1,3",options="header"]
+|===
+| Coordinate | Values (prevent profile)
+| `fate` (per field) | `Present` · `Attenuated(δ)` with `δ ∈ ℕ∪{inf,top}` · `Predicated(P)` (quality only) · `Dropped`. (`Falsified` is the deceptive dual — excluded.)
+| `bond` | `Intact` where the bearer is present; `Withheld`/`Severed` where absent. (`Misbound` is the deceptive dual — excluded.)
+| `merge` | `Single`; or `Fused` with a REQUIRED provenance tag `tau`. (`Conflated` is the deceptive dual — excluded.)
+|===
+
+The `if/then/else` on `bond` keyed by `fate.bearer` is the door-too-small applied
+to the schema itself: a grade with the bearer present yet `Severed`, or absent yet
+`Intact`, does not validate, and the validator names the coordinate
+(`edges/N/grade/bond`).
+
+== The grade algebra (language-neutral, normative)
+
+Stated here so two independent checker implementations agree by construction.
+
+*Order convention.* `⊑` is the RETENTION order: `x ⊑ y` iff `y` retains at least
+as much particularity as `x`. It is the componentwise product order; each
+coordinate's order is in the calculus (§3, §5). The deceptive dual of each
+coordinate is the bottom (worst retention), so every honest floor fails against it.
+
+*Composition* `▷` (apply the second to the residual of the first) is componentwise
+(calculus §4): tropical addition on the fidelity δ (`top` absorbs `inf` absorbs
+finite); `Dropped`/`Severed`/`Conflated` (and the deceptive duals) absorbing;
+`Present`/`Intact`/`Single` the units.
+
+*Accumulation over the DAG.* Each root node has grade ε. For a single-input edge
+`e` with source `s`: `acc(e.output) = acc(s) ▷ grade(e)`. For a two-input `fuse`
+edge: `acc(e.output) = (acc(s1) ⊓ acc(s2)) ▷ grade(e)`, where `⊓` is the
+retention-meet (the result is "no better than its worse constituent in any
+coordinate", calculus T-Fuse).
+
+== The verdict
+
+Given the `use_model` (a designated `output` node and a partial `floor` grade):
+
+[stem]
+++++
+\mathsf{p\text{-}sufficient} \iff \mathrm{floor} \sqsubseteq \mathrm{acc}(\text{output}).
+++++
+
+If it fails, the verdict is `p-insufficient` and the report carries a *witness*:
+the topologically-first edge whose accumulated output grade drops below the floor
+in a failing coordinate — the edge to repair (the trope-particularity analogue of
+the invariant-path argmin).
+
+== Profiles
+
+* *prevent* (this schema, shipped): deceptive grades are malformed; rejected at
+  validation with the coordinate named.
+* *detect* (documented, calculus §6.1): deceptive grades are representable and
+  caught at the verdict instead. An implementation MUST declare which profile it
+  serves; this repository serves *prevent*.
+
+== Conformance
+
+`tests/conformance/cases.json` + `fixtures/` (IR → expected verdict, with witness)
+and `schema-invalid/` (documents that MUST be rejected, with the coordinate named)
+are the conformance contract. Any implementation MUST reproduce them. See
+`docs/CONTRIBUTING-A-FRONTEND.adoc`.
