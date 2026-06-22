@@ -1,0 +1,119 @@
+{
+  "$schema": "https://github.com/hyperpolymath/trope-checker/schemas/trope-ir.schema.json",
+  "$comment": "SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>. SPDX-License-Identifier: MPL-2.0",
+  "version": "0.1",
+  "profile": "prevent",
+  "nodes": [
+    {
+      "id": "t0",
+      "type": "Trope",
+      "present": [
+        "quality",
+        "bearer",
+        "context",
+        "record"
+      ]
+    },
+    {
+      "id": "t1",
+      "type": "Trope",
+      "present": [
+        "quality",
+        "bearer",
+        "context",
+        "record"
+      ]
+    },
+    {
+      "id": "t2",
+      "type": "Trope",
+      "present": [
+        "quality",
+        "bearer",
+        "context",
+        "record"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_att1",
+      "effect": "attenuate",
+      "inputs": [
+        "t0"
+      ],
+      "output": "t1",
+      "grade": {
+        "fate": {
+          "quality": {
+            "k": "Attenuated",
+            "delta": 3
+          },
+          "bearer": {
+            "k": "Attenuated",
+            "delta": 3
+          },
+          "context": {
+            "k": "Attenuated",
+            "delta": 3
+          },
+          "record": {
+            "k": "Attenuated",
+            "delta": 3
+          }
+        },
+        "bond": {
+          "k": "Intact"
+        },
+        "merge": {
+          "k": "Single"
+        }
+      }
+    },
+    {
+      "id": "e_att2",
+      "effect": "attenuate",
+      "inputs": [
+        "t1"
+      ],
+      "output": "t2",
+      "grade": {
+        "fate": {
+          "quality": {
+            "k": "Attenuated",
+            "delta": 4
+          },
+          "bearer": {
+            "k": "Attenuated",
+            "delta": 4
+          },
+          "context": {
+            "k": "Attenuated",
+            "delta": 4
+          },
+          "record": {
+            "k": "Attenuated",
+            "delta": 4
+          }
+        },
+        "bond": {
+          "k": "Intact"
+        },
+        "merge": {
+          "k": "Single"
+        }
+      }
+    }
+  ],
+  "use_model": {
+    "output": "t2",
+    "floor": {
+      "fate": {
+        "quality": {
+          "k": "Attenuated",
+          "delta": 7
+        }
+      }
+    }
+  }
+}

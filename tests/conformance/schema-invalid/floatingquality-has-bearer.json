@@ -1,0 +1,25 @@
+{
+  "$schema": "https://github.com/hyperpolymath/trope-checker/schemas/trope-ir.schema.json",
+  "$comment": "SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>. SPDX-License-Identifier: MPL-2.0",
+  "version": "0.1",
+  "profile": "prevent",
+  "nodes": [
+    {
+      "id": "n0",
+      "type": "FloatingQuality",
+      "present": [
+        "quality",
+        "bearer"
+      ]
+    }
+  ],
+  "edges": [],
+  "use_model": {
+    "output": "n0",
+    "floor": {
+      "merge": {
+        "k": "Single"
+      }
+    }
+  }
+}
