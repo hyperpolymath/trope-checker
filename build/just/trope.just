@@ -1,29 +1,25 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 #
-# Trope-particularity verification recipes. Imported by the root Justfile via
-#   import? "build/just/trope.just"
-# These are the trope-checker's real `check`/`test` targets (the RSR-template
-# build/test/quality recipes remain generic stubs).
+# Trope-particularity verification recipes (Idris2 through-and-through; no Python).
+# Imported by the root Justfile via  import? "build/just/trope.just"
 
-# Run all trope-particularity checks: schema + verified core + conformance.
-check: trope-check
+# Run everything: typecheck the verified core, build the checker, run conformance.
+check: trope-proofs trope-build trope-conformance
 
-trope-check: trope-schema trope-idris trope-conformance
-    @echo "trope-checker: all checks green"
-
-# Validate the Trope IR JSON Schema and its positive/negative fixtures.
-trope-schema:
-    python3 tests/conformance/validate_schema.py
-
-# Typecheck the Idris2 verified core (no axioms).
-trope-idris:
+# Typecheck the verified core (the proofs) — no axioms.
+trope-proofs:
     cd verification/proofs/idris2 && idris2 --typecheck trope.ipkg
 
-# Run the machine conformance suite (IR -> verdict, with witnesses).
-trope-conformance:
-    python3 tests/conformance/run.py
+# Install the verified core as a package, then build the executable checker.
+trope-build:
+    idris2 --install verification/proofs/idris2/trope.ipkg
+    cd src/idris2 && idris2 --build tropecheck.ipkg
 
-# Regenerate the conformance fixtures (re-verifies each against the checker).
-trope-fixtures:
-    python3 tests/conformance/build_fixtures.py
+# Machine conformance suite: IR -> verdict (+ witness) and schema-invalid rejection.
+trope-conformance:
+    bash tests/conformance/run.sh
+
+# Convenience: run the checker on one IR document.
+tropecheck ir:
+    src/idris2/build/exec/tropecheck {{ir}}

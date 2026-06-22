@@ -1,15 +1,16 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 #
-# Trope-particularity checks: IR schema validation + conformance suite (always),
-# and the Idris2 verified core typecheck (best-effort, if idris2 is available).
+# Trope-particularity checks (no Python). The jq well-formedness job is the
+# reliable signal; the Idris2 verified-core + conformance job is best-effort
+# (the toolchain is environment-dependent).
 name: trope-check
 
 on:
   push:
     paths:
       - 'schemas/**'
-      - 'src/checker/**'
+      - 'src/idris2/**'
       - 'tests/conformance/**'
       - 'verification/proofs/idris2/**'
       - 'spec/**'
@@ -21,35 +22,37 @@ permissions:
   contents: read
 
 jobs:
-  schema-and-conformance:
+  ir-wellformed:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Install jsonschema
-        run: python -m pip install --upgrade jsonschema
-      - name: Validate Trope IR schema + fixtures
-        run: python3 tests/conformance/validate_schema.py
-      - name: Run conformance suite (IR -> verdict, witnesses)
-        run: python3 tests/conformance/run.py
+      - name: Every IR fixture + the schema is well-formed JSON
+        run: |
+          for f in tests/conformance/fixtures/*.ir.json \
+                   tests/conformance/schema-invalid/*.json \
+                   schemas/trope-ir.schema.json tests/conformance/cases.json; do
+            jq -e . "$f" >/dev/null || { echo "malformed JSON: $f"; exit 1; }
+          done
+          echo "all IR fixtures + schema are well-formed JSON"
+      - name: No unsound constructs in the verified core
+        run: |
+          if grep -rEn 'believe_me|assert_total|postulate|really_believe_me' verification/proofs/idris2/Trope; then
+            echo "unsound construct found"; exit 1
+          fi
+          echo "verified core: no unsound constructs"
 
-  verified-core:
+  verified-core-and-conformance:
     runs-on: ubuntu-latest
-    continue-on-error: true   # idris2 toolchain is environment-dependent
+    continue-on-error: true   # idris2 + chez toolchain is environment-dependent
     steps:
       - uses: actions/checkout@v4
-      - name: Typecheck the verified core (if idris2 present)
+      - name: Typecheck core, build checker, run conformance (if idris2 present)
         run: |
           if command -v idris2 >/dev/null 2>&1; then
-            cd verification/proofs/idris2 && idris2 --typecheck trope.ipkg
+            ( cd verification/proofs/idris2 && idris2 --typecheck trope.ipkg )
+            idris2 --install verification/proofs/idris2/trope.ipkg
+            ( cd src/idris2 && idris2 --build tropecheck.ipkg )
+            bash tests/conformance/run.sh
           else
             echo "idris2 not available on this runner; skipping (see docs/status/PROOF-STATUS.adoc)."
           fi
-      - name: Guard against unsound constructs in the proofs
-        run: |
-          if grep -rEn 'believe_me|assert_total|postulate|really_believe_me' verification/proofs/idris2/Trope/; then
-            echo "Unsound construct found in the verified core"; exit 1
-          fi
-          echo "verified core: no unsound constructs"
