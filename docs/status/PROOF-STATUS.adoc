@@ -1,101 +1,66 @@
+// SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 // SPDX-License-Identifier: MPL-2.0
-// Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
-// Template: rsr-template-repo/docs/status/PROOF-STATUS.adoc
-// Tracks proof completion. Requirements defined in PROOF-NEEDS.adoc
-= Proof Status — {{PROJECT}}
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Proof status — trope-checker verified core
+:revdate: 2026-06-22
+:toc: macro
 
-== Summary
+What is *proved* (machine-checked, no axioms), *stubbed-and-named* (an open
+problem stated, never asserted as done — HC-5), and *deferred*. Ground-truth:
+`idris2 --typecheck verification/proofs/idris2/trope.ipkg` (exit 0). No
+`believe_me`, `assert_total`, or `postulate` stands behind any claim below.
 
-[cols="2,1,1,1,1,1", options="header"]
+toc::[]
+
+== Proved (machine-checked)
+
+[cols="1,2,2",options="header"]
 |===
-| Category | Total | Done | In Progress | Blocked | Remaining
-
-| ABI/FFI (ABI) | 5 | 0 | 0 | 0 | 5
-| Typing (TP) | 2 | 0 | 0 | 0 | 2
-| Invariant (INV) | 0 | 0 | 0 | 0 | 0
-| Security (SEC) | 0 | 0 | 0 | 0 | 0
-| Concurrency (CONC) | 0 | 0 | 0 | 0 | 0
-| Algorithm (ALG) | 0 | 0 | 0 | 0 | 0
-| Domain (DOM) | 0 | 0 | 0 | 0 | 0
-| *Total* | *7* | *0* | *0* | *0* | *7*
-|===
-
-*Overall*: 0% proven
-
-== Proofs Done
-
-// Format:
-// | ID | Proof | Prover | File | Date | Verified By |
-// | ABI-1 | Non-null pointer proofs | Idris2 | verification/proofs/idris2/ABI/Pointers.idr | 2026-XX-XX | idris2 --check |
-
-[cols="1,3,1,3,1,2", options="header"]
-|===
-| ID | Proof | Prover | File | Date | Verified By
-
-| — | No proofs completed yet | — | — | — | —
+| Lemma | Statement | Where
+| Fidelity L1 | `dplus` (tropical loss addition, ⊤ absorbs ∞ absorbs finite) is associative | `Trope.Fidelity.dplusAssoc`
+| Fidelity unit/refl | `Q 0` right-unit of `dplus`; `dLte` reflexive | `Trope.Fidelity.dplusZeroR`, `dLteRefl`
+| Coordinate L1 | `▷` associative on fate, bond, merge | `Trope.Coords.{fateAssoc,bondAssoc,mergeAssoc}`
+| Coordinate L2 | unit of `▷` on each coordinate | `Trope.Coords.{fateUnitL/R,bondUnitL/R,mergeUnitL/R}`
+| Coordinate ⊑ refl | retention order reflexive on each coordinate | `Trope.Coords.{fateLteRefl,bondLteRefl,mergeLteRefl}`
+| Grade L1 (assoc) | `▷` associative on the full three-coordinate grade | `Trope.Laws.gradeAssoc`
+| Grade L2 (unit) | `ε ▷ g = g = g ▷ ε` | `Trope.Grade.{gradeUnitL,gradeUnitR}`
+| Decidability of ⊑ | `⊑` is decidable on grades | `Trope.Laws.decGradeLte`
+| Veridicality Derivation | exactly three deceptive duals, one per coordinate (Falsified/Misbound/Conflated), each the unique deceptive inhabitant | `Trope.Veridicality.{fate,bond,merge}DeceptiveUnique`, `deceptiveDuals`
+| Honest Generation | the five atoms (attenuate/predicate/drop/sever/fuse) + ε generate exactly the honest fragment of each coordinate; the atoms never produce a deceptive dual | `Trope.Generation.{genFate,genBond,genMerge,movesHonest*}`
+| ε honest & coherent | ε is non-deceptive and HC-4-coherent | `Trope.Veridicality.epsilonHonest`, `Trope.Grade.epsilonCoherent`
 |===
 
-== Proofs In Progress
+== Stubbed-and-named (open problems — NOT asserted)
 
-[cols="1,3,1,2,1,2", options="header"]
+[cols="1,3",options="header"]
 |===
-| ID | Proof | Prover | Assignee | Started | Blocker
-
-| — | — | — | — | — | —
-|===
-
-== Proofs Blocked
-
-[cols="1,3,2,3", options="header"]
-|===
-| ID | Proof | Blocked By | Notes
-
-| — | — | — | —
+| ID | Open problem
+| *Grade soundness* (calculus §8) | `Γ ⊢ e : A ! g ⟹ g ⊑ ρ(in,out)` — the declared grade never claims more retention than execution delivers. Requires an operational model of execution (`ρ`); the term language is out of the verified core's scope this pass. Stated in the calculus; *not* claimed proved here. This is the headline next truth-mover.
+| *L4 monotonicity / L5 infectiousness as theorems* | Hold by the bottom/absorbing structure of each coordinate (used implicitly); not yet extracted as standalone Idris lemmas. Tractable; deferred to the next pass.
+| *O1 exhaustiveness of the effects* | That the five atoms (plus the three duals) are the _true generators_ of all particularity-affecting operations is a well-chosen list, not yet a theorem derived from the three axes. Calculus O1. Philosophy-of-individuation question O1-coord is logged, not coded.
 |===
 
-== Proofs Remaining
+== Deferred (named, not attempted this pass)
 
-[cols="1,3,1,1,1,1", options="header"]
-|===
-| ID | Proof | Category | Prover | Priority | Est. Effort
+* Full Haec compiler / codegen / runtime (scaffolded in the `haec` repo).
+* A Rust fast-core validated against this reference via the conformance suite.
+* The produce/demand adjunction (calculus O3); the fidelity-carrier question (O4).
 
-| ABI-1 | Non-null pointer proofs | ABI | Idris2 | P1 | 2h
-| ABI-2 | Memory layout correctness | ABI | Idris2 | P1 | 4h
-| ABI-3 | Platform type size proofs | ABI | Idris2 | P1 | 2h
-| ABI-4 | FFI function return type proofs | ABI | Idris2 | P1 | 2h
-| ABI-5 | C ABI compliance | ABI | Idris2 | P1 | 4h
-| TP-1 | Core data type well-formedness | TP | Idris2 | P1 | 4h
-| TP-2 | Public API type safety | TP | Lean4 | P2 | 4h
-|===
+== Modelling notes (faithful-but-simplified, recorded for honesty)
 
-== Verification Commands
-
-[source,bash]
-----
-# Check all Idris2 proofs
-just proof-check-idris2
-
-# Check all Lean4 proofs
-just proof-check-lean4
-
-# Check all Agda proofs
-just proof-check-agda
-
-# Check all Coq proofs
-just proof-check-coq
-
-# Run all proof checks
-just proof-check-all
-
-# Scan for dangerous patterns
-panic-attack assail --proofs-only
-----
-
-== Changelog
-
-[cols="1,3,1", options="header"]
-|===
-| Date | Change | By
-
-| 2026-04-04 | Initial proof status tracking | Template
-|===
+* *Provenance tags on `Fused` are erased* in the verified core (they are metadata
+  that does not affect the lattice laws); the executable checker carries them.
+* *Deceptive duals are modelled as each coordinate's bottom* (worst retention,
+  absorbing), which is how the calculus orders `Conflated`; this makes every
+  honest floor fail against a deceptive grade (HC-2) by construction.
+* *L2 is stated with ε's literal value* in Idris (a bare top-level `epsilon` as a
+  function argument does not reduce under the unifier); since
+  `epsilon = MkGrade Present Present Present Present Intact Single` definitionally,
+  the statement is `ε ▷ g = g`.
+* *The use-model floor is a partial per-coordinate demand, not a grade value.* HC-4
+  (the Σ-coherence: bond⊣bearer-fate) is enforced on edge grade VALUES, where it
+  makes incoherent states unrepresentable; the floor is a set of independent
+  minimum-demands (each coordinate optional), so an author CAN write an incoherent
+  floor (e.g. bearer-Dropped + bond-Intact). This is harmless — each demanded
+  coordinate is checked independently — but is an author-error surface, not covered
+  by the HC-4 unrepresentability claim. (Audit 2026-06-22.)

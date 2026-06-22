@@ -1,48 +1,32 @@
+// SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 // SPDX-License-Identifier: MPL-2.0
-// Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
-= Audit Gate
-Codex
-v1.1, 2026-04-07
-:toc:
-:toclevels: 2
-:sectnums:
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= AUDIT — trope-checker release gate
+:revdate: 2026-06-22
 
-== Purpose
+The release-audit gate: what must be green before a tag. Ground-truth by running
+the tools, not by reading status docs (see `AFFIRMATION.adoc` for the dated snapshot).
 
-This root document exists so humans and bots can see the hard audit posture
-without having to discover the standards repository first.
+== Gate checks
 
-Canonical source documents live in the `standards` repository. This file is a
-repo-local audit gate summary for template users and automated agents.
+[cols="1,3,1",options="header"]
+|===
+| Check | Command | State 2026-06-22
+| Schema-invalid rejection | `bash tests/conformance/run.sh` (Idris decoder) | PASS (8 rejected at coordinate)
+| Conformance | `just trope-build && bash tests/conformance/run.sh` | PASS (10/10, witnesses match)
+| Verified core | `idris2 --typecheck verification/proofs/idris2/trope.ipkg` | PASS (exit 0, no axioms)
+| Unsound-construct scan | `grep -rE 'believe_me\|assert_total\|postulate' verification/proofs/idris2/Trope` | CLEAN
+| Aggregate | `just check` | PASS
+|===
 
-== Hard Rules
+== Out of scope for this gate (named, not blocking)
 
-* Do not call anything `stable`, `v1.0.0`, or full release unless the stable
-  release gate has been passed end to end.
-* Do not publish implementation-facing work below `B` in CRG unless the work is
-  genuinely abstract and makes no implementation-readiness claim.
-* `D` requires RSR compliance or a documented equivalent repository discipline.
-* `C` requires deep code and folder annotation, not just local confidence.
-* `B` means `beta-stable`: external breadth and safe broad trial, not merely
-  public visibility.
-* Papers, whitepapers, release notes, and READMEs must not outrun the proofs,
-  tests, or artefacts that support their claims.
-* Release paths must not ship with placeholders, stubs, `FIXME`, `XXX`,
-  template residue, fake fuzz, fake benches, or partial proof debt hidden as
-  if it were complete.
+* Grade soundness (`g ⊑ ρ`) — open problem, `docs/status/PROOF-STATUS.adoc`.
+* The pre-existing RSR-template machinery (`just validate`, the full estate CI set)
+  is inherited template state; it is not the trope-checker release gate and may be
+  red on estate infrastructure unrelated to this work.
 
-== Canonical Standards
+== Provenance
 
-Read these as the authoritative source:
-
-* `standards/component-readiness-grades/COMPONENT-READINESS-GRADES.md`
-* `standards/release-pre-flight/V1-GATE.adoc`
-* `standards/publication-pre-flight/PREFLIGHT.adoc`
-* `standards/publication-pre-flight/ESTATE-AUDIT-BASELINE-2026-03-30.adoc`
-* `standards/session-management-standards/README.adoc`
-
-== Bot Requirement
-
-Bots operating in repositories derived from this template should treat this
-document as a key root audit document and should not make optimistic release or
-publication claims that conflict with it.
+Built into the RSR-template repo on `feat/trope-build`; commits signed with
+`id_ed25519_signing`. Decisions in `docs/decisions/0002-trope-particularity-build.adoc`.

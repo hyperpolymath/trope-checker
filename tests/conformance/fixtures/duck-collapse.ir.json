@@ -1,0 +1,68 @@
+{
+  "$schema": "https://github.com/hyperpolymath/trope-checker/schemas/trope-ir.schema.json",
+  "$comment": "SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>. SPDX-License-Identifier: MPL-2.0",
+  "version": "0.1",
+  "profile": "prevent",
+  "nodes": [
+    {
+      "id": "duck",
+      "type": "Trope",
+      "present": [
+        "quality",
+        "bearer",
+        "context",
+        "record"
+      ]
+    },
+    {
+      "id": "yesno",
+      "type": "Codomain",
+      "codomain": "Bool"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_collapse",
+      "effect": "collapse",
+      "inputs": [
+        "duck"
+      ],
+      "output": "yesno",
+      "grade": {
+        "fate": {
+          "quality": {
+            "k": "Predicated",
+            "predicate": "isQuack"
+          },
+          "bearer": {
+            "k": "Dropped"
+          },
+          "context": {
+            "k": "Dropped"
+          },
+          "record": {
+            "k": "Dropped"
+          }
+        },
+        "bond": {
+          "k": "Withheld"
+        },
+        "merge": {
+          "k": "Single"
+        }
+      },
+      "note": "the whole call became one yes/no"
+    }
+  ],
+  "use_model": {
+    "output": "yesno",
+    "floor": {
+      "fate": {
+        "quality": {
+          "k": "Attenuated",
+          "delta": 3
+        }
+      }
+    }
+  }
+}

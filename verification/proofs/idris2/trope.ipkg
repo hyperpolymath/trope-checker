@@ -1,0 +1,31 @@
+-- SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+-- SPDX-License-Identifier: MPL-2.0
+--
+-- The verified core of the trope-particularity calculus (spec/calculus.adoc).
+-- Defines the three-coordinate loss-shape grade, its composition (▷) and
+-- retention order (⊑), and proves the tractable laws with no axioms or unsound escape
+-- hatches. A real typecheck:
+--   idris2 --typecheck verification/proofs/idris2/trope.ipkg
+--
+-- What is proved vs. stubbed-and-named is recorded in docs/status/PROOF-STATUS.adoc
+-- and AFFIRMATION.adoc; grade soundness (the full g ⊑ ρ theorem) is the named
+-- open problem and is NOT asserted here.
+
+package trope
+
+version = 0.1.0
+
+authors = "Jonathan D.A. Jewell"
+
+brief = "Verified core: loss-shape grade algebra + composition/order laws for trope-particularity"
+
+sourcedir = "."
+
+depends = base
+
+modules = Trope.Fidelity
+        , Trope.Coords
+        , Trope.Grade
+        , Trope.Laws
+        , Trope.Veridicality
+        , Trope.Generation

@@ -1,0 +1,59 @@
+// SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Targeting the Trope IR — a guide for new front-ends
+:toc: macro
+:sectnums:
+
+This is the document that makes "portable" real: how a _new_ front-end (a
+language, or a static analyser for an existing one) targets the Trope IR so the
+same checker trope-checks it. Haec is the first front-end; it is not privileged.
+
+toc::[]
+
+== 1. Emit the IR, not a verdict
+
+Your front-end *lowers* its program to a Trope IR document (`schemas/trope-ir.schema.json`)
+and hands it to the checker. You do not decide acceptability; the checker does,
+against each consumer's declared use-model floor. Validate your output:
+the checker (the Idris decoder is the reference validator) and run it
+through `src/idris2/build/exec/tropecheck your-ir.json`.
+
+== 2. The grade vocabulary you may emit (prevent profile)
+
+Per edge, a grade `Σ(fate). Bond(fate.bearer) × Merge`:
+
+* *fate* per field: `Present`, `Attenuated{delta}` (`delta` ∈ ℕ or `"inf"`/`"top"`),
+  `Predicated{predicate}` (quality field only), `Dropped`.
+* *bond*: `Intact` (bearer present) or `Withheld`/`Severed` (bearer absent).
+* *merge*: `Single`, or `Fused{tau}` with a REQUIRED provenance tag.
+
+You may NOT emit a deceptive grade (`Falsified`/`Misbound`/`Conflated`) or an
+untagged merge: under the prevent profile these are malformed and the validator
+rejects them, naming the coordinate. That rejection _is_ the conflation/deception
+detector at your lowering boundary (HC-3, R-2026-06-22).
+
+== 3. Your obligation: lowering correctness (O2)
+
+The checker's soundness is *relative to faithful lowering*. It cannot verify that a
+construct you lower to (say) a `collapse` _is_ one, nor that a value you mark
+faithful is not in fact false. *Proving each construct's lowering faithful is YOUR
+obligation*, discharged per construct in your repository — not something the
+checker provides. State it per construct even before the proof exists (see Haec's
+`design/elaboration.adoc` for the pattern).
+
+== 4. The conformance contract
+
+To claim conformance, your toolchain MUST reproduce, for every pair in
+`tests/conformance/cases.json`, the same verdict (`p-sufficient`/`p-insufficient`)
+and, where given, the same witness edge; and every document in
+`tests/conformance/schema-invalid/` MUST be rejected at the named coordinate.
+"Portable" means _means-the-same-everywhere_, enforced by this suite — not merely
+_runs-everywhere_. Add your own fixtures alongside; do not weaken existing ones.
+
+== 5. What you get back
+
+A verdict object: `{ "verdict": "p-sufficient" }`, or
+`{ "verdict": "p-insufficient", "failing_coordinates": [...], "witness": "<edge id>",
+"witness_coordinate": "<coord>" }`. The witness is the first edge that pushed the
+running grade below the floor — the edge to repair.

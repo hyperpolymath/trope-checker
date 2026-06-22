@@ -5,11 +5,11 @@
 #
 [metadata]
 version = "0.1.0"
-last-updated = "{{CURRENT_DATE}}"
+last-updated = "2026-06-22"
 
 [project]
-name = "[YOUR-REPO-NAME]"
-purpose = "{{PROJECT_DESCRIPTION}}"
+name = "Trope Checker"
+purpose = "The portable trust boundary of the trope-particularity calculus: a pure function from a language-neutral Trope IR to a sufficiency verdict."
 
 [ai-allocation]
 agents = [

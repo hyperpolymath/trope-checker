@@ -1,0 +1,66 @@
+{
+  "$schema": "https://github.com/hyperpolymath/trope-checker/schemas/trope-ir.schema.json",
+  "$comment": "SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>. SPDX-License-Identifier: MPL-2.0",
+  "version": "0.1",
+  "profile": "prevent",
+  "nodes": [
+    {
+      "id": "attendee",
+      "type": "Trope",
+      "present": [
+        "quality",
+        "bearer",
+        "context",
+        "record"
+      ]
+    },
+    {
+      "id": "badge",
+      "type": "Trope",
+      "present": [
+        "quality",
+        "context"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_project",
+      "effect": "project",
+      "inputs": [
+        "attendee"
+      ],
+      "output": "badge",
+      "grade": {
+        "fate": {
+          "quality": {
+            "k": "Present"
+          },
+          "bearer": {
+            "k": "Dropped"
+          },
+          "context": {
+            "k": "Present"
+          },
+          "record": {
+            "k": "Dropped"
+          }
+        },
+        "bond": {
+          "k": "Withheld"
+        },
+        "merge": {
+          "k": "Single"
+        }
+      }
+    }
+  ],
+  "use_model": {
+    "output": "badge",
+    "floor": {
+      "bond": {
+        "k": "Intact"
+      }
+    }
+  }
+}

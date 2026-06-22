@@ -1,0 +1,66 @@
+{
+  "$schema": "https://github.com/hyperpolymath/trope-checker/schemas/trope-ir.schema.json",
+  "$comment": "SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>. SPDX-License-Identifier: MPL-2.0",
+  "version": "0.1",
+  "profile": "prevent",
+  "nodes": [
+    {
+      "id": "interview",
+      "type": "Trope",
+      "present": [
+        "quality",
+        "bearer",
+        "context",
+        "record"
+      ]
+    },
+    {
+      "id": "quote",
+      "type": "FloatingQuality",
+      "present": [
+        "quality"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_detach",
+      "effect": "detach",
+      "inputs": [
+        "interview"
+      ],
+      "output": "quote",
+      "grade": {
+        "fate": {
+          "quality": {
+            "k": "Present"
+          },
+          "bearer": {
+            "k": "Dropped"
+          },
+          "context": {
+            "k": "Dropped"
+          },
+          "record": {
+            "k": "Dropped"
+          }
+        },
+        "bond": {
+          "k": "Severed"
+        },
+        "merge": {
+          "k": "Single"
+        }
+      },
+      "note": "vivid line shared with no speaker, no question, no context"
+    }
+  ],
+  "use_model": {
+    "output": "quote",
+    "floor": {
+      "bond": {
+        "k": "Intact"
+      }
+    }
+  }
+}

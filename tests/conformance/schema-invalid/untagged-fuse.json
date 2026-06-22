@@ -1,0 +1,69 @@
+{
+  "$schema": "https://github.com/hyperpolymath/trope-checker/schemas/trope-ir.schema.json",
+  "$comment": "SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>. SPDX-License-Identifier: MPL-2.0",
+  "version": "0.1",
+  "profile": "prevent",
+  "nodes": [
+    {
+      "id": "n0",
+      "type": "Trope",
+      "present": [
+        "quality",
+        "bearer",
+        "context",
+        "record"
+      ]
+    },
+    {
+      "id": "n1",
+      "type": "Trope",
+      "present": [
+        "quality",
+        "bearer",
+        "context",
+        "record"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e",
+      "effect": "fuse",
+      "inputs": [
+        "n0",
+        "n1"
+      ],
+      "output": "n1",
+      "grade": {
+        "fate": {
+          "quality": {
+            "k": "Present"
+          },
+          "bearer": {
+            "k": "Present"
+          },
+          "context": {
+            "k": "Present"
+          },
+          "record": {
+            "k": "Present"
+          }
+        },
+        "bond": {
+          "k": "Intact"
+        },
+        "merge": {
+          "k": "Fused"
+        }
+      }
+    }
+  ],
+  "use_model": {
+    "output": "n1",
+    "floor": {
+      "merge": {
+        "k": "Single"
+      }
+    }
+  }
+}

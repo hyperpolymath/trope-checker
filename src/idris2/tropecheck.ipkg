@@ -1,0 +1,28 @@
+-- SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+-- SPDX-License-Identifier: MPL-2.0
+--
+-- The executable tropechecker: a Trope IR JSON document -> verdict. Reuses the
+-- verified core (package `trope`, in verification/proofs/idris2). Build:
+--   idris2 --install verification/proofs/idris2/trope.ipkg   # once
+--   idris2 --build   src/idris2/tropecheck.ipkg              # -> build/exec/tropecheck
+
+package tropecheck
+
+version = 0.1.0
+
+authors = "Jonathan D.A. Jewell"
+
+brief = "Executable tropechecker: Trope IR JSON -> verdict (reuses the verified core)"
+
+sourcedir = "."
+
+depends = base, trope
+
+modules = Checker.Json
+        , Checker.Ir
+        , Checker.Decode
+        , Checker.Check
+
+main = Main
+
+executable = tropecheck

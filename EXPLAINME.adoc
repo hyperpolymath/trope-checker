@@ -1,94 +1,81 @@
+// SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 // SPDX-License-Identifier: MPL-2.0
-// Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
-= RSR Template Repo - Explainme
-image:https://img.shields.io/badge/License-MPL_2.0-blue.svg[License: MPL-2.0,link="https://opensource.org/licenses/MPL-2.0"]
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= EXPLAINME — trope-checker (developer deep-dive)
+:toc: macro
+:sectnums:
 
-:toc:
-:icons: font
+The README is the pitch; this is how it actually works and why it is shaped this way.
 
-This file explains how the key template claims map to real files.
+toc::[]
 
-== Central Session Protocol Authority
+== The one job
 
-Claim:
-Session protocols are centrally maintained and not duplicated in this template.
+`check : TropeIR → Verdict`. Everything else (schema, verified core, conformance)
+exists to make that one pure function trustworthy and portable. The checker never
+sees a source program — only the IR. That is the whole portability story (HC-1).
 
-How this is implemented:
+== Idris2 through-and-through
 
-* The local dispatcher (`session/dispatch.sh`) maps canonical commands to central
-  protocol paths in `standards/session-management-standards`.
-* Local files (`session/custom-checks.k9`, `session/local-hooks.sh`,
-  `coordination.k9`) are integration-only.
+The checker is one Idris2 codebase. The *verified core*
+(`verification/proofs/idris2/`, package `trope`) defines and proves the grade
+algebra (L1/L2, decidable ⊑, the veridicality and generation results). The
+*executable* (`src/idris2/`, `Checker.Json` → `Checker.Decode` → `Checker.Check` →
+`Main`) **reuses that very algebra** — it imports `Trope.Grade`/`Trope.Coords`/
+`Trope.Fidelity` and composes with the same `gradeCompose` and coordinate orders.
+So there is no "second core kept in sync": the thing that runs is the thing that is
+proved, plus a JSON front-end. The conformance suite then guards against
+front-end/regression drift rather than against two divergent implementations. A
+Rust fast-core remains a deferred option (calculus §9.3), validated — if ever built
+— against this reference via the same suite.
 
-Caveat:
+There is no Python anywhere (estate rule); the runners are `bash` + `jq`.
 
-* If `SESSION_STANDARDS_DIR` is unset and no adjacent standards checkout exists,
-  the dispatcher records the command but cannot resolve central checklist paths.
+== Data flow
 
-== Canonical Command Surface
+. *Parse* the IR JSON (`Checker/Json.idr` — a small parser for the IR subset).
+. *Decode + validate* (`Checker/Decode.idr`): this is the validation boundary.
+  HC-4 (bond coherent with the bearer's fate) and HC-3 (no deceptive grades, no
+  untagged merge) are enforced here; a rejection names the coordinate
+  (e.g. `edges/e/grade/bond: incoherent with the bearer's fate (HC-4)`). The JSON
+  Schema (`schemas/`) is the language-neutral published contract; the decoder is the
+  executable reference validator, and the two encode the same rules.
+. *Accumulate grades* over the DAG (`Checker/Check.idr`): roots get ε; a
+  single-input edge composes `acc(source) ▷ grade(edge)`; a `fuse` edge takes the
+  retention-meet of its two inputs then composes.
+. *Decide* `floor(use_model) ⊑ acc(output)`. If it fails, walk edges to find the
+  *witness*: the first edge whose accumulated grade dropped below the floor in a
+  failing coordinate.
 
-Claim:
-Template bindings align to one canonical command model.
+== The grade, concretely
 
-How this is implemented:
+`Grade = (fate : Φ→Fate, bond, merge)`. `Fate = Present | Attenuated δ | Predicated |
+Dropped | Falsified`; `Bond = Intact | Withheld | Severed | Misbound`; `Merge =
+Single | Fused | Conflated`. The deceptive duals (Falsified/Misbound/Conflated) are
+each their coordinate's bottom: absorbing under ▷, below every honest value, so any
+honest floor fails against them. Under the prevent profile they are not even
+decodable into a valid IR (the decoder rejects them, naming the coordinate).
 
-* `Justfile` provides thin aliases (`intake-repo`, `checkpoint-change`,
-  `verify-maintenance`, `verify-substantial`, `verify-release`, `close-planned`,
-  `close-urgent`, `recover-repo`, `handover-*`).
-* Every alias calls `session/dispatch.sh` with canonical verb-object pairs.
+== Reading the proofs
 
-Caveat:
+`idris2 --typecheck verification/proofs/idris2/trope.ipkg`. Start in `Trope.Fidelity`
+(the δ dimension), then `Trope.Coords` (the three coordinates + per-coordinate laws),
+then `Trope.Grade`/`Trope.Laws` (the assembled grade + L1/L2/decidability), then
+`Trope.Veridicality` and `Trope.Generation` (the structure results). What is and is
+not proved is in `docs/status/PROOF-STATUS.adoc` — read it before believing any claim.
 
-* Recipes are wrappers only. They do not replace protocol content from
-  the central standards repo.
+== Building and running
 
-== Runtime State Is Local
+[source,sh]
+----
+just check          # typecheck core + build the tropecheck binary + conformance
+just trope-build    # install the core package, build src/idris2/build/exec/tropecheck
+src/idris2/build/exec/tropecheck tests/conformance/fixtures/duck-collapse.ir.json
+----
 
-Claim:
-Session state is per-repository runtime output, not standards text.
+== Extending
 
-How this is implemented:
-
-* `session/dispatch.sh` writes command and continuity-core capture stubs to
-  `.session/LAST-CANONICAL-COMMAND.md` in the target repository path.
-
-Caveat:
-
-* Runtime files are intentionally lightweight and require human/agent completion.
-
-== Template Token Policy
-
-Claim:
-Placeholders are explicit template content until initialization.
-
-How this is implemented:
-
-* `README.adoc` and bootstrap recipes keep `{{TOKEN}}` placeholders visible.
-* `just init` performs token replacement.
-
-Caveat:
-
-* Uninitialized placeholders must not be treated as project-specific truth.
-
-== Julia Registry Packages — Standalone Repo Requirement
-
-Claim:
-If this template is used to create a Julia package, it must remain a standalone repository registered with the Julia package registry.
-
-How this is implemented:
-
-* Julia's package registry (General.jl or other) expects each package to be a standalone GitHub repository with `Project.toml` at the repository root.
-* Installation via `Pkg.add()`, dependency resolution, and automated CI/CD all depend on this canonical structure.
-
-Caveat:
-
-* Do NOT move this repository into a monorepo or subdirectory, as this breaks registry registration and package discoverability.
-* See `JULIA-REGISTRY-REQUIREMENT.md` (workspace root) for the complete list of 34 registered Julia packages and enforcement rationale.
-* Non-registry Julia packages can be organized differently if they are not published to any registry.
-
-
-== License
-
-This project is licensed under the Mozilla Public License, v. 2.0. See the `LICENSE` file for details.
-
-SPDX-License-Identifier: MPL-2.0
+A new front-end: see `docs/CONTRIBUTING-A-FRONTEND.adoc`. A new effect or grade
+coordinate: change the calculus first, then the schema, then the verified core, then
+the decoder/checker, then the conformance suite — in that order, small verified
+increments (HC-5).

@@ -1,0 +1,76 @@
+{
+  "$schema": "https://github.com/hyperpolymath/trope-checker/schemas/trope-ir.schema.json",
+  "$comment": "SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>. SPDX-License-Identifier: MPL-2.0",
+  "version": "0.1",
+  "profile": "prevent",
+  "nodes": [
+    {
+      "id": "letter",
+      "type": "Trope",
+      "present": [
+        "quality",
+        "bearer",
+        "context",
+        "record"
+      ]
+    },
+    {
+      "id": "scan",
+      "type": "Trope",
+      "present": [
+        "quality",
+        "bearer",
+        "context",
+        "record"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_attenuate",
+      "effect": "attenuate",
+      "inputs": [
+        "letter"
+      ],
+      "output": "scan",
+      "grade": {
+        "fate": {
+          "quality": {
+            "k": "Attenuated",
+            "delta": "top"
+          },
+          "bearer": {
+            "k": "Attenuated",
+            "delta": "top"
+          },
+          "context": {
+            "k": "Attenuated",
+            "delta": "top"
+          },
+          "record": {
+            "k": "Attenuated",
+            "delta": "top"
+          }
+        },
+        "bond": {
+          "k": "Intact"
+        },
+        "merge": {
+          "k": "Single"
+        }
+      },
+      "note": "heavily compressed; couldn't say which strokes were lost"
+    }
+  ],
+  "use_model": {
+    "output": "scan",
+    "floor": {
+      "fate": {
+        "quality": {
+          "k": "Attenuated",
+          "delta": 5
+        }
+      }
+    }
+  }
+}

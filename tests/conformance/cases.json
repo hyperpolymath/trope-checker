@@ -1,0 +1,67 @@
+{
+  "$comment": "SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>. SPDX-License-Identifier: MPL-2.0",
+  "cases": [
+    {
+      "ir": "duck-preserve.ir.json",
+      "expect": "p-sufficient",
+      "note": "preserve grade ε dominates every floor (calculus §Worked check)"
+    },
+    {
+      "ir": "duck-collapse.ir.json",
+      "expect": "p-insufficient",
+      "witness": "e_collapse",
+      "witness_coordinate": "fate.quality",
+      "note": "Predicated is below/incomparable to any Attenuated(δ) (calculus §Worked check)"
+    },
+    {
+      "ir": "badge-project.ir.json",
+      "expect": "p-sufficient",
+      "note": "named intentional drop; the floor demands only what survives"
+    },
+    {
+      "ir": "project-needs-bearer.ir.json",
+      "expect": "p-insufficient",
+      "witness": "e_project",
+      "witness_coordinate": "bond",
+      "note": "projecting away the bearer → bond Withheld ⊏ Intact"
+    },
+    {
+      "ir": "letter-attenuate.ir.json",
+      "expect": "p-insufficient",
+      "witness": "e_attenuate",
+      "witness_coordinate": "fate.quality",
+      "note": "Attenuated(⊤) is below every finite attenuation (honest unknown)"
+    },
+    {
+      "ir": "interview-detach.ir.json",
+      "expect": "p-insufficient",
+      "witness": "e_detach",
+      "witness_coordinate": "bond",
+      "note": "Severed ⊏ Intact; the type also becomes FloatingQuality"
+    },
+    {
+      "ir": "weather-fuse.ir.json",
+      "expect": "p-sufficient",
+      "note": "Fused ⊒ Fused; the label keeps plurality recoverable"
+    },
+    {
+      "ir": "fuse-needs-single.ir.json",
+      "expect": "p-insufficient",
+      "witness": "e_fuse",
+      "witness_coordinate": "merge",
+      "note": "demanding Single but getting Fused → insufficient"
+    },
+    {
+      "ir": "compose-attenuate-twice.ir.json",
+      "expect": "p-sufficient",
+      "note": "Attenuated(3) ▷ Attenuated(4) = Attenuated(7) (tropical: losses add) (L1)"
+    },
+    {
+      "ir": "compose-attenuate-then-collapse.ir.json",
+      "expect": "p-insufficient",
+      "witness": "e_collapse",
+      "witness_coordinate": "fate.quality",
+      "note": "Attenuated(2) still meets floor A(10); the collapse edge drops below it"
+    }
+  ]
+}

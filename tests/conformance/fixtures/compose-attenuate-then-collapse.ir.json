@@ -1,0 +1,111 @@
+{
+  "$schema": "https://github.com/hyperpolymath/trope-checker/schemas/trope-ir.schema.json",
+  "$comment": "SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>. SPDX-License-Identifier: MPL-2.0",
+  "version": "0.1",
+  "profile": "prevent",
+  "nodes": [
+    {
+      "id": "t0",
+      "type": "Trope",
+      "present": [
+        "quality",
+        "bearer",
+        "context",
+        "record"
+      ]
+    },
+    {
+      "id": "t1",
+      "type": "Trope",
+      "present": [
+        "quality",
+        "bearer",
+        "context",
+        "record"
+      ]
+    },
+    {
+      "id": "bit",
+      "type": "Codomain",
+      "codomain": "Bool"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_att",
+      "effect": "attenuate",
+      "inputs": [
+        "t0"
+      ],
+      "output": "t1",
+      "grade": {
+        "fate": {
+          "quality": {
+            "k": "Attenuated",
+            "delta": 2
+          },
+          "bearer": {
+            "k": "Attenuated",
+            "delta": 2
+          },
+          "context": {
+            "k": "Attenuated",
+            "delta": 2
+          },
+          "record": {
+            "k": "Attenuated",
+            "delta": 2
+          }
+        },
+        "bond": {
+          "k": "Intact"
+        },
+        "merge": {
+          "k": "Single"
+        }
+      }
+    },
+    {
+      "id": "e_collapse",
+      "effect": "collapse",
+      "inputs": [
+        "t1"
+      ],
+      "output": "bit",
+      "grade": {
+        "fate": {
+          "quality": {
+            "k": "Predicated",
+            "predicate": "isLoud"
+          },
+          "bearer": {
+            "k": "Dropped"
+          },
+          "context": {
+            "k": "Dropped"
+          },
+          "record": {
+            "k": "Dropped"
+          }
+        },
+        "bond": {
+          "k": "Withheld"
+        },
+        "merge": {
+          "k": "Single"
+        }
+      }
+    }
+  ],
+  "use_model": {
+    "output": "bit",
+    "floor": {
+      "fate": {
+        "quality": {
+          "k": "Attenuated",
+          "delta": 10
+        }
+      }
+    }
+  }
+}
