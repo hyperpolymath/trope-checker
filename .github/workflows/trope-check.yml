@@ -4,7 +4,7 @@
 # Trope-particularity checks (no Python). The jq well-formedness job is the
 # reliable signal; the Idris2 verified-core + conformance job is best-effort
 # (the toolchain is environment-dependent).
-name: trope-check
+name: "🔴 Gate: Trope conformance"
 
 on:
   push:
