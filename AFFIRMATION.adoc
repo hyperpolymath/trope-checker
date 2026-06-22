@@ -24,7 +24,7 @@ the Veridicality Derivation (exactly three deceptive duals); the Honest Generati
 Theorem (five atoms generate the honest fragment). No `believe_me` / `assert_total`
 / `postulate` anywhere.
 
-*Stubbed-and-named, NOT asserted:* grade soundness (`g ⊑ ρ`) — the headline open
+*Soundness advance (2026-06-22):* the verdict-soundness corollary, T-Sub soundness, ⊑-preorder, and grade soundness for EXACT faithful lowering are now machine-checked (Trope.Order/Trope.Soundness); a machine-checked FINDING shows strict L4 fails for fate (Predicated ⊥ Dropped) so it is lax. *Stubbed-and-named, NOT asserted:* grade soundness for conservative lowering over fate + the term-language/fix operational model — the remaining open
 problem; L4/L5 as standalone lemmas; O1 exhaustiveness. Deferred: Haec compiler,
 Rust fast-core, the adjunction (O3), the fidelity-carrier question (O4).
 

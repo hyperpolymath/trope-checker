@@ -35,7 +35,7 @@ toc::[]
 [cols="1,3",options="header"]
 |===
 | ID | Open problem
-| *Grade soundness* (calculus §8) | `Γ ⊢ e : A ! g ⟹ g ⊑ ρ(in,out)` — the declared grade never claims more retention than execution delivers. Requires an operational model of execution (`ρ`); the term language is out of the verified core's scope this pass. Stated in the calculus; *not* claimed proved here. This is the headline next truth-mover.
+| *Grade soundness* (calculus §8) | `Γ ⊢ e : A ! g ⟹ g ⊑ ρ(in,out)` — the declared grade never claims more retention than execution delivers. Requires an operational model of execution (`ρ`); the term language is out of the verified core's scope this pass. Stated in the calculus; *not* claimed proved here. PARTIAL ADVANCE 2026-06-22 (see "Soundness advance" below): the verdict corollary, T-Sub soundness, and grade soundness for EXACT faithful lowering are now machine-checked; what remains open is the term-language/fix operational model and conservative composition over fate.
 | *L4 monotonicity / L5 infectiousness as theorems* | Hold by the bottom/absorbing structure of each coordinate (used implicitly); not yet extracted as standalone Idris lemmas. Tractable; deferred to the next pass.
 | *O1 exhaustiveness of the effects* | That the five atoms (plus the three duals) are the _true generators_ of all particularity-affecting operations is a well-chosen list, not yet a theorem derived from the three axes. Calculus O1. Philosophy-of-individuation question O1-coord is logged, not coded.
 |===
@@ -43,7 +43,7 @@ toc::[]
 == Deferred (named, not attempted this pass)
 
 * Full Haec compiler / codegen / runtime (scaffolded in the `haec` repo).
-* A Rust fast-core validated against this reference via the conformance suite.
+* A Rust fast-core — *DRAFTED 2026-06-22* (`src/rust/`, dep-free, std-only; agrees with the Idris2 reference bit-for-bit over the conformance corpus, via `just trope-rust`). Further hardening (fuzzing, perf) deferred.
 * The produce/demand adjunction (calculus O3); the fidelity-carrier question (O4).
 
 == Modelling notes (faithful-but-simplified, recorded for honesty)
@@ -64,3 +64,37 @@ toc::[]
   floor (e.g. bearer-Dropped + bond-Intact). This is harmless — each demanded
   coordinate is checked independently — but is an author-error surface, not covered
   by the HC-4 unrepresentability claim. (Audit 2026-06-22.)
+
+== Soundness advance (2026-06-22)
+
+Newly machine-checked in `Trope.Order` + `Trope.Soundness` (no axioms):
+
+* *⊑ is a preorder* — reflexivity (Trope.Coords) + *transitivity* (`fateLteTrans`,
+  `bondLteTrans`, `mergeLteTrans`, `dLteTrans`, assembled to `gradeLteTrans`).
+* *Verdict-soundness corollary* (`verdictSound`) — `floor ⊑ g ∧ g ⊑ ρ ⟹ floor ⊑ ρ`.
+  This is the calculus §8 corollary, now proved (it is exactly transitivity of ⊑).
+* *T-Sub soundness* (`subSound`) — `g' ⊑ g ∧ g ⊑ ρ ⟹ g' ⊑ ρ`.
+* *Grade soundness for EXACT faithful lowering* (`soundFromExact`) — if the declared
+  grade equals the observed retention (the strongest faithful lowering, O2), then
+  `g ⊑ ρ`, via congruence of ▷ + reflexivity. No L4 needed.
+* *L4 monotonicity holds for the chain coordinates* bond and merge
+  (`bondComposeMono`, `mergeComposeMono`).
+
+=== FINDING: strict L4 monotonicity FAILS for the fate coordinate
+
+`Trope.Soundness.fateL4MonotonicityFails` machine-checks a counterexample:
+`Dropped ⊑ Present` and `Predicated ⊑ Predicated`, yet
+`Dropped ▷ Predicated = Dropped` while `Present ▷ Predicated = Predicated`, and
+`Dropped ⋢ Predicated` (Predicated and Dropped are *intentionally incomparable*,
+calculus §3.1). So strict L4 does not hold for fate; the calculus's "L4 is a *lax*
+compatibility" (§5 note) is load-bearing. Consequence: grade soundness for
+*conservative* (inexact) steps cannot be composed by naive L4 over the fate
+coordinate; the *exact* route (`soundFromExact`) sidesteps it, and bond/merge remain
+monotone.
+
+=== Still open (narrowed)
+
+* Grade soundness for *conservative* lowering over fate — needs the lax argument the
+  calculus hints at, not strict L4.
+* The operational model of the term language + `fix` (calculus §7) and a definition
+  of observed retention `ρ` over executions — the deeper part of the open problem.

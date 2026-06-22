@@ -4,7 +4,7 @@
 # Trope-particularity checks (no Python). The jq well-formedness job is the
 # reliable signal; the Idris2 verified-core + conformance job is best-effort
 # (the toolchain is environment-dependent).
-name: trope-check
+name: "🔴 Gate: Trope conformance"
 
 on:
   push:
@@ -56,3 +56,12 @@ jobs:
           else
             echo "idris2 not available on this runner; skipping (see docs/status/PROOF-STATUS.adoc)."
           fi
+
+  rust-fast-core:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the Rust fast-core (dep-free, offline) and run the conformance corpus
+        run: |
+          ( cd src/rust && cargo build --release )
+          TROPECHECK_BIN=src/rust/target/release/tropecheck-rs bash tests/conformance/run.sh

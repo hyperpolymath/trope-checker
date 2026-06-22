@@ -29,3 +29,5 @@ modules = Trope.Fidelity
         , Trope.Laws
         , Trope.Veridicality
         , Trope.Generation
+        , Trope.Order
+        , Trope.Soundness

@@ -23,3 +23,9 @@ trope-conformance:
 # Convenience: run the checker on one IR document.
 tropecheck ir:
     src/idris2/build/exec/tropecheck {{ir}}
+
+# Build the Rust fast-core and validate it against the SAME conformance corpus
+# (cross-checks it agrees with the Idris2 reference). Dep-free; builds offline.
+trope-rust:
+    cd src/rust && cargo build --release
+    TROPECHECK_BIN=src/rust/target/release/tropecheck-rs bash tests/conformance/run.sh
