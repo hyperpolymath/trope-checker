@@ -1,0 +1,20 @@
+# SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+# SPDX-License-Identifier: MPL-2.0
+#
+# The Rust "fast core" (deferred-in-brief): a second implementation of the
+# tropechecker, validated against the Idris2 reference via the SAME conformance
+# corpus (calculus §9.3). Deliberately DEPENDENCY-FREE (std only, hand-written JSON
+# parser) so it builds offline with no crates.io access — no Python, no network.
+[package]
+name = "tropecheck-rs"
+version = "0.1.0"
+edition = "2021"
+license = "MPL-2.0"
+description = "Rust fast-core tropechecker (Trope IR -> verdict), validated by conformance against the Idris2 reference"
+
+[[bin]]
+name = "tropecheck-rs"
+path = "src/main.rs"
+
+[profile.release]
+opt-level = 3

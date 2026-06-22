@@ -43,7 +43,7 @@ toc::[]
 == Deferred (named, not attempted this pass)
 
 * Full Haec compiler / codegen / runtime (scaffolded in the `haec` repo).
-* A Rust fast-core validated against this reference via the conformance suite.
+* A Rust fast-core — *DRAFTED 2026-06-22* (`src/rust/`, dep-free, std-only; agrees with the Idris2 reference bit-for-bit over the conformance corpus, via `just trope-rust`). Further hardening (fuzzing, perf) deferred.
 * The produce/demand adjunction (calculus O3); the fidelity-carrier question (O4).
 
 == Modelling notes (faithful-but-simplified, recorded for honesty)

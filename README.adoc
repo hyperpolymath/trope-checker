@@ -67,6 +67,7 @@ rejects them at validation, naming the offending coordinate. The alternative
 | `spec/trope-ir.adoc`        | The normative IR spec: nodes, edges, grade algebra, verdict.
 | `schemas/trope-ir.schema.json` | The Trope IR JSON Schema — the trust boundary (prevent profile).
 | `src/idris2/`               | The executable checker (Idris2): JSON parser + IR decoder + checker, reusing the verified core; plus `Main` → the `tropecheck` binary.
+| `src/rust/`                 | The Rust fast-core: a dep-free (std-only) second checker, validated against the Idris2 reference via the conformance corpus.
 | `tests/conformance/`        | The machine conformance suite: `cases.json` + `fixtures/` + `schema-invalid/`.
 | `verification/proofs/idris2/` | The verified core (Idris2): grade algebra + L1/L2/⊑/veridicality/generation.
 | `docs/CONTRIBUTING-A-FRONTEND.adoc` | How a new front-end targets the IR (the portability contract).
@@ -109,8 +110,8 @@ Both the language and the checker *realise* the *Particularity* vocabulary
 
 Alpha. The schema, executable checker, and conformance suite are green; the
 verified core typechecks with no axioms behind its claimed lemmas. Grade
-soundness (the full `g ⊑ ρ` theorem) and a Rust fast-core are deferred and named
-in `docs/status/PROOF-STATUS.adoc`.
+soundness (the full `g ⊑ ρ` theorem) is the named open problem (with a 2026-06-22 partial advance)
+in `docs/status/PROOF-STATUS.adoc`. A Rust fast-core is drafted in `src/rust/` (dep-free, validated against the Idris2 reference via the conformance corpus).
 
 == Licence
 
