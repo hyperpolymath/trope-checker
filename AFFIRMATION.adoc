@@ -12,9 +12,9 @@ what is deferred — stated plainly, verified by running the tools, never overcl
 
 *Ground truth (commands actually run):*
 
-* `python3 src/checker/validate_schema.py` → schema is valid draft-2020-12; all 10
-  fixtures validate; all 8 schema-invalid fixtures are rejected at the named coordinate.
-* `python3 tests/conformance/run.py` → 10/10 conformance cases pass, verdicts and
+* `bash tests/conformance/run.sh` → all 8 schema-invalid fixtures rejected by the Idris
+  decoder at the named coordinate; the JSON Schema is the published contract.
+* `just trope-build && bash tests/conformance/run.sh` → 10/10 conformance cases pass; verdicts and
   witness edges match.
 * `idris2 --typecheck verification/proofs/idris2/trope.ipkg` → exit 0, six modules.
 

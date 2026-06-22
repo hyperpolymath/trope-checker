@@ -20,17 +20,20 @@ schema, a verified core, and a conformance suite.
 [cols="1,3",options="header"]
 |===
 | ID | Decision
-| *R-2026-06-22 (deploy variant = prevent)* | Deception is a validation-boundary fault. The three deceptive grades (Falsified/Misbound/Conflated) and any untagged merge are not writable (HC-3) and are malformed in a valid Trope IR; the schema rejects them at validation, naming the coordinate. The `detect` variant (catch at the verdict) is documented but not shipped.
-| *Schema is the trust boundary* | `schemas/trope-ir.schema.json` (draft 2020-12) is canonical. HC-4 (the Σ-dependency bond⊣bearer-fate) is encoded with `if/then/else` so incoherent grades are unrepresentable; deceptive grades are excluded from the prevent profile.
-| *Two cores + conformance* | The Idris2 development (`verification/proofs/idris2/`) is the verified reference (it proves the laws); the Python `tropecheck.py` is the executable/shipping sketch; the conformance suite ties them. A Rust fast-core is deferred. The checker depends on no source language (HC-1).
-| *RSR placement* | Built into the existing RSR-template repo, honouring its layout: calculus+IR spec → `spec/`; schema → `schemas/`; checker → `src/checker/`; conformance → `tests/conformance/`; proofs → `verification/proofs/idris2/`; status → `docs/status/` + `AFFIRMATION.adoc`. `spec/` and `schemas/` added to `.machine_readable/root-allow.txt` with justification.
+| *R-2026-06-22 (deploy variant = prevent)* | Deception is a validation-boundary fault. The three deceptive grades (Falsified/Misbound/Conflated) and any untagged merge are not writable (HC-3) and are malformed in a valid Trope IR; the decoder rejects them at validation, naming the coordinate. The `detect` variant (catch at the verdict) is documented in the calculus (§6.1), not shipped.
+| *R-2026-06-22 (no Python — Idris2 through-and-through)* | The estate forbids Python. The executable checker and every runner were (re)done with no Python: the checker is Idris2 (`src/idris2/`, the `tropecheck` binary), the conformance/CI runners are `bash` + `jq`. Julia/Haskell/Elixir/Rust were considered; Idris2-through-and-through was chosen so the executable REUSES the verified core's algebra rather than being a separate implementation.
+| *Idris2 through-and-through* | One language: the verified core (`verification/proofs/idris2/`, package `trope`) proves the laws; the executable (`src/idris2/`: `Checker.Json` → `Checker.Decode` → `Checker.Check` → `Main`) imports and reuses that algebra (`Trope.Grade` etc.). The JSON decoder is the reference validator; `schemas/trope-ir.schema.json` is the language-neutral published contract. The checker depends on no source language (HC-1). A Rust fast-core stays deferred (calculus §9.3).
+| *Schema is the trust boundary* | The IR schema encodes HC-4 (the Σ-dependency bond⊣bearer-fate) so incoherent grades are unrepresentable; the Idris decoder enforces the same and rejects deceptive grades. The schema is the published artefact; the decoder is the executable reference validator; they encode the same rules.
+| *RSR placement* | Built into the existing RSR-template repo, honouring its layout: calculus+IR spec → `spec/`; schema → `schemas/`; executable checker → `src/idris2/`; conformance → `tests/conformance/`; verified core → `verification/proofs/idris2/`; status → `docs/status/` + `AFFIRMATION.adoc`. `spec/`, `schemas/`, `LICENSES/` added to `.machine_readable/root-allow.txt` with justification.
 | *Licensing* | Code/config/schemas = MPL-2.0; prose docs = CC-BY-SA-4.0 (two SPDX lines); single MPL-2.0 GitHub badge from root `LICENSE`. `LICENSES/` carries both texts.
 | *Stub-and-name (HC-5)* | Grade soundness (`g ⊑ ρ`) is not asserted; it is the named open problem in `docs/status/PROOF-STATUS.adoc`. Only machine-checked lemmas are claimed proved.
 |===
 
 == Consequences
 
-The checker is sound (not complete), relative to faithful lowering, and does not
-check veridicality — these firewalls are stated in the README and never laundered.
-A new front-end becomes "portable" by lowering to the IR and passing the
-conformance suite (`docs/CONTRIBUTING-A-FRONTEND.adoc`).
+The thing that runs is the thing that is proved (plus a JSON front-end), so the
+verified core and the executable cannot drift into two divergent algebras. The
+checker is sound (not complete), relative to faithful lowering, and does not check
+veridicality — firewalls stated in the README and never laundered. A new front-end
+becomes "portable" by lowering to the IR and passing the conformance suite
+(`docs/CONTRIBUTING-A-FRONTEND.adoc`).

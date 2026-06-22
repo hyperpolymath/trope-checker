@@ -12,8 +12,8 @@ the tools, not by reading status docs (see `AFFIRMATION.adoc` for the dated snap
 [cols="1,3,1",options="header"]
 |===
 | Check | Command | State 2026-06-22
-| Schema + fixtures | `python3 src/checker/validate_schema.py` | PASS (10 valid, 8 rejected at coordinate)
-| Conformance | `python3 tests/conformance/run.py` | PASS (10/10, witnesses match)
+| Schema-invalid rejection | `bash tests/conformance/run.sh` (Idris decoder) | PASS (8 rejected at coordinate)
+| Conformance | `just trope-build && bash tests/conformance/run.sh` | PASS (10/10, witnesses match)
 | Verified core | `idris2 --typecheck verification/proofs/idris2/trope.ipkg` | PASS (exit 0, no axioms)
 | Unsound-construct scan | `grep -rE 'believe_me\|assert_total\|postulate' verification/proofs/idris2/Trope` | CLEAN
 | Aggregate | `just check` | PASS

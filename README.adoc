@@ -66,7 +66,7 @@ rejects them at validation, naming the offending coordinate. The alternative
 | `spec/calculus.adoc`        | The normative calculus (source of truth).
 | `spec/trope-ir.adoc`        | The normative IR spec: nodes, edges, grade algebra, verdict.
 | `schemas/trope-ir.schema.json` | The Trope IR JSON Schema — the trust boundary (prevent profile).
-| `src/checker/`              | The executable reference checker (`tropecheck.py`) + schema validator.
+| `src/idris2/`               | The executable checker (Idris2): JSON parser + IR decoder + checker, reusing the verified core; plus `Main` → the `tropecheck` binary.
 | `tests/conformance/`        | The machine conformance suite: `cases.json` + `fixtures/` + `schema-invalid/`.
 | `verification/proofs/idris2/` | The verified core (Idris2): grade algebra + L1/L2/⊑/veridicality/generation.
 | `docs/CONTRIBUTING-A-FRONTEND.adoc` | How a new front-end targets the IR (the portability contract).
@@ -82,7 +82,7 @@ rejects them at validation, naming the offending coordinate. The alternative
 just check        # schema validation + Idris2 typecheck + conformance suite
 just trope-conformance   # just the IR→verdict conformance corpus
 idris2 --typecheck verification/proofs/idris2/trope.ipkg   # the verified core
-python3 src/checker/tropecheck.py tests/conformance/fixtures/duck-collapse.ir.json
+src/idris2/build/exec/tropecheck tests/conformance/fixtures/duck-collapse.ir.json
 ----
 
 The conformance suite (`tests/conformance/`) is the formal sibling of the

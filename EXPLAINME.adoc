@@ -11,39 +11,50 @@ toc::[]
 
 == The one job
 
-`check : TropeIR → Verdict`. Everything else (schema, Idris core, conformance) exists
-to make that one pure function trustworthy and portable. The checker never sees a
-source program — only the IR. That is the whole portability story (HC-1).
+`check : TropeIR → Verdict`. Everything else (schema, verified core, conformance)
+exists to make that one pure function trustworthy and portable. The checker never
+sees a source program — only the IR. That is the whole portability story (HC-1).
+
+== Idris2 through-and-through
+
+The checker is one Idris2 codebase. The *verified core*
+(`verification/proofs/idris2/`, package `trope`) defines and proves the grade
+algebra (L1/L2, decidable ⊑, the veridicality and generation results). The
+*executable* (`src/idris2/`, `Checker.Json` → `Checker.Decode` → `Checker.Check` →
+`Main`) **reuses that very algebra** — it imports `Trope.Grade`/`Trope.Coords`/
+`Trope.Fidelity` and composes with the same `gradeCompose` and coordinate orders.
+So there is no "second core kept in sync": the thing that runs is the thing that is
+proved, plus a JSON front-end. The conformance suite then guards against
+front-end/regression drift rather than against two divergent implementations. A
+Rust fast-core remains a deferred option (calculus §9.3), validated — if ever built
+— against this reference via the same suite.
+
+There is no Python anywhere (estate rule); the runners are `bash` + `jq`.
 
 == Data flow
 
-. *Parse + validate* the IR JSON against `schemas/trope-ir.schema.json`. Validation
-  is load-bearing: HC-4 (bond⊣bearer dependency) and HC-3 (no deceptive grades)
-  are enforced here, and a rejection names the coordinate.
-. *Accumulate grades* over the DAG (`src/checker/tropecheck.py`): roots get ε; a
+. *Parse* the IR JSON (`Checker/Json.idr` — a small parser for the IR subset).
+. *Decode + validate* (`Checker/Decode.idr`): this is the validation boundary.
+  HC-4 (bond coherent with the bearer's fate) and HC-3 (no deceptive grades, no
+  untagged merge) are enforced here; a rejection names the coordinate
+  (e.g. `edges/e/grade/bond: incoherent with the bearer's fate (HC-4)`). The JSON
+  Schema (`schemas/`) is the language-neutral published contract; the decoder is the
+  executable reference validator, and the two encode the same rules.
+. *Accumulate grades* over the DAG (`Checker/Check.idr`): roots get ε; a
   single-input edge composes `acc(source) ▷ grade(edge)`; a `fuse` edge takes the
-  retention-meet of its two inputs then composes its label.
-. *Decide* `floor(use_model) ⊑ acc(output)`. If it fails, walk edges in topological
-  order to find the *witness*: the first edge whose accumulated grade dropped below
-  the floor in a failing coordinate.
-
-== Why two cores
-
-The Idris2 development (`verification/proofs/idris2/`) *defines and proves* the grade
-algebra (the laws L1/L2, decidable ⊑, the veridicality and generation results). The
-Python checker is the runnable sketch. They are kept in agreement by the conformance
-suite — the same design the calculus prescribes (§9.3): a verified reference + a
-shipping core + a corpus that forces agreement. A Rust fast-core is the deferred
-third leg.
+  retention-meet of its two inputs then composes.
+. *Decide* `floor(use_model) ⊑ acc(output)`. If it fails, walk edges to find the
+  *witness*: the first edge whose accumulated grade dropped below the floor in a
+  failing coordinate.
 
 == The grade, concretely
 
 `Grade = (fate : Φ→Fate, bond, merge)`. `Fate = Present | Attenuated δ | Predicated |
 Dropped | Falsified`; `Bond = Intact | Withheld | Severed | Misbound`; `Merge =
-Single | Fused τ | Conflated`. The deceptive duals (Falsified/Misbound/Conflated) are
+Single | Fused | Conflated`. The deceptive duals (Falsified/Misbound/Conflated) are
 each their coordinate's bottom: absorbing under ▷, below every honest value, so any
 honest floor fails against them. Under the prevent profile they are not even
-representable in a valid IR.
+decodable into a valid IR (the decoder rejects them, naming the coordinate).
 
 == Reading the proofs
 
@@ -53,8 +64,18 @@ then `Trope.Grade`/`Trope.Laws` (the assembled grade + L1/L2/decidability), then
 `Trope.Veridicality` and `Trope.Generation` (the structure results). What is and is
 not proved is in `docs/status/PROOF-STATUS.adoc` — read it before believing any claim.
 
+== Building and running
+
+[source,sh]
+----
+just check          # typecheck core + build the tropecheck binary + conformance
+just trope-build    # install the core package, build src/idris2/build/exec/tropecheck
+src/idris2/build/exec/tropecheck tests/conformance/fixtures/duck-collapse.ir.json
+----
+
 == Extending
 
 A new front-end: see `docs/CONTRIBUTING-A-FRONTEND.adoc`. A new effect or grade
-coordinate: change the calculus first, then the schema, then the Idris core, then the
-checker, then the conformance suite — in that order, small verified increments (HC-5).
+coordinate: change the calculus first, then the schema, then the verified core, then
+the decoder/checker, then the conformance suite — in that order, small verified
+increments (HC-5).

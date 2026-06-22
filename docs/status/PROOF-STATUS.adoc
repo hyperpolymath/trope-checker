@@ -57,3 +57,10 @@ toc::[]
   function argument does not reduce under the unifier); since
   `epsilon = MkGrade Present Present Present Present Intact Single` definitionally,
   the statement is `ε ▷ g = g`.
+* *The use-model floor is a partial per-coordinate demand, not a grade value.* HC-4
+  (the Σ-coherence: bond⊣bearer-fate) is enforced on edge grade VALUES, where it
+  makes incoherent states unrepresentable; the floor is a set of independent
+  minimum-demands (each coordinate optional), so an author CAN write an incoherent
+  floor (e.g. bearer-Dropped + bond-Intact). This is harmless — each demanded
+  coordinate is checked independently — but is an author-error surface, not covered
+  by the HC-4 unrepresentability claim. (Audit 2026-06-22.)

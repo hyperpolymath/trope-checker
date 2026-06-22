@@ -16,8 +16,8 @@ toc::[]
 Your front-end *lowers* its program to a Trope IR document (`schemas/trope-ir.schema.json`)
 and hands it to the checker. You do not decide acceptability; the checker does,
 against each consumer's declared use-model floor. Validate your output:
-`python3 src/checker/validate_schema.py` (after adding your fixtures) and run it
-through `src/checker/tropecheck.py`.
+the checker (the Idris decoder is the reference validator) and run it
+through `src/idris2/build/exec/tropecheck your-ir.json`.
 
 == 2. The grade vocabulary you may emit (prevent profile)
 
