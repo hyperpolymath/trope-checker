@@ -1,94 +1,60 @@
+// SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 // SPDX-License-Identifier: MPL-2.0
-// Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
-= RSR Template Repo - Explainme
-image:https://img.shields.io/badge/License-MPL_2.0-blue.svg[License: MPL-2.0,link="https://opensource.org/licenses/MPL-2.0"]
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= EXPLAINME — trope-checker (developer deep-dive)
+:toc: macro
+:sectnums:
 
-:toc:
-:icons: font
+The README is the pitch; this is how it actually works and why it is shaped this way.
 
-This file explains how the key template claims map to real files.
+toc::[]
 
-== Central Session Protocol Authority
+== The one job
 
-Claim:
-Session protocols are centrally maintained and not duplicated in this template.
+`check : TropeIR → Verdict`. Everything else (schema, Idris core, conformance) exists
+to make that one pure function trustworthy and portable. The checker never sees a
+source program — only the IR. That is the whole portability story (HC-1).
 
-How this is implemented:
+== Data flow
 
-* The local dispatcher (`session/dispatch.sh`) maps canonical commands to central
-  protocol paths in `standards/session-management-standards`.
-* Local files (`session/custom-checks.k9`, `session/local-hooks.sh`,
-  `coordination.k9`) are integration-only.
+. *Parse + validate* the IR JSON against `schemas/trope-ir.schema.json`. Validation
+  is load-bearing: HC-4 (bond⊣bearer dependency) and HC-3 (no deceptive grades)
+  are enforced here, and a rejection names the coordinate.
+. *Accumulate grades* over the DAG (`src/checker/tropecheck.py`): roots get ε; a
+  single-input edge composes `acc(source) ▷ grade(edge)`; a `fuse` edge takes the
+  retention-meet of its two inputs then composes its label.
+. *Decide* `floor(use_model) ⊑ acc(output)`. If it fails, walk edges in topological
+  order to find the *witness*: the first edge whose accumulated grade dropped below
+  the floor in a failing coordinate.
 
-Caveat:
+== Why two cores
 
-* If `SESSION_STANDARDS_DIR` is unset and no adjacent standards checkout exists,
-  the dispatcher records the command but cannot resolve central checklist paths.
+The Idris2 development (`verification/proofs/idris2/`) *defines and proves* the grade
+algebra (the laws L1/L2, decidable ⊑, the veridicality and generation results). The
+Python checker is the runnable sketch. They are kept in agreement by the conformance
+suite — the same design the calculus prescribes (§9.3): a verified reference + a
+shipping core + a corpus that forces agreement. A Rust fast-core is the deferred
+third leg.
 
-== Canonical Command Surface
+== The grade, concretely
 
-Claim:
-Template bindings align to one canonical command model.
+`Grade = (fate : Φ→Fate, bond, merge)`. `Fate = Present | Attenuated δ | Predicated |
+Dropped | Falsified`; `Bond = Intact | Withheld | Severed | Misbound`; `Merge =
+Single | Fused τ | Conflated`. The deceptive duals (Falsified/Misbound/Conflated) are
+each their coordinate's bottom: absorbing under ▷, below every honest value, so any
+honest floor fails against them. Under the prevent profile they are not even
+representable in a valid IR.
 
-How this is implemented:
+== Reading the proofs
 
-* `Justfile` provides thin aliases (`intake-repo`, `checkpoint-change`,
-  `verify-maintenance`, `verify-substantial`, `verify-release`, `close-planned`,
-  `close-urgent`, `recover-repo`, `handover-*`).
-* Every alias calls `session/dispatch.sh` with canonical verb-object pairs.
+`idris2 --typecheck verification/proofs/idris2/trope.ipkg`. Start in `Trope.Fidelity`
+(the δ dimension), then `Trope.Coords` (the three coordinates + per-coordinate laws),
+then `Trope.Grade`/`Trope.Laws` (the assembled grade + L1/L2/decidability), then
+`Trope.Veridicality` and `Trope.Generation` (the structure results). What is and is
+not proved is in `docs/status/PROOF-STATUS.adoc` — read it before believing any claim.
 
-Caveat:
+== Extending
 
-* Recipes are wrappers only. They do not replace protocol content from
-  the central standards repo.
-
-== Runtime State Is Local
-
-Claim:
-Session state is per-repository runtime output, not standards text.
-
-How this is implemented:
-
-* `session/dispatch.sh` writes command and continuity-core capture stubs to
-  `.session/LAST-CANONICAL-COMMAND.md` in the target repository path.
-
-Caveat:
-
-* Runtime files are intentionally lightweight and require human/agent completion.
-
-== Template Token Policy
-
-Claim:
-Placeholders are explicit template content until initialization.
-
-How this is implemented:
-
-* `README.adoc` and bootstrap recipes keep `{{TOKEN}}` placeholders visible.
-* `just init` performs token replacement.
-
-Caveat:
-
-* Uninitialized placeholders must not be treated as project-specific truth.
-
-== Julia Registry Packages — Standalone Repo Requirement
-
-Claim:
-If this template is used to create a Julia package, it must remain a standalone repository registered with the Julia package registry.
-
-How this is implemented:
-
-* Julia's package registry (General.jl or other) expects each package to be a standalone GitHub repository with `Project.toml` at the repository root.
-* Installation via `Pkg.add()`, dependency resolution, and automated CI/CD all depend on this canonical structure.
-
-Caveat:
-
-* Do NOT move this repository into a monorepo or subdirectory, as this breaks registry registration and package discoverability.
-* See `JULIA-REGISTRY-REQUIREMENT.md` (workspace root) for the complete list of 34 registered Julia packages and enforcement rationale.
-* Non-registry Julia packages can be organized differently if they are not published to any registry.
-
-
-== License
-
-This project is licensed under the Mozilla Public License, v. 2.0. See the `LICENSE` file for details.
-
-SPDX-License-Identifier: MPL-2.0
+A new front-end: see `docs/CONTRIBUTING-A-FRONTEND.adoc`. A new effect or grade
+coordinate: change the calculus first, then the schema, then the Idris core, then the
+checker, then the conformance suite — in that order, small verified increments (HC-5).

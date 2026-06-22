@@ -1,91 +1,119 @@
+// SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 // SPDX-License-Identifier: MPL-2.0
-// Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
-// SPDX-FileCopyrightText: 2024-2026 Jonathan D.A. Jewell (hyperpolymath)
-= {{PROJECT_NAME}}
-:toc:
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Trope Checker
+:toc: macro
 :toc-placement: preamble
+:sectanchors:
 
-image:https://img.shields.io/badge/OpenSSF-Best_Practices-green?logo=opensourcesecurity[OpenSSF Best Practices,link="https://www.bestpractices.dev/en/projects/new?repo_url=https://{{FORGE}}/{{OWNER}}/{{REPO}}"]
 image:https://img.shields.io/badge/License-MPL_2.0-blue.svg[License: MPL-2.0,link="https://opensource.org/licenses/MPL-2.0"]
-image:https://api.thegreenwebfoundation.org/greencheckimage/{{FORGE}}[Green Web,link="https://www.thegreenwebfoundation.org/green-web-check/?url={{FORGE}}"]
+image:https://img.shields.io/badge/status-alpha-orange[Status: alpha]
+image:https://img.shields.io/badge/IR_profile-prevent-success[Profile: prevent]
 
-{{PROJECT_DESCRIPTION}}
+[.lead]
+The portable trust boundary of *trope-particularity*: a pure function from a
+language-neutral _Trope IR_ to a sufficiency verdict.
 
-[IMPORTANT]
-====
-*This file is a template.* You are reading `README.adoc` from the *RSR template repo*
-(or a freshly-cloned copy of it). Run `just init` to replace every `{{PLACEHOLDER}}`
-token with your project's details, then delete this admonition. Until you do, the
-`{{...}}` markers below are intentional placeholders, not content.
-====
+toc::[]
 
 == What this is
 
-A new repository scaffolded from the *Rhodium Standard Repository (RSR)* template:
-a batteries-included starting point that ships with CI/CD, machine-readable project
-metadata, an AI-agent gatekeeper protocol, a formally-typed ABI/FFI seam
-(Idris2 + Zig), container and reproducible-build scaffolding, and governance
-infrastructure — all wired and passing the RSR validators on day one.
+The tropechecker consumes a *Trope IR* — a labelled DAG of property-instances
+(nodes) and graded effect-applications (edges) with a declared use-model floor —
+composes the loss-shape grades, and returns a verdict: `p-sufficient` or
+`p-insufficient`, with a *witness edge* when insufficient. The normative
+semantics is the calculus in `spec/calculus.adoc`; this repository holds it, the
+IR schema, the verified core, and the conformance suite.
 
-Replace this section with a description of *your* project once initialised.
+[IMPORTANT]
+.The checker is language-independent (HC-1)
+====
+The checker MUST NOT parse, import, execute, or depend on any source language.
+It is a pure function _of the IR_, and the IR (its JSON schema) is the trust
+boundary. A front-end's grade annotations are *claims*; the checker validates
+their *composition*, not their origin. `{{LANG}}` (Haec) is the first front-end
+that lowers to the IR — dogfooding without coupling — but a static analyser for
+an existing language could emit the same IR and be checked by the same checker.
+====
 
-== Quick start
+== The three firewalls (HC-2 — never let code launder them)
 
-[source,bash]
-----
-# 1. Create a repo from this template (or clone it), then from the repo root:
-just init                # interactive bootstrap: fills every {{PLACEHOLDER}}
+. *Soundness, not completeness.* A conservative `p-insufficient` is acceptable;
+  claiming _less_ loss than occurred is never sound. No completeness is claimed.
+. *Relative to faithful lowering.* The checker bounds IR-level loss by IR-level
+  grades. It does NOT prove that a front-end's claim "this construct _is_ a
+  `collapse`" is true — that is the front-end's lowering-correctness obligation
+  (calculus O2), discharged per front-end, not here.
+. *Veridicality is declared and propagated, not checked.* Detecting that a value
+  claimed faithful is in fact false needs a ground-truth oracle the checker does
+  not have (calculus O5). The checker guarantees only that deception does not
+  compose away and that deceptive grades fail every honest floor.
 
-# 2. See the available tasks:
-just                     # lists all phases (build, test, validate, audit, ...)
+== Deploy variant: prevent (R-2026-06-22)
 
-# 3. Check the repo still satisfies the RSR shape:
-just validate            # structure + metadata checks
-----
-
-`just init` prompts for the project name, owner, author, licence contact, and the
-other values listed in `.machine_readable/ai/PLACEHOLDERS.adoc`, substitutes them
-across the tree, validates the result, and (if available) runs the `k9-svc` checks.
-
-== What you get
-
-* *Machine-readable metadata* (`.machine_readable/6a2/`) — `STATE`, `META`,
-  `ECOSYSTEM`, `PLAYBOOK`, `AGENTIC`, `NEUROSYM`, `CLADE`, and `anchors/ANCHOR`,
-  in a2ml, so tools and agents can read the project's state and boundaries.
-* *AI gatekeeper protocol* — `0-AI-MANIFEST.a2ml` is the universal entry point that
-  tells an AI agent how to work in this repo before it touches anything.
-* *Typed ABI/FFI seam* — `src/interface/Abi/` (Idris2 type + layout proofs) over
-  `src/interface/ffi/` (Zig implementation), with generated C headers.
-* *CI/CD* — GitHub Actions for quality, security (CodeQL, Scorecard, secret
-  scanning), multi-forge mirroring, and RSR anti-pattern enforcement.
-* *Supply-chain & reproducibility* — container layering (stapeln), Nix/Guix shells,
-  SBOM, and signing hooks.
-* *Governance* — `GOVERNANCE.adoc`, `MAINTAINERS.adoc`, `.github/` community health
-  files, and a release `AUDIT.adoc` gate.
+Deception is treated as a *validation-boundary fault*. The three deceptive grades
+(`fate=Falsified`, `bond=Misbound`, `merge=Conflated`) and any untagged merge are
+not writable in source (HC-3) and are *malformed* in a valid Trope IR: the schema
+rejects them at validation, naming the offending coordinate. The alternative
+`detect` variant (admit them, catch at the verdict) is documented in the calculus
+(§6.1) but is not the shipped profile.
 
 == Repository map
 
-[cols="1,3"]
+[cols="1,3",options="header"]
 |===
 | Path | What lives there
-
-| `0-AI-MANIFEST.a2ml`      | Universal entry point for AI agents (read first).
-| `.machine_readable/`      | Project metadata, policies, contractiles, AI configs.
-| `src/interface/`          | Typed ABI (Idris2) + FFI (Zig) + generated headers.
-| `docs/`                   | Onboarding, status, governance, practice, decisions.
-| `build/`, `Justfile`      | Task orchestration (`just` phases delegate to `build/just/*.just`).
-| `.github/`                | Workflows + community health files.
-| `tests/`, `benches/`      | Test suites and benchmarks.
+| `spec/calculus.adoc`        | The normative calculus (source of truth).
+| `spec/trope-ir.adoc`        | The normative IR spec: nodes, edges, grade algebra, verdict.
+| `schemas/trope-ir.schema.json` | The Trope IR JSON Schema — the trust boundary (prevent profile).
+| `src/checker/`              | The executable reference checker (`tropecheck.py`) + schema validator.
+| `tests/conformance/`        | The machine conformance suite: `cases.json` + `fixtures/` + `schema-invalid/`.
+| `verification/proofs/idris2/` | The verified core (Idris2): grade algebra + L1/L2/⊑/veridicality/generation.
+| `docs/CONTRIBUTING-A-FRONTEND.adoc` | How a new front-end targets the IR (the portability contract).
+| `docs/status/PROOF-STATUS.adoc` | What is proved vs. stubbed-and-named vs. deferred.
+| `docs/decisions/`           | Architecture decision records.
+| `AFFIRMATION.adoc`          | Dated, ground-truthed honesty snapshot (proved / stubbed / deferred).
 |===
 
-== Where to go next
+== Run the checks
 
-* `EXPLAINME.adoc` — the engineering deep-dive: how the pieces actually work.
-* `AFFIRMATION.adoc` — the dated, signed honesty snapshot of the repo's true state.
-* `AUDIT.adoc` — the release audit gate.
-* `.machine_readable/ai/PLACEHOLDERS.adoc` — the full placeholder reference.
+[source,sh]
+----
+just check        # schema validation + Idris2 typecheck + conformance suite
+just trope-conformance   # just the IR→verdict conformance corpus
+idris2 --typecheck verification/proofs/idris2/trope.ipkg   # the verified core
+python3 src/checker/tropecheck.py tests/conformance/fixtures/duck-collapse.ir.json
+----
+
+The conformance suite (`tests/conformance/`) is the formal sibling of the
+workbench's human _particularity trainer_: any implementation MUST reproduce its
+verdicts and witness edges to claim conformance. "Portable" means
+_means-the-same-everywhere_, enforced by the suite, not merely _runs-everywhere_.
+
+== Where it sits — the three-repo picture
+
+[%hardbreaks]
+*Haec* (a language, one of many) — writes & type-checks programs; emits Trope IR.
+        │  emits
+        ▼
+*Trope IR* — a graded-effect DAG (the wire format / trust boundary).
+        │  consumed by
+        ▼
+*trope-checker* (this repo) — composes grades, checks each use-model, returns a verdict.
+
+Both the language and the checker *realise* the *Particularity* vocabulary
+(`github.com/hyperpolymath/trope-particularity-workbench`). See
+`docs/trope-estate-architecture.svg`.
+
+== Status
+
+Alpha. The schema, executable checker, and conformance suite are green; the
+verified core typechecks with no axioms behind its claimed lemmas. Grade
+soundness (the full `g ⊑ ρ` theorem) and a Rust fast-core are deferred and named
+in `docs/status/PROOF-STATUS.adoc`.
 
 == Licence
 
-Released under the link:LICENSE[Mozilla Public License 2.0] unless a per-file
-`SPDX-License-Identifier` says otherwise.
+Code, config, and schemas: Mozilla Public License 2.0. Prose documentation:
+CC-BY-SA-4.0. Per-file `SPDX-License-Identifier` headers are authoritative; the
+single GitHub community-health badge is MPL-2.0 from the root `LICENSE`.

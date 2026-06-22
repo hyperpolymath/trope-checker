@@ -1,0 +1,36 @@
+// SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= AFFIRMATION — trope-checker
+:revdate: 2026-06-22
+
+A dated, ground-truthed honesty snapshot (the README/EXPLAINME/AFFIRMATION trio).
+This is the brief's "STATUS" deliverable: what is proved, what is stubbed-and-named,
+what is deferred — stated plainly, verified by running the tools, never overclaimed.
+
+== As of 2026-06-22
+
+*Ground truth (commands actually run):*
+
+* `python3 src/checker/validate_schema.py` → schema is valid draft-2020-12; all 10
+  fixtures validate; all 8 schema-invalid fixtures are rejected at the named coordinate.
+* `python3 tests/conformance/run.py` → 10/10 conformance cases pass, verdicts and
+  witness edges match.
+* `idris2 --typecheck verification/proofs/idris2/trope.ipkg` → exit 0, six modules.
+
+*Proved, machine-checked, no axioms* (see `docs/status/PROOF-STATUS.adoc`):
+L1 (associativity of ▷) and L2 (unit) on the full grade; decidability of ⊑;
+the Veridicality Derivation (exactly three deceptive duals); the Honest Generation
+Theorem (five atoms generate the honest fragment). No `believe_me` / `assert_total`
+/ `postulate` anywhere.
+
+*Stubbed-and-named, NOT asserted:* grade soundness (`g ⊑ ρ`) — the headline open
+problem; L4/L5 as standalone lemmas; O1 exhaustiveness. Deferred: Haec compiler,
+Rust fast-core, the adjunction (O3), the fidelity-carrier question (O4).
+
+*Honest scope statement:* the checker is sound, not complete; its guarantee is
+_relative to faithful lowering_ (a front-end's per-construct obligation, calculus
+O2); and veridicality is declared-and-propagated, not checked (calculus O5). The
+deploy variant is *prevent* (deception = validation-boundary fault, R-2026-06-22).
+
+— Authored by the build agent under owner direction; signed in git history.
