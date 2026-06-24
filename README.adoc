@@ -63,13 +63,17 @@ rejects them at validation, naming the offending coordinate. The alternative
 [cols="1,3",options="header"]
 |===
 | Path | What lives there
-| `spec/calculus.adoc`        | The normative calculus (source of truth).
+| `spec/calculus.adoc`        | The normative calculus (source of truth, `:revnumber: 0.1`).
+| `spec/calculus-v0.2-draft.adoc` | v0.2 *draft addendum*: the proved grade-algebra obligations `R-2026-06-23-01..04` (non-commutative product monoid; conicality; three-tier cancellation boundary; `Dropped`/`Total` honest). Does not edit v0.1.
 | `spec/trope-ir.adoc`        | The normative IR spec: nodes, edges, grade algebra, verdict.
 | `schemas/trope-ir.schema.json` | The Trope IR JSON Schema — the trust boundary (prevent profile).
 | `src/idris2/`               | The executable checker (Idris2): JSON parser + IR decoder + checker, reusing the verified core; plus `Main` → the `tropecheck` binary.
 | `src/rust/`                 | The Rust fast-core: a dep-free (std-only) second checker, validated against the Idris2 reference via the conformance corpus.
 | `tests/conformance/`        | The machine conformance suite: `cases.json` + `fixtures/` + `schema-invalid/`.
 | `verification/proofs/idris2/` | The verified core (Idris2): grade algebra + L1/L2/⊑/veridicality/generation.
+| `verification/proofs/lean4/grade-boundary/` | The grade-algebra ground truth (Lean 4 + Mathlib, sorry-free, axiom-clean): the three-tier honest/deceptive cancellation boundary.
+| `verification/proofs/agda/theorem-b/` | Theorem B — the deferred calculus metatheory (Agda `--safe --without-K`, zero postulates): intrinsic graded calculus, value-substitution, subject reduction (β/let; `fix` open), Honest Generation.
+| `verification/proofs/INTEGRATION-REPORT.adoc` | How the three streams reconcile: the unified R-id ↔ Lean ↔ Agda ↔ status table, the convergence (central open problem), and the divergence adjudication.
 | `docs/CONTRIBUTING-A-FRONTEND.adoc` | How a new front-end targets the IR (the portability contract).
 | `docs/status/PROOF-STATUS.adoc` | What is proved vs. stubbed-and-named vs. deferred.
 | `docs/decisions/`           | Architecture decision records.
@@ -84,6 +88,9 @@ just check        # schema validation + Idris2 typecheck + conformance suite
 just trope-conformance   # just the IR→verdict conformance corpus
 idris2 --typecheck verification/proofs/idris2/trope.ipkg   # the verified core
 src/idris2/build/exec/tropecheck tests/conformance/fixtures/duck-collapse.ir.json
+just verify-all   # grade-algebra ground truth (Lean) + Theorem B (Agda), both green + honesty gate
+just build-lean   # just the Lean grade-boundary harness + axiom audit
+just build-agda   # just the Agda Theorem B metatheory (--safe --without-K)
 ----
 
 The conformance suite (`tests/conformance/`) is the formal sibling of the
@@ -109,9 +116,14 @@ Both the language and the checker *realise* the *Particularity* vocabulary
 == Status
 
 Alpha. The schema, executable checker, and conformance suite are green; the
-verified core typechecks with no axioms behind its claimed lemmas. Grade
-soundness (the full `g ⊑ ρ` theorem) is the named open problem (with a 2026-06-22 partial advance)
-in `docs/status/PROOF-STATUS.adoc`. A Rust fast-core is drafted in `src/rust/` (dep-free, validated against the Idris2 reference via the conformance corpus).
+verified core typechecks with no axioms behind its claimed lemmas. The grade-algebra
+*honest/deceptive cancellation boundary* is now proved in Lean (sorry-free,
+axiom-clean) and its metatheory developed in Agda (Theorem B). Grade soundness (the
+full `g ⊑ ρ` theorem) and the *operational model for `fix`/routing* (the central open
+problem, CO-1, gated by O4) remain the named open problems in
+`docs/status/PROOF-STATUS.adoc`; see `verification/proofs/INTEGRATION-REPORT.adoc` for
+the full proved-vs-missing picture. A Rust fast-core is drafted in `src/rust/`
+(dep-free, validated against the Idris2 reference via the conformance corpus).
 
 == Licence
 

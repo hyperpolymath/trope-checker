@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MPL-2.0
 // SPDX-License-Identifier: CC-BY-SA-4.0
 = AFFIRMATION — trope-checker
-:revdate: 2026-06-22
+:revdate: 2026-06-24
 
 A dated, ground-truthed honesty snapshot (the README/EXPLAINME/AFFIRMATION trio).
 This is the brief's "STATUS" deliverable: what is proved, what is stubbed-and-named,
@@ -32,5 +32,29 @@ Rust fast-core, the adjunction (O3), the fidelity-carrier question (O4).
 _relative to faithful lowering_ (a front-end's per-construct obligation, calculus
 O2); and veridicality is declared-and-propagated, not checked (calculus O5). The
 deploy variant is *prevent* (deception = validation-boundary fault, R-2026-06-22).
+
+== As of 2026-06-24 — grade-boundary ground truth + Theorem B
+
+*Ground truth (commands actually run):*
+
+* `just build-lean` (≡ `lake build` in `verification/proofs/lean4/grade-boundary/`) → exit 0;
+  axiom audit reports `propext`/`Quot.sound` only — *no `sorryAx`*, no user `axiom`, no `native_decide`.
+* `just build-agda` (≡ `agda --safe --without-K All.agda` + `Smoke.agda` in
+  `verification/proofs/agda/theorem-b/`) → exit 0; *zero* `postulate`/`sorry`/`TERMINATING`/`trustMe`.
+
+*Proved, machine-checked:* the grade-algebra *honest/deceptive cancellation boundary* — the
+non-commutative product monoid, full-carrier conicality, and the *three-tier strict cancellation
+boundary* (cancellation only on the finite-fidelity core) — in Lean; and over it, Theorem B's
+intrinsic graded calculus, grade-exact value substitution, β/let subject reduction, and Honest
+Generation, in Agda. Two recorded results: symmetric cut is *impossible* (F2); tier-preservation is
+*closure, not a homomorphism* (F2×F4).
+
+*Stubbed-and-named, NOT asserted (the honest gap, stated plainly):* Theorem B *Target 3 is PARTIAL* —
+*`fix`/lfp subject reduction is NOT-REACHED and not postulated*. There is *no full subject reduction
+and no operational model* for the calculus's `fix`/routing dynamics; this is the *central open
+problem (CO-1)*, gated by v0.1's O4 (the limit carrier). The grade algebra itself is not at fault.
+Documentation gaps OPEN-B/B′ (`Falsified`/`Misbound` absent from v0.1 §3.1/§3.2) and OPEN-C
+(`Withheld`/`Fused` tier-2 membership not individually witnessed) are recorded, not filled. Full
+proved-vs-missing picture: `verification/proofs/INTEGRATION-REPORT.adoc`.
 
 — Authored by the build agent under owner direction; signed in git history.

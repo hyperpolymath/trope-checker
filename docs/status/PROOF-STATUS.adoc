@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: MPL-2.0
 // SPDX-License-Identifier: CC-BY-SA-4.0
 = Proof status — trope-checker verified core
-:revdate: 2026-06-22
+:revdate: 2026-06-23
 :toc: macro
+:stem: latexmath
 
 What is *proved* (machine-checked, no axioms), *stubbed-and-named* (an open
 problem stated, never asserted as done — HC-5), and *deferred*. Ground-truth:
@@ -98,3 +99,112 @@ monotone.
   calculus hints at, not strict L4.
 * The operational model of the term language + `fix` (calculus §7) and a definition
   of observed retention `ρ` over executions — the deeper part of the open problem.
+  *This is now named CO-1, the repository's central open problem (see the next
+  section); the two streams converge on it.*
+
+== Grade-algebra boundary + Theorem B metatheory (2026-06-23)
+
+Two work-streams landed against the *authoritative Lean ground truth*
+`verification/proofs/lean4/grade-boundary/GradeBoundary.lean` (Lean 4 v4.16.0 +
+Mathlib, sorry-free; `#print axioms` = `propext`/`Quot.sound` only — built green this
+date, no `sorryAx`/user-`axiom`/`native_decide`):
+
+* *Stream A* — `spec/calculus-v0.2-draft.adoc`: a v0.2 spec addendum lifting the
+  proved algebra into obligations `R-2026-06-23-01..04`.
+* *Stream B* — `verification/proofs/agda/theorem-b/` (Agda `--safe --without-K`,
+  *zero postulates*; `All.agda`/`Smoke.agda` green this date): the calculus
+  metatheory (Theorem B).
+
+Full reconciliation — the unified R-id ↔ Lean ↔ Agda ↔ status table, the convergence
+analysis, and the divergence adjudication — is in
+`verification/proofs/INTEGRATION-REPORT.adoc`. Headlines:
+
+=== Proved (this date)
+
+[cols="1,3",options="header"]
+|===
+| Result | Where
+
+| *Three-tier strict cancellation boundary* stem:[\mathcal{C} \subsetneq \mathcal{H}
+  \subsetneq \mathcal{G}] — cancellation holds *only* on the finite-fidelity core and
+  fails on the honest-but-lossy and deceptive tiers alike (the non-cancellative set
+  *strictly* contains the deceptive set)
+| Lean `honest_fidelity_cancel` (core) + `grade_not_leftCancel` (L5) + absorbing &
+  honest-not-cancel witnesses; Agda `TB.Tier` (`core-closed-▷`, `Q-cancelʳ`, six
+  `*-not-cancel`, `deceptive-absorbs-▷`). (A: R-2026-06-23-03; B: F4.)
+
+| *F2 — `▷` is non-commutative* (witness `dropped`/`falsified`), so `CommMonoid` /
+  special-Frobenius cannot model it — *now strengthened* by B's impossibility result:
+  *symmetric (orientation-free) computational cut is impossible*
+| Lean `grade_mul_not_comm`, `Fate.not_comm`; Agda `grade-not-comm`,
+  `cut-symmetric-fails` (= `grade-not-comm`), `cut-orientation-matters`. (A:
+  R-2026-06-23-01; B: F2 + Target 2 refutation.)
+
+| *F2×F4 interaction — tier-preservation is CLOSURE, not a homomorphism.* The naïve
+  `tierOf (g ▷ h) ≡ tierOf g ⊓ tierOf h` is *false* on fate (`dropped ▷ falsified =
+  dropped` honest, shielding a later deceptive `falsified`); same phenomenon as the
+  strict-L4 failure
+| Agda `TB.Tier.fate-tier-meet-hom-fails`, guarded by `fate-L4-fails`
+  (≡ Idris `Soundness.fateL4MonotonicityFails`). (B: F2×F4 finding.)
+
+| *Partition correction — `Dropped` and `Total` are HONEST*, not deceptive (absorbing
+  yet truthful). The non-cancellative set partitions as honest-but-lossy
+  (`dropped`/`predicated`/`severed`/`total`, +`withheld`/`fused`) versus deceptive
+  (`falsified`/`misbound`/`conflated`/`unknown`)
+| Lean `dropped_absorbing`, `fidelity_total_honest_not_cancel`, `total_add_Q`,
+  `total_add_unknown`; Agda `TB.Tier` classifiers. (A: R-2026-06-23-04; B: F4.)
+
+| *Value substitution is grade-exact* ("tropes follow values through cut"); *honesty
+  is closed under ▷* so deceptive grades are unreachable from honest terms (HC-3)
+| Agda `TB.Substitution.subst`/`cut-preserves-grade` (Target 2);
+  `TB.Honest.honest-closed-▷` + atom-honesty (Target 4).
+|===
+
+=== Theorem B — true per-target status (NOT rounded up)
+
+[cols="1,3",options="header"]
+|===
+| Target | Status
+
+| *1* — encode the grade as a non-commutative graded structure (intrinsic calculus) | *PROVED*
+| *2* — substitution-admissibility / reindexing | *PROVED* (+ `cut-symmetric-fails` refutation)
+| *3* — subject reduction respecting the F4 boundary | *PARTIAL — INCOMPLETE.* β/let core PROVED (intrinsic SR; tier preserved exactly); *`fix`/lfp NOT-REACHED* (no postulate), blocked on CO-1 + O4. *There is no full subject reduction and no operational model yet.*
+| *4* — Honest Generation (HC-*) + Veridicality (L*) | *PROVED*
+|===
+
+=== CO-1 — CENTRAL OPEN PROBLEM (the repository's headline gap)
+
+*The calculus has no operational model (reduction dynamics) for its grade-routing /
+iterating constructs.* v0.1 is a pure type-and-grade discipline; reduction beyond the
+β/let core is undefined. The two streams *converge on this single hole* from opposite
+sides — recorded as ONE item, not two:
+
+* *Spec face (= A's OPEN-A):* the lossless fractional *split / rejoin / routing*
+  operator whose cancellability R-2026-06-23-03 constrains-in-advance is referenced
+  but *undefined* (no typing rule, no dynamics).
+* *Proof face (= B's Target-3 fixpoint case):* `fix`/lfp subject reduction is
+  *NOT-REACHED* — no ↝ rule for `fix`, no observed-retention `ρ`.
+* *Additionally gated by v0.1 O4* (the `Conat`-vs-tag limit carrier for ordering
+  iterated attenuation beyond stem:[\omega]) — B's second missing piece, which *is*
+  v0.1's pre-existing O4.
+
+The grade algebra is *not* at fault (the lfp endpoint stem:[\{total, unknown\}] is
+already ▷-fixed and tier-stable). *Entanglement:* v0.1 §7 justifies the `fix` lfp
+grade "by L4 monotonicity", but strict L4 is machine-proved to *fail on fate*
+(`fate-L4-fails`) — so even the grade-side `fix` justification rests on a monotonicity
+now known only to be lax.
+
+=== Documentation-reconciliation gaps (recorded, not filled — for the merge author)
+
+* *OPEN-A* — folded into CO-1 above.
+* *OPEN-B* — `Falsified` (fate's deceptive bottom, dual of honest `Dropped`) is in the
+  proved carrier but absent from v0.1 §3.1's four-inhabitant fate table. *OPEN-B′
+  (surfaced during integration)* — the analogous gap holds for `Misbound` (bond's
+  deceptive bottom), absent from v0.1 §3.2's three-inhabitant bond table. (Merge's
+  `Conflated` is already in v0.1 §3.3.) Whether to amend v0.1 §3.1/§3.2 normatively is
+  a documentation decision, not fixed by F1–F4.
+* *OPEN-C* — tier-2 membership is recorded, not exhaustively proved: the harness
+  witnesses *representative* honest-but-lossy elements non-cancellative
+  (`predicated`/`severed`/`total`, +`dropped`); `Withheld` and `Fused` sit in tier 2
+  by the carrier's order structure but carry no individual named non-cancellation
+  witness in either development.
