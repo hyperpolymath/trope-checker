@@ -1,0 +1,90 @@
+// SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= ADR 0003 — Split reference semantics: Lean ground truth + Agda metatheory over the Idris2 executable
+:revdate: 2026-06-23
+
+== Status
+
+Accepted (alpha). The integration landed green and signed; evidence in
+`verification/proofs/INTEGRATION-REPORT.adoc`.
+
+== Context
+
+ADR 0002 chose *Idris2 through-and-through* for the shipping artefacts: the verified
+core (`verification/proofs/idris2/`, package `trope`) proves L1/L2/⊑/veridicality/
+generation and the executable (`src/idris2/`) reuses that same algebra, so the thing
+that runs is the thing that is proved.
+
+Two facts were left open by that decision. First, the calculus (`spec/calculus.adoc`
+§9, "Verified core, fast core, conformance suite") states that the *reference*
+tropechecker SHOULD be an *Agda* development that defines the loss-shape category and
+proves the laws and grade soundness — a target ADR 0002 did not address. Second, the
+honest/deceptive *cancellation boundary* of the grade algebra (no Frobenius/
+cancellative/conical framing exists in v0.1) was unproved, and characterising it
+needs an algebra library (`WithTop` monoids, cancellation, conicality) that Idris2's
+ecosystem does not provide off the shelf.
+
+This ADR records how that gap was filled, landing 2026-06-23 across three reconciled
+work-streams measured against one authoritative ground truth.
+
+== Decisions
+
+[cols="1,3",options="header"]
+|===
+| ID | Decision
+
+| *Lean 4 + Mathlib = grade-algebra GROUND TRUTH* | The honest/deceptive cancellation
+boundary is proved in `verification/proofs/lean4/grade-boundary/GradeBoundary.lean`
+(Lean `v4.16.0` + Mathlib, sorry-free; `#print axioms` = `propext`/`Quot.sound` only —
+no `sorryAx`/user-`axiom`/`native_decide`). Lean was chosen for Mathlib's `WithTop`
+additive monoids and cancellation machinery, which let the boundary be characterised
+exactly: a *non-commutative* product monoid, full-carrier conicality, and the
+*three-tier strict cancellation boundary* (cancellation only on the finite-fidelity
+core). This file is *authoritative* and is not modified by downstream work.
+
+| *Agda (`--safe --without-K`) = Theorem B, the calculus METATHEORY* | The deferred
+metatheory is developed in `verification/proofs/agda/theorem-b/` (Agda `2.8.0` +
+stdlib; zero postulates) over the same carrier: the intrinsic graded calculus,
+grade-exact value substitution, subject reduction (β/let), and Honest Generation.
+This realises the calculus §9 "reference Agda development" target for Targets 1/2/4
+and partially Target 3. The two developments agree (same product monoid, same
+non-commutativity witness `dropped`/`falsified`, same three-tier partition).
+
+| *Idris2 remains the executable reference* | ADR 0002 stands unchanged: `src/idris2/`
+is the shipping checker and `verification/proofs/idris2/` its verified core. Lean and
+Agda are *semantics and metatheory*, not compiled into the checker binary. The three
+roles are distinct: Lean = algebra ground truth; Agda = calculus metatheory; Idris2 =
+executable + its reused core.
+
+| *Spec addendum binds claims to proofs* | `spec/calculus-v0.2-draft.adoc` lifts the
+proved facts into dated normative obligations `R-2026-06-23-01..04`, each bound 1:1
+(where possible) to its governing Lean theorem. It *does not edit v0.1* — it is a
+separate file precisely so the merge step can diff it.
+
+| *Honesty / stub-and-name (HC-5)* | Theorem B *Target 3 is PARTIAL*: β/let subject
+reduction is proved; *`fix`/lfp is NOT-REACHED and not postulated*. The two streams
+*converge on one hole* — *CO-1: the calculus has no operational model for `fix`/
+routing dynamics*, gated by v0.1's O4 (the limit carrier). Nothing is rounded up; the
+true per-target status is in `docs/status/PROOF-STATUS.adoc` and the unified table in
+`verification/proofs/INTEGRATION-REPORT.adoc`.
+
+| *Toolchains pinned* | Lean `v4.16.0` + Mathlib (`lean-toolchain`, `lake-manifest.json`);
+Agda `2.8.0` + standard-library (`theorem-b.agda-lib`). Builds and gates:
+`just build-lean`, `just build-agda`, `just verify-all`.
+|===
+
+== Consequences
+
+Two *independent* formalisations of the same carrier (Lean algebra + Agda metatheory)
+raise confidence beyond a single development, and the three-tier boundary, the
+non-commutativity result (F2: symmetric cut is impossible) and the F2×F4 interaction
+(tier-preservation is closure, not a homomorphism; strict L4 fails on fate) are now
+machine-certified facts on the trust boundary.
+
+The cost is two further proof assistants in the toolchain (pinned, with their own
+build recipes) and the standing central open problem CO-1, which blocks full subject
+reduction until the calculus is given an operational model. The Idris2 checker is
+unaffected: it neither depends on nor ships the Lean/Agda artefacts. See
+`verification/proofs/INTEGRATION-REPORT.adoc` for the unified R-id ↔ Lean ↔ Agda ↔
+status table and the convergence/divergence analysis.
