@@ -1,0 +1,385 @@
+// SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= The Trope-Particularity Calculus — v0.2 grade-algebra addendum (proved obligations)
+:revnumber: 0.2-draft
+:revdate: 2026-06-23
+:toc: macro
+:sectnums:
+:sectnumlevels: 2
+:stem: latexmath
+:icons: font
+
+[abstract]
+This is a *draft addendum* to the trope-particularity calculus v0.1
+(`spec/calculus.adoc`, `:revnumber: 0.1`). It records, as dated normative
+obligations, four facts about the grade algebra that are now *machine-proved* in
+the Lean 4 + Mathlib development at `verification/proofs/lean4/grade-boundary/`
+(sorry-free; `#print axioms` = `propext`/`Quot.sound` only). The work here is
+*documentation only*: the algebra is already established; this document lifts it
+into normative spec text and binds each new obligation to its governing theorem.
+It does *not* edit v0.1 — it is written as a separate file precisely so the merge
+step can diff it against v0.1 — and it neither re-derives the theorems nor reopens
+the proved algebra; it binds each fact to its Lean name. v0.1's open obligation
+*O1* (completeness of the seven
+effects) is untouched and remains open throughout.
+
+The key words *MUST*, *MUST NOT*, *SHALL*, *SHALL NOT*, *SHOULD*, *MAY*, and
+*OPTIONAL* are to be interpreted as in RFC 2119/8174.
+
+toc::[]
+
+== Provenance, and what is being recorded (invent nothing)
+
+The four obligations below are *not* new claims. Each is a lift, in substance, of a
+green theorem from the grade-boundary harness, which is itself the single source
+of truth for the algebra. The carrier the theorems range over is, exactly:
+
+* fidelity `Delta = WithTop (WithTop ℕ)` (`dplus = (+)`, unit `Q 0 = 0`);
+* `Fate = Present | Atten Delta | Predicated | Dropped | Falsified`;
+* `Bond = Intact | Withheld | Severed | Misbound`;
+* `Merge = Single | Fused | Conflated`;
+* `Grade` = the flat record `Fate⁴ × Bond × Merge`, with *independent* fields.
+
+[IMPORTANT]
+.Two firewalls carried forward in substance from the harness, not to be laundered
+====
+. *No Frobenius / cancellative / conical framing exists in v0.1.* A grep of
+`calculus.adoc` finds none (its only near-hit, *O3*, is the unrelated
+produce/demand *adjunction* conjecture). The obligations below are therefore *new
+recordings of proved structure*, not transcriptions of existing v0.1 prose.
+
+. *"CF" (cancellative + conical ⇒ a lossless special-Frobenius split/merge) is
+refuted as universal*, and this document MUST NOT be read as reinstating it. It is
+ruled out twice over: by left-absorption of the deceptive bottoms
+(R-2026-06-23-03, *L5*, `grade_not_leftCancel`) and, independently, by
+non-commutativity of the full operation (R-2026-06-23-01, `grade_mul_not_comm`).
+What survives CF's refutation is *cancellation on the finite-fidelity core*
+(R-2026-06-23-03) — that algebraic fact alone, and no splitting or merging law,
+global or core-local.
+====
+
+=== Existing numbering recorded (the non-collision basis)
+
+So that the new ids are demonstrably consistent and non-colliding, v0.1's scheme
+is recorded here as it stands at the time of writing:
+
+[cols="1,3",options="header"]
+|===
+| Namespace (v0.1 / siblings) | Meaning, and its status under this addendum
+
+| `L1`–`L5` (v0.1 §4) | The composition laws. *Untouched.* `L5` is *constrained and
+  sharpened* by R-2026-06-23-03 (this addendum's §4), not replaced.
+| `O1`–`O4` (v0.1 §10) | The open obligations/falsifiers. *Untouched and still open*;
+  `O1` (seven-effects completeness) in particular is out of scope here.
+| `R-2026-06-22` (v0.1 §6.1) | The sole v0.1 decision-log id (the conflation-as-fault
+  decision). The `R-YYYY-MM-DD` shape is reused below.
+| `HC-*`, `L-*` | Reserved by the grade-boundary README for the *separate Agda*
+  development (Honest Generation; Veridicality). *Not touched, not collided with.*
+|===
+
+New obligations take the form *`R-2026-06-23-NN`*: the same `R-YYYY-MM-DD`
+decision-log prefix as `R-2026-06-22`, with a two-digit sequence suffix that
+extends the one-entry-per-date convention to carry several same-date records.
+This collides with none of `L\d`, `O\d`, `R-2026-06-22`, `HC-*`, or `L-*`.
+
+[NOTE]
+====
+*Source-of-truth toolchain.* All five primary governing theorems (`instMonoid`,
+`grade_mul_not_comm`, `grade_conical`, `grade_not_leftCancel`,
+`honest_fidelity_cancel`) are discharged under Lean `v4.16.0` + Mathlib `v4.16.0`,
+sorry-free, with `#print axioms` reporting `propext`/`Quot.sound` only — no
+`sorryAx`, no user `axiom`, no `native_decide`. The R-id ↔ theorem table in §7
+below (where one R-id binds a pair) is the claims-match-proofs contract; it is the
+artifact the merge step keys on.
+====
+
+== R-2026-06-23-01 — the grade is a *non-commutative* product monoid
+
+[cols="1,4",options="header"]
+|===
+| ID | Obligation (normative)
+
+| *R-2026-06-23-01* | The grade carrier under composition stem:[\triangleright] is
+a *monoid*, formed as the *componentwise product* of its coordinate monoids
+(`Fate⁴ × Bond × Merge`); this is the *degenerate-to-product* structure, confirmed
+constructively (`instMonoid`). That product *MUST NOT* be assumed commutative: it
+is *non-commutative* (`grade_mul_not_comm`). Consequently any algebraic model of
+the operation stem:[\triangleright] *MUST* treat it as order-sensitive, and
+*SHALL NOT* assume `CommMonoid`, `AddCommMonoid`, or special-Frobenius structure
+for it. The non-commutativity is a property of the *full* operation, witnessed by
+elements outside the cancellative core (the disagreeing heads `Dropped` and
+`Falsified`); special-Frobenius is moreover unavailable across the honest region,
+whose non-cancellative honest-but-lossy tier obstructs its comonoid leg
+(R-2026-06-23-03).
+|===
+
+This records v0.1 *L1–L2* (monoid) at full strength while adding the order
+discipline v0.1 left implicit. The witness to non-commutativity is intrinsic to
+the `Fate` coordinate: it carries *two* distinct left-absorbing heads, `Dropped`
+and `Falsified`, which disagree (`Dropped ▷ Falsified = Dropped` but
+`Falsified ▷ Dropped = Falsified`), so swapping operands changes the result
+(`Fate.not_comm`, lifted to the `fQuality` field by `grade_mul_not_comm`).
+
+[IMPORTANT]
+====
+*Order matters, not merely grade-sum.* Because stem:[\triangleright] is
+non-commutative, two effect sequences with the *same multiset* of per-step grades
+*MAY* compose to *different* total grades. A checker, an IR producer, or any
+optimiser *MUST NOT* reorder effect edges (v0.1 §9) under the assumption that
+composition is symmetric. This is the precise sense in which special-Frobenius —
+which presupposes a commutative comonoid/monoid interaction — is *unavailable*:
+the obstruction is structural (order-sensitivity), independent of, and additional
+to, the cancellation obstruction of R-2026-06-23-03.
+====
+
+== R-2026-06-23-02 — conicality of the full grade
+
+[cols="1,4",options="header"]
+|===
+| ID | Obligation (normative)
+
+| *R-2026-06-23-02* | The full grade carrier is *conical*: for all grades
+stem:[a, b], if stem:[a \triangleright b = \varepsilon] then stem:[a = \varepsilon]
+*and* stem:[b = \varepsilon] (`grade_conical`). The unit grade stem:[\varepsilon]
+(full presence, intact bond, single merge) *MUST NOT* be treated as reachable
+under composition by any pair other than stem:[\varepsilon \triangleright \varepsilon].
+|===
+
+Conicality holds on the *entire* carrier (not only the core), and is proved
+fieldwise from per-coordinate conicality (`Fate.conical`, `Bond.conical`,
+`Merge.conical`). Operationally: no amount of loss can be *manufactured from* the
+unit, and the loss-free state cannot be *re-attained* except from itself. A
+verdict engine *MAY* rely on this — a final grade of stem:[\varepsilon]
+witnesses a genuinely loss-free pipeline, never an accidental cancellation of
+losses against gains, because there are no gains.
+
+== R-2026-06-23-03 — the three-tier cancellation boundary (headline)
+
+[cols="1,4",options="header"]
+|===
+| ID | Obligation (normative)
+
+| *R-2026-06-23-03* | The carrier is stratified by cancellability into *three
+strict tiers*. Write stem:[\mathcal{C}] for the *cancellative core*,
+stem:[\mathcal{H}] for the *honest* region, and stem:[\mathcal{G}] for the *full*
+carrier. Then the inclusions are *strict*:
+stem:[\mathcal{C} \subsetneq \mathcal{H} \subsetneq \mathcal{G}]. *Cancellation
+holds ONLY on the finite-fidelity core stem:[\mathcal{C}]*
+(`honest_fidelity_cancel`), and *fails everywhere above it* — on the
+honest-but-lossy tier and on the deceptive tier alike; the full carrier is
+*non-left-cancellative* (`grade_not_leftCancel`). Accordingly, *should* a future
+revision introduce a lossless fractional split, rejoin, or routing operator (none
+exists today — see OPEN-A), that operator *MUST* be licensed *ONLY* on
+stem:[\mathcal{C}], the sole region carrying the cancellation it would rely on;
+on stem:[\mathcal{H} \setminus \mathcal{C}] and on
+stem:[\mathcal{G} \setminus \mathcal{H}] it *MUST* be treated as lossy and
+irreversible, and *MUST NOT* be presented as recoverable.
+|===
+
+The three tiers, by their inhabitants:
+
+[cols="1,1,3",options="header"]
+|===
+| Tier | Region | Inhabitants and cancellation status
+
+| *1* | *Cancellative core* stem:[\mathcal{C}]
+| The finite-fidelity region — `Atten(Q n)` with stem:[n \in \mathbb{N}], where
+  `Delta.Q` embeds stem:[(\mathbb{N}, +, 0)] injectively and additively — together
+  with the coordinate units (`Present`, `Intact`, `Single`). *Cancellation holds*
+  here and *only* here (`honest_fidelity_cancel`).
+
+| *2* | *Honest-but-lossy* stem:[\mathcal{H} \setminus \mathcal{C}]
+| `Dropped`, `Predicated`, `Severed`, `Withheld`, `Fused`, and `Total` (honest
+  stem:[\infty]). These are *honest* — they tell no lie about what was lost — yet
+  they are *non-cancellative* (`Fate.predicated_honest_not_cancel`,
+  `Bond.severed_honest_not_cancel`, `fidelity_total_honest_not_cancel`; `Withheld`
+  and `Fused` belong here by the carrier's order structure but carry no individual
+  witness yet — OPEN-C). Honest loss is still loss: it cannot be undone.
+
+| *3* | *Deceptive, absorbing bottoms* stem:[\mathcal{G} \setminus \mathcal{H}]
+| `Falsified` (fate), `Misbound` (bond), `Conflated` (merge), and `Unknown`
+  (fidelity). Each is a *left zero* (`Fate.falsified_absorbing`,
+  `Bond.misbound_absorbing`, `Merge.conflated_absorbing`,
+  `Delta.unknown_absorbing`): it absorbs everything composed after it, so it
+  cannot be cancelled back out. This is *L5*.
+|===
+
+[WARNING]
+.Two strict inclusions, two distinct witnesses — do not collapse them
+====
+The boundary is *three-tier, not two-tier*: the non-cancellative set is
+*strictly larger* than the deceptive set.
+
+. stem:[\mathcal{C} \subsetneq \mathcal{H}] is witnessed by an *honest* element
+that nonetheless fails to cancel — e.g. `Total`, `Severed`, or `Predicated`
+(`fidelity_total_honest_not_cancel`, `Bond.severed_honest_not_cancel`,
+`Fate.predicated_honest_not_cancel`). "Honest" does *not* imply "cancellative".
+
+. stem:[\mathcal{H} \subsetneq \mathcal{G}] is witnessed by a *deceptive* element
+— e.g. `Falsified` — at which left-cancellation fails outright
+(`grade_not_leftCancel`).
+
+Conflating these two would mis-state the algebra: it would either (wrongly) license
+splitting on honest-but-lossy elements, or (wrongly) brand honest loss as
+deception. Both are forbidden.
+====
+
+[IMPORTANT]
+.The split / rejoin / routing constraint is a constraint-in-advance
+====
+The licensing constraint above is the frozen consequence both the calculus and its
+proof harness must respect: any fractional split / rejoin / routing is licensed
+*only* on the cancellative core stem:[\mathcal{C}] (tier 1), is order-sensitive
+(F2 / R-2026-06-23-01), and is *forbidden* on tiers 2 and 3. The order-sensitivity
+attaches to the routing *operation*, not to the internal composition of core
+grades: within stem:[\mathcal{C}] the grade product reduces to fidelity addition
+(`Delta.Q_add`), which is commutative *and* cancellative, so the core licenses
+*both* losslessness and commutative reassembly. It is the operation's general form
+— which may move grades between coordinates and tiers — that the order discipline
+of R-2026-06-23-01 governs.
+
+This addendum *defines no split / rejoin / routing operator* — none exists in
+v0.1. The obligation here *constrains in advance* any such operator a future
+revision may introduce; the operator itself is listed as OPEN-A in §8.
+====
+
+== R-2026-06-23-04 — partition correction: `Dropped` and `Total` are *honest*
+
+[cols="1,4",options="header"]
+|===
+| ID | Correction (normative, dated for the decision-log)
+
+| *R-2026-06-23-04* | `Dropped` and `Total` *MUST* be classified as *honest*, not
+deceptive. `Dropped` is *honest withholding* — a field withheld entirely, the
+clean omission whose *deceptive dual* is the distinct fate `Falsified`. `Total`
+is the *honest* stem:[\infty] — total quantified loss — whose deceptive
+counterpart is the fidelity bottom `Unknown` (loss of *unknown* amount).
+Documentation, taxonomy tables, and tooling *MUST NOT* enumerate `Dropped` or
+`Total` in the deceptive tier (tier 3 of R-2026-06-23-03).
+|===
+
+This correction is recorded explicitly because it *contradicts informal
+phrasings* that treat any absorbing or bottom-like element as deceptive. Both
+`Dropped` and `Total` are *absorbing* in their coordinate yet *truthful*:
+`Dropped` is left-absorbing on `Fate` (`Fate.dropped_absorbing`) while remaining
+an honest omission; `Total` absorbs finite fidelity (`Delta.total_add_Q`) and is
+itself absorbed only by the deceptive `Unknown` (`Delta.total_add_unknown`),
+yet asserts no falsehood. The distinction *absorbing-but-honest* versus
+*absorbing-and-deceptive* is the whole reason the boundary is three-tier
+(R-2026-06-23-03): it is *precisely* because `Dropped`, `Total`, `Severed`, and
+`Predicated` are honest-yet-non-cancellative that "cancellation fails stem:[\iff]
+deception" is *false*.
+
+[NOTE]
+====
+*Carrier reconciliation.* The proved `Fate` coordinate has *five* inhabitants —
+it includes `Falsified`, the deceptive fate-bottom dual to honest `Dropped`. v0.1
+§3.1's fate table lists only *four* (`Present`, `Attenuated(δ)`, `Predicated(P)`,
+`Dropped`) and predates `Falsified`. This addendum records `Falsified` as
+established by the carrier; whether v0.1 §3.1 should be amended to introduce it is
+a documentation-reconciliation decision for the merge author, logged as OPEN-B
+(§8). Nothing here edits v0.1 §3.1.
+====
+
+== Relationship to the v0.1 obligations
+
+*R-2026-06-23-03 constrains, and does not replace, L5.* v0.1's *L5* ("conflation
+infectiousness": once the merge coordinate is `Conflated`, no composition restores
+`Fused` or `Single`) stands unchanged. R-2026-06-23-03 makes L5's irreversibility
+*precise* — it is *left-absorption of the deceptive bottom* — and *generalises* it
+from the merge coordinate alone to *every* coordinate's deceptive bottom
+(`Falsified`, `Misbound`, `Conflated`, `Unknown`), with the full-carrier
+consequence `grade_not_leftCancel`. Read together: v0.1's L5 is the merge-coordinate
+instance of the general left-absorption fact that R-2026-06-23-03 records.
+
+*L1–L4 are reinforced, not altered.* R-2026-06-23-01 records the L1–L2 monoid at
+full strength and adds the order discipline (non-commutativity) that L1's
+associativity alone does not capture. L3 (bottom-absorption) and L4 (monotonicity)
+are consistent with, and presupposed by, the tier structure of R-2026-06-23-03.
+
+*O1 is untouched and remains open.* v0.1's *O1* — that the seven effects are
+*exhaustive* — is a separate completeness question and is *not* addressed,
+advanced, or closed here. The algebraic facts recorded in this addendum concern
+the *structure of the grade monoid*, not the *enumeration of the effects that
+populate it*; the two are orthogonal. O2–O4 are likewise untouched.
+
+== Interface table — the claims-match-proofs contract
+
+This table is the keystone artifact: each new obligation is bound *1:1 where
+possible* to its governing theorem(s) in
+`verification/proofs/lean4/grade-boundary/GradeBoundary.lean` (namespace
+`Trope`, sub-namespaces `Trope.Grade`, `Trope.Fate`, `Trope.Bond`,
+`Trope.Merge`, `Trope.Delta`). An implementation claiming conformance to an R-id
+below *MUST* be checkable against the named theorem(s).
+
+[cols="1,2,3",options="header"]
+|===
+| R-id | Established fact (frozen interface) | Governing Lean theorem(s)
+
+| *R-2026-06-23-01* | F1 + F2 — non-commutative product monoid
+| `Trope.Grade.instMonoid` (degenerate-to-product); `Trope.Grade.grade_mul_not_comm`
+  (non-commutative). _Coordinate witness:_ `Trope.Fate.not_comm`.
+
+| *R-2026-06-23-02* | F3 — conicality of the full grade
+| `Trope.Grade.grade_conical`. _Fieldwise:_ `Trope.Fate.conical`,
+  `Trope.Bond.conical`, `Trope.Merge.conical`.
+
+| *R-2026-06-23-03* | F4 — three-tier strict cancellation boundary
+| _Core (cancellation):_ `Trope.Grade.honest_fidelity_cancel`. _Upper inclusion
+  (L5, non-left-cancellative):_ `Trope.Grade.grade_not_leftCancel`. _Deceptive
+  left-zeros:_ `Trope.Fate.falsified_absorbing`, `Trope.Bond.misbound_absorbing`,
+  `Trope.Merge.conflated_absorbing`, `Trope.Delta.unknown_absorbing`. _Honest-but-
+  lossy witnesses (lower strict inclusion):_ `Trope.Fate.predicated_honest_not_cancel`,
+  `Trope.Bond.severed_honest_not_cancel`, `Trope.Grade.fidelity_total_honest_not_cancel`.
+
+| *R-2026-06-23-04* | Partition correction — `Dropped`, `Total` honest
+| `Trope.Fate.dropped_absorbing` (honest yet absorbing); `Trope.Grade.fidelity_total_honest_not_cancel`
+  and `Trope.Delta.total_add_Q`, `Trope.Delta.total_add_unknown` (`Total` honest
+  yet absorbing, absorbed only by `Unknown`). _Embedding of the honest core:_
+  `Trope.Delta.Q_add`, `Trope.Delta.Q_injective`, `Trope.Delta.Q_zero`.
+|===
+
+R-2026-06-23-01, -02, and -04 are 1:1 on a primary theorem; R-2026-06-23-03 (the
+headline) is intrinsically a *pair* of primaries — `grade_not_leftCancel`
+(the upper strict inclusion / L5) and `honest_fidelity_cancel` (the core) — with
+the absorbing and honest-not-cancel lemmas as supporting witnesses for the two
+strict inclusions.
+
+== OPEN, for author review
+
+The following surfaced while authoring and are *genuine gaps* that F1–F4 and the
+partition correction do *not* settle. In line with the brief, they are *recorded,
+not filled*.
+
+* *OPEN-A — the split / rejoin / routing operator is referenced but undefined.*
+  R-2026-06-23-03 (and the frozen consequence it records) governs the
+  cancellability of *fractional split / rejoin / routing*, yet no such operator is
+  defined in v0.1 or in the grade-boundary harness. The obligation constrains an
+  operation that does not yet exist. Whether to introduce it — and if so, with what
+  typing rule — is for author review; until then R-2026-06-23-03 stands as a
+  *constraint-in-advance*.
+
+* *OPEN-B — `Falsified` is absent from v0.1 §3.1.* The proved `Fate` coordinate is
+  five-ary, but v0.1 §3.1's fate table lists four inhabitants and does not mention
+  `Falsified` (the deceptive dual of `Dropped`). This addendum records `Falsified`
+  as carrier-established; whether the eventual v0.2 should amend v0.1 §3.1 to
+  introduce it normatively — and how that interacts with the v0.1 §6.1
+  conflation-as-fault story
+  for the *fate* coordinate — is a documentation-reconciliation decision, not one
+  fixed by F1–F4.
+
+* *OPEN-C — tier-2 membership is recorded, not exhaustively proved.* The harness
+  proves *representative* honest-but-lossy elements non-cancellative (`Predicated`,
+  `Severed`, `Total`). That `Withheld` and `Fused` also sit in tier 2 (honest,
+  non-cancellative) is asserted here from the carrier's order structure but is not
+  individually witnessed by a named theorem in the current harness. Whether to add
+  those witnesses, or to prove tier-2 membership uniformly, is for author review.
+
+'''
+_Suggested CHANGELOG line:_ `docs: draft trope-particularity calculus v0.2
+addendum (proved grade algebra: non-commutative product monoid [R-2026-06-23-01];
+full-carrier conicality [R-2026-06-23-02]; three-tier strict cancellation boundary,
+cancellation only on the finite-fidelity core [R-2026-06-23-03]; Dropped/Total
+honest-not-deceptive partition correction [R-2026-06-23-04]; R-id↔Lean-theorem
+contract; L5 sharpened not replaced; O1 untouched).`

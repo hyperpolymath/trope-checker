@@ -1,0 +1,211 @@
+// SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Theorem B — interface report (metatheory of the trope-particularity calculus, Agda)
+:revnumber: 1.0
+:revdate: 2026-06-23
+:toc: macro
+:sectnums:
+
+toc::[]
+
+== What this is
+
+Theorem B is the deferred metatheory of the trope-particularity *calculus* (spec
+`spec/calculus.adoc`, `:revnumber: 0.1`) over the grade algebra. It is developed
+*intrinsically* in Agda 2.8.0 + agda-stdlib, `--safe --without-K`, in
+`verification/proofs/agda/theorem-b/`, REUSING the echo-types graded-reindexing
+*style* (`echo-types/proofs/agda/EchoGraded.agda` — the thin-poset reindexing
+modality; `EchoIndexed.agda` — indexed functoriality; these are the
+"`EchoVariance`" graded muscle the task names).
+
+It sits ON TOP of the *FROZEN INTERFACE* — the grade algebra established in Lean 4
+(`verification/proofs/lean4/grade-boundary/GradeBoundary.lean`, sorry-free, axioms
+`propext`/`Quot.sound` only). The four established facts are re-established in Agda
+here as the foundation (`TB.Grade`), then the calculus metatheory is built over them.
+
+[IMPORTANT]
+====
+*Build.* `agda All.agda` and `agda Smoke.agda` both exit 0 under `--safe
+--without-K`. A cold rebuild (`agda --ignore-interfaces All.agda`) exits 0.
+*Postulates: ZERO* (see §"Postulate ledger"). No `sorry`, no `TERMINATING`, no
+`trustMe`. The one genuinely-open obligation (subject reduction through `fix`) is
+*NOT-REACHED and NOT postulated* — it is documented as a precise obstruction.
+====
+
+== The four established facts (FROZEN, cited verbatim — not re-derived)
+
+[cols="1,5",options="header"]
+|===
+| Fact | Statement (as frozen)
+
+| *F1* | `Grade` is a product `Monoid` (componentwise) — DEGENERATE-TO-PRODUCT.
+| *F2* | the product is *NON-COMMUTATIVE* (`grade_mul_not_comm`): `Fate` has two
+disagreeing left-absorbing heads `dropped`/`falsified`. `CommMonoid`/Special-Frobenius
+ruled out. ▷ is order-sensitive.
+| *F3* | conicality on the FULL carrier: `a * b = 1 → a = 1 ∧ b = 1`.
+| *F4* | the strict THREE-TIER boundary cancellative-core ⊊ honest ⊊ full:
+deceptive (`falsified`/`misbound`/`conflated`/`unknown`, left zeros ⇒ L5 irreversible)
+⊊ honest-but-lossy (`severed`/`predicated`/`total`/`dropped`, non-cancellative)
+⊊ finite-fidelity cancellative core (Q embeds (ℕ,+,0), cancels).
+|===
+
+Fences respected: spec is v0.1 (O1 seven-effects completeness OUT OF SCOPE,
+untouched); "CF" (cancellative+conical ⇒ special-Frobenius) NOT assumed — it is
+refuted-as-universal by both F2 and L5.
+
+== Module → fact → status map (the merge key)
+
+[cols="2,3,1,2",options="header"]
+|===
+| Agda module / theorem | Depends on | Target | Status
+
+| `TB.Grade` `gmonoid-assoc/unitL/unitR` | F1 | 1 | PROVED
+| `TB.Grade` `grade-not-comm` | *F2* | 1 | PROVED
+| `TB.Grade` `grade-conical` | F3 | 1 | PROVED
+| `TB.Grade` `falsified/dropped/misbound/conflated/unknown-absorbL` | F4 (L5) | 1 | PROVED
+| `TB.Order` `_⊑_`, `⊑-refl` | F4 (retention order; T-Sub) | 1 | PROVED
+| `TB.Tier` `tierOf`, `_⊓ᵗ_` | F4 | 3 | PROVED
+| `TB.Tier` `deceptive-absorbs-▷` | F4 (L5), F2 | 3 | PROVED
+| `TB.Tier` `dTier-meet-hom` | F4 (fidelity tier) | 3 | PROVED
+| `TB.Tier` `core-closed-▷`, `Q-cancelʳ` | F4 (tier 1) | 3 | PROVED
+| `TB.Tier` `*-not-cancel` (six witnesses) | F4 (strictness, L5) | 3 | PROVED
+| `TB.Tier` `fate-tier-meet-hom-fails` | *F2*×F4 | 3 | PROVED (a FINDING)
+| `TB.Tier` `fate-L4-fails` | F4 (L4 fails on fate) | 3 | PROVED (guard)
+| `TB.Syntax` `_⊢_!_` (intrinsic, graded) | F1, F2, F4 | 1 | PROVED
+| `TB.Substitution` `subst`, `_[_]`, `cut-preserves-grade` | F1 (ε unit) | 2 | PROVED
+| `TB.Substitution` `cut-left-grade` | F1 | 2 | PROVED
+| `TB.Substitution` `cut-orientation-matters`, `cut-symmetric-fails` | *F2* | 2 | PROVED (refutation)
+| `TB.Reduction` `_↝_`, `β-redex-grade`, `let-redex-grade`, `β/let-tier-preserved` | F1, F4 | 3 | PROVED (β/let core)
+| `TB.Reduction` `attenuate/project-stays-deceptive`, `seq-stays-core` | F4 | 3 | PROVED
+| `TB.Reduction` `fix`/lfp subject reduction | F4, O4 | 3 | *NOT-REACHED* (no postulate)
+| `TB.Honest` `honest-closed-▷` + atom-honesty | F2, F4, Veridicality/HC | 4 | PROVED
+| `TB.Honest` `genFate/genBond/genMerge` | HC coverage | 4 | PROVED
+| `TB.Honest` `*DeceptiveUnique`, `deceptiveDuals` | L* (Veridicality) | 4 | PROVED
+|===
+
+== Per-target verdict
+
+=== Target 1 — encode the grade as a NON-COMMUTATIVE graded structure (intrinsic) — *PROVED*
+
+`TB.Grade` ports the carrier (Δ, Fate, Bond, Merge, Grade) and ▷ clause-for-clause
+from the Lean, with first-argument-match so F2 holds *definitionally*
+(`dropped ▷f falsified = dropped ≠ falsified = falsified ▷f dropped`). F1/F2/F3 and
+the F4 absorbing lemmas are re-established. `TB.Syntax` is the *intrinsic* calculus
+`Γ ⊢ A ! g` (a derivation is a well-typed-and-well-graded term): variables carry ε;
+the unary effect formers POST-compose their atom on the right (`g ▷ atom`); the
+binary seams `app`/`let` put the earlier effect on the LEFT (`gx ▷ gf ▷ g`,
+`g₁ ▷ g₂`, CBV argument-first); T-Sub is a leaf, one-sided along `_⊑_`. F2 is
+*mandatory and respected*: ▷ is a bare non-commutative function — no
+`CommMonoid`/Special-Frobenius instance anywhere.
+
+NOTE (honest scope): the field-presence indexing of `Trope[S]`/`FloatingQuality`
+(the S ⊆ Φ subtyping) is modelled coarsely (a single `⋆Trope` plus the
+detach/collapse type-changes); the *grade* discipline is exact. The binary `fuse`
+former (needing the retention-join ⊔) is omitted from the intrinsic core; its grade
+rule `(g₁ ⊔ g₂) ▷ label` is recorded but not built (orthogonal lattice machinery,
+no bearing on F2/F4). These are deliberate scoping choices, stated loudly, not
+silent weakenings.
+
+=== Target 2 — substitution-admissibility / reindexing ("tropes follow values through cut") — *PROVED + sharpness refutation*
+
+The substitution lemma `subst : Subst Γ Δ → Γ ⊢ A ! g → Δ ⊢ A ! g` preserves the
+grade `g` *EXACTLY* — the conclusion's grade is the same `g`, no ▷ reorder anywhere.
+This is the machine-checked form of "tropes follow values through cut". It is
+insensitive to F2 precisely because a value (and a variable) carries ε, the
+two-sided unit of ▷; single substitution `_[_]` inherits exactness.
+
+The F2 boundary is itself a *theorem*, not a gap: `cut-left-grade` pins the oriented
+cut grade `g₁ ▷ g₂`; `cut-orientation-matters` exhibits computations whose forward
+composition differs from the swapped one (witness `dropped`/`falsified`); and
+`cut-symmetric-fails` refutes any orientation-free computational-cut law. So the
+value lemma is *sharp* — F2 forbids its symmetric generalisation. This is exactly
+the predicted F2 wall, delivered as a refutation rather than an unproven obligation.
+
+=== Target 3 — subject reduction respecting the three-tier F4 boundary — *PARTIAL (β/let core PROVED; `fix` NOT-REACHED)*
+
+Reduction `_↝_` is indexed at a *fixed* `(Γ, A, g)`, so subject reduction — type AND
+grade preserved by a step — holds BY CONSTRUCTION: it is the well-typedness of
+`_↝_`'s constructors. The substantive content is that the β and let-value steps
+*can* be typed at one grade index, which is the grade-COLLAPSE equations
+`β-redex-grade : (ε ▷ ε) ▷ g ≡ g` and `let-redex-grade : ε ▷ g ≡ g` — genuine F1
+unit-law equations (LHS syntactically distinct from RHS, *not* the tautology
+`g ≡ g`), the contractum having grade `g` by Target 2. Hence the grade — and so the
+*tier* — is preserved *EXACTLY*: `β-tier-preserved`/`let-tier-preserved`
+(`tierOf ((ε ▷ ε) ▷ g) ≡ tierOf g`, non-vacuous), the strongest form of respecting
+the boundary — no tier moves across a step.
+
+NOTE: the `reduct` projection (which returns the well-graded contractum) carries no
+directional content on its own — all the force is in `_↝_`'s indexing and the
+collapse equations above. It is named honestly, not as a free-standing theorem.
+
+The boundary under genuine grade *composition* (the effect formers, and any
+effect-sequencing reduction) is respected in the CLOSURE sense (`TB.Tier`):
+`deceptive-absorbs-▷` (L5 irreversibility, made dynamic — applying any further
+effect to a deceptive computation keeps it deceptive: `attenuate/project-stays-
+deceptive`), `core-closed-▷`/`Q-cancelʳ` (the cancellative core stays in the core
+and cancels), and the six `*-not-cancel` witnesses (three-tier strictness).
+
+[IMPORTANT]
+.FINDING (F2×F4): tier-preservation is CLOSURE, not a homomorphism
+====
+The naive single-tier meet-homomorphism `tierOf (g ▷ h) ≡ tierOf g ⊓ tierOf h` is
+*FALSE* on the fate coordinate — `fate-tier-meet-hom-fails`: `dropped ▷f falsified
+= dropped` (honest), but `fateTier dropped ⊓ fateTier falsified = deceptive`. The
+honest left-absorbing head `dropped` *shields* a later deceptive `falsified`. This
+is the same non-commutativity phenomenon (F2) as the L4-monotonicity failure
+(`fate-L4-fails`, ported from `Soundness.idr`). It is *why* tier-preservation had to
+be stated as set-membership closure and *why* the ⊑/L4 route is unsound — both are
+kept as compiled guard theorems so no later work re-introduces the wrong route.
+====
+
+NOT-REACHED — subject reduction through `fix`/lfp (calculus §7). Honestly
+characterised in `TB.Reduction` (and *not postulated*): two things are genuinely
+missing — (1) an operational model (no ↝ rule for `fix`, no observed-retention ρ;
+the spec is a type discipline), and (2) the O4 limit carrier for ordering iterated
+attenuation beyond ω (Conat-vs-tag). The lfp's fidelity endpoint lands in the
+▷-fixed absorbing tops `{total, unknown}`, so the *grade* is tier-stable; the
+unproven part is the operational unfold-preserves-tier step. This obstruction is
+the missing operational semantics + O4, NOT a defect of the grade algebra.
+
+=== Target 4 — Honest Generation (HC-*) and Veridicality (L*) — *PROVED* (reached because 1–3 landed)
+
+`TB.Honest` ports Veridicality (`isDeceptive{Fate,Bond,Merge}`, the uniqueness
+lemmas, `deceptiveDuals = (falsified, misbound, conflated)`) and Generation
+(`Move`, `moveFate/Bond/Merge`, `movesHonest*`, `genFate/genBond/genMerge`) from the
+Idris ground truth. The new content is the *calculus metatheorem*: honesty is closed
+under the non-commutative ▷ (`honest-closed-▷`, via per-coordinate
+`fate/bond/merge-honest`), and every writable effect atom is honest
+(`ε/atten/drop/sever/predicate-atom-honest`). Therefore a term built from the
+writable effects can NEVER produce a deceptive grade
+(`preserve/attenuate/detach/collapse-stays-honest`) — HC-3 / the prevent-variant,
+realised dynamically: the deceptive states are unreachable by construction.
+
+== Postulate ledger
+
+*NONE.* The development contains zero `postulate`, zero `sorry`, zero
+`{-# TERMINATING #-}`, zero `trustMe`/`believe_me`. Verified by grep over
+`TB/*.agda`, `All.agda`, `Smoke.agda` and by `--safe`. The single open obligation
+(Target 3, `fix`) is NOT-REACHED and explicitly NOT modelled by any assumption.
+
+== F2 and F4 respected, not weakened — checklist
+
+* F2 (non-commutativity) is *mandatory* and live: `grade-not-comm` is a pinned
+  theorem; ▷ is a bare non-commutative function; no commutative bundle is
+  instantiated for `Grade`/`Fate`; the substitution refutation
+  (`cut-symmetric-fails`) and the tier finding (`fate-tier-meet-hom-fails`) both
+  DEPEND on F2 and would be false under a commutative model.
+* F4 (three-tier boundary) is preserved as a *structure* subject reduction respects:
+  the cancellative core is closed and cancels; the deceptive tier is forward-closed
+  (L5); the honest-but-lossy middle is shown non-cancellative by witnesses; and the
+  one place a clean homomorphism would over-claim is exhibited as a refuted finding.
+  No statement was silently restricted to make it go through; every scoping choice
+  (presence-coarseness, `fuse` omission, `fix` NOT-REACHED) is stated explicitly.
+
+== Files
+
+`TB/Grade.agda` (F1/F2/F3 + F4 atoms), `TB/Order.agda` (⊑), `TB/Tier.agda` (F4
+dynamic), `TB/Syntax.agda` (intrinsic calculus), `TB/Substitution.agda` (Target 2),
+`TB/Reduction.agda` (Target 3), `TB/Honest.agda` (Target 4), `All.agda`
+(whole-dev), `Smoke.agda` (headline pins), `theorem-b.agda-lib` (depends:
+`standard-library`).
