@@ -124,5 +124,15 @@ dist/
 # writes compiled .ttc/.ttm under build/ttc/; these are generated artifacts.
 /build/ttc/
 
+# Lean 4 / Lake build artifacts and vendored packages. `.lake/` holds compiled
+# .olean/.ilean/.c/.trace outputs AND embedded clones of Mathlib/aesop/batteries
+# (their own git repos) — never track it; the pin lives in lake-manifest.json +
+# lean-toolchain, which ARE tracked.
+.lake/
+*.olean
+*.ilean
+# Agda typecheck interface files (the _build/ dir is already ignored above).
+*.agdai
+
 # Rust fast-core build output
 src/rust/target/
