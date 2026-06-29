@@ -9,7 +9,9 @@
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-BIN="$ROOT/src/idris2/build/exec/tropecheck"
+# Honour TROPECHECK_BIN so the corpus can drive an alternative checker (e.g. the
+# Rust fast-core for cross-validation); fall back to the Idris2 reference binary.
+BIN="${TROPECHECK_BIN:-$ROOT/src/idris2/build/exec/tropecheck}"
 CASES="$ROOT/tests/conformance/cases.json"
 FIX="$ROOT/tests/conformance/fixtures"
 INV="$ROOT/tests/conformance/schema-invalid"
