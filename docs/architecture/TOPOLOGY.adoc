@@ -30,6 +30,7 @@ the architecture, not a side artefact.
 | Layer | Language | Role
 
 | `verification/proofs/lean4/grade-boundary/` | Lean 4 + Mathlib | *Grade-algebra ground truth* (authoritative): the honest/deceptive three-tier cancellation boundary. Sorry-free; `#print axioms` = `propext`/`Quot.sound` only.
+| `verification/proofs/lean4/grade-factorisation/` | Lean 4 + Mathlib | *Tropical factorisation probe* (dynamics-free): imports the grade-boundary carrier and decides whether the grade admits a commutative cost-quotient. Verdict *(B) factors but veridicality-blind* — a nontrivial hom onto commutative `Δ` exists, but every commutative-target hom is forced to identify `dropped`/`falsified` (blindness co-located with the fate-axis non-commutativity). Precondition only — does *not* touch CO-1. Sorry-free; axiom-clean.
 | `verification/proofs/agda/theorem-b/` | Agda (`--safe --without-K`) | *Calculus metatheory* (Theorem B): intrinsic graded calculus, value substitution, β/let subject reduction, Honest Generation. Zero postulates. (`fix`/lfp open — CO-1.)
 | `verification/proofs/idris2/` | Idris2 | *Verified core* reused by the executable checker (`src/idris2/`) — the thing that runs is the thing that is proved.
 | `tests/conformance/` | JSON + bash/jq | The portable-semantics anchor: any implementation must reproduce its IR→verdict pairs and witness edges.

@@ -1,0 +1,257 @@
+// SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Tropical Factorisation Probe — Report
+:revnumber: 1.0
+:toc: macro
+:toclevels: 2
+
+Subproject: `verification/proofs/lean4/grade-factorisation/`. +
+Carrier reused by import (unmodified): `verification/proofs/lean4/grade-boundary/`. +
+Lean 4 v4.16.0 + Mathlib v4.16.0 (pinned, shared build). Sorry-free; axiom-clean.
+
+toc::[]
+
+== Verdict (stated up front)
+
+*(B) FACTORS but VERIDICALITY-BLIND.*
+
+A nontrivial monoid homomorphism `π : (Grade, ▷, ε) → (Δ, +, Q 0)` onto the
+commutative tropical fidelity carrier `Δ = WithTop (WithTop ℕ)` *exists* and is *proved
+green* (`pi_hom`, `pi_one`, the bundled `piHom : Grade →* Multiplicative Δ`,
+`pi_nontrivial`). But it *necessarily* identifies the honest withholding constructor
+`dropped` with the deceptive constructor `falsified`. This collapse is not an artefact
+of one cost-assignment: *every* multiplicative map from `Fate` into *any* commutative
+monoid is forced to identify them (`forced_collapse_general`, `forced_collapse`,
+`no_veridicality_faithful_hom`). Therefore the best case (A) — a homomorphism that also
+preserves the honest/deceptive distinction — is *impossible*; and the dead case (C) — no
+nontrivial homomorphism at all — is *false*.
+
+Consequence, in the brief's own terms: *tropical captures the FIDELITY sub-grade only;
+the fate-axis honest/deceptive distinction (`dropped` vs `falsified`) needs separate,
+non-tropical handling; the route is partially viable.* The loss is precisely co-located
+with the non-commutativity: the commutative coordinates (`Bond`, `Merge`) carry no such
+obstruction and their deceptions remain tropically separable
+(`psiBond_hom`, `psiBond_separates_honest_deceptive`). This is *not* "recursion solved"
+— see the guard immediately below.
+
+== Necessary-not-sufficient guard (verbatim, non-negotiable)
+
+____
+A POSITIVE result here means ONLY "the commutative cost-quotient EXISTS — the tropical
+route is NOT EXCLUDED, precondition met." It does NOT mean "tropical solves recursion."
+Whether recursion's grade actually lives in the commutative part needs an operational
+model (CO-1) and stays parked. Any report wording that implies the fixpoint is solved,
+handled, or even addressed is a FALSE CLAIM and must be removed. This probe can only
+kill the tropical route or fail to kill it. It cannot confirm it.
+____
+
+The result here is *(B)*, i.e. the route is *not killed* but is *narrowed*: it survives
+only for fidelity, and only as a precondition. Nothing in this subproject touches an
+operational model, fix dynamics, the limit carrier, admissibility, or Scott-continuity.
+Those are downstream of this probe and remain parked (see *Fireline*).
+
+== Ground truth (STEP 0 — read from the source, nothing invented)
+
+Quoted from `grade-boundary/GradeBoundary.lean`:
+
+* *Fidelity carrier* (lines 75–105). `Δ = WithTop (WithTop ℕ)`; `dplus = (+)` is
+  *commutative* (the underlying additive monoid is); `Q n = ↑↑n`, `total = ↑⊤` (the
+  honest infinite loss, inner top), `unknown = ⊤` (the deceptive bottom of fidelity,
+  outer top), unit `Q 0 = 0`. The absorption order is `unknown ⊐ total ⊐ finite`, with
+  the *decisive asymmetry*
++
+[source]
+----
+theorem total_add_unknown : total + unknown = unknown   -- GradeBoundary.lean:104
+theorem unknown_absorbing (d) : unknown + d = unknown    -- left zero (L5)
+theorem total_add_Q (n)      : total + Q n = total        -- total absorbs finite only
+----
+
+* *Fate composition* `comp`, first-match, clause-for-clause (lines 126–139). The two
+  load-bearing facts:
++
+[source]
+----
+| falsified, _ => falsified      -- falsified is left-absorbing
+| dropped,   _ => dropped        -- dropped is ALSO left-absorbing
+...                              -- so the two heads DISAGREE on order:
+--   dropped  ▷ falsified = dropped     (dropped wins by first-match)
+--   falsified ▷ dropped  = falsified   (falsified wins by first-match)
+----
++
+`Fate.not_comm` (GradeBoundary.lean:180) witnesses non-commutativity at exactly this
+pair; `Δ` commutativity and this disagreement are the entire engine of the verdict.
+
+== The claim under test
+
+A candidate projection `π : (Grade, ▷, unit) → (Δ, +, Q 0)`, "extract accumulated
+fidelity cost". `Δ` is the commutative tropical target. The question: is `π` a
+*nontrivial monoid homomorphism*, and exactly what does it preserve and collapse?
+
+== Deliverable 1 — the cost extraction `π`
+
+Fidelity (a `Δ`) is nested only under `Fate.atten`; `Bond` and `Merge` carry no `Δ`.
+So a fidelity cost factors through a per-slot map `φ : Fate → Δ`, summed over the four
+fate slots, with `Bond`/`Merge` sent to the additive unit `Q 0` (equivalently, the
+constant-`0` homomorphism). `pi g := φ g.fQuality + φ g.fBearer + φ g.fContext + φ
+g.fRecord`.
+
+*Modelling choices (flagged — these are choices, not facts).* The honest core is forced
+in spirit but the boundary values are a modelling decision, and that decision is the
+first place the probe can be gamed:
+
+[cols="1,1,3",options="header"]
+|===
+| Constructor | Assigned `Δ`-cost | Status
+| `present`    | `Q 0` (= 0)        | Obvious: no loss.
+| `atten d`    | `d`                | *Choice* (the natural one): read off the stored
+                                       fidelity payload. Any additive endo of `Δ` would
+                                       respect composition; identity is the faithful read.
+| `predicated` | `unknown`          | *Choice.* Forced to a top by `predicated ▷ atten d
+                                       = predicated`; forced to `unknown` (not `total`)
+                                       by the `atten unknown` case.
+| `dropped`    | `unknown`          | *Choice, then forced by D4* to equal `falsified`.
+| `falsified`  | `unknown`          | *Choice, then forced by D4* to equal `dropped`.
+|===
+
+The brief's natural first guess keeps honest and deceptive apart — `dropped ↦ total`,
+`falsified ↦ unknown` — call it `phiV`. We carry it explicitly precisely so we can
+falsify it.
+
+== Deliverable 2 — the homomorphism test (falsifier-first)
+
+*Positive half (the blind map factors).* `phi_hom : φ (a * b) = φ a + φ b` is proved by
+an *exhaustive* case-split over all `5 × 5` `Fate` constructor pairings (the `atten d`
+cases generic in `d`). Lifted over the four independent slots, `pi_hom : π (a ▷ b) = π a
++ π b` and `pi_one : π ε = Q 0` hold; `Δ`'s commutativity is used exactly once, to
+rearrange the eight summands (`abel`). The homomorphism is packaged as a typeclass-level
+object `piHom : Grade →* Multiplicative Δ`.
+
+*Falsifier half (the faithful candidate breaks).* `piV_not_hom` is a *verified theorem*
+that the veridicality-faithful `phiV` is *not* a homomorphism. The witness is the F2
+pair `a = gDropped`, `b = gFalsified` (each unit except its quality slot):
+
+[source]
+----
+phiV(dropped ▷ falsified) = phiV(dropped)            = total
+phiV(dropped) + phiV(falsified) = total + unknown    = unknown
+total ≠ unknown                                       -- (total_ne_unknown)
+----
+
+The absorbing-meet selects the constructor `dropped` by *first-match position* (cost
+`total`); the commutative cost-sum selects `unknown` (the absorption-maximal top). They
+disagree. The failure is *one-sided* — on `falsified ▷ dropped` it accidentally holds
+(`unknown + total = unknown`) — which is the fingerprint of cost *entangled* with
+non-commutative constructor identity. This is precisely the breaker the brief
+anticipated.
+
+== Deliverable 3 — nontriviality
+
+`pi_nontrivial : π (gAtten (Q 1)) ≠ π (gAtten (Q 2))` — the homomorphism distinguishes
+attenuation levels, so it is not the trivial collapse-to-unit. Guards against a vacuous
+YES; see D6b for the adversary that makes this guard bite. Two reinforcements:
+`pi_surjective` proves `π` is *onto* `Δ` (`π (gAtten d) = d`), so "onto" is literal; and
+`pi_discrete_nontrivial : π ε ≠ π gDropped` shows nontriviality does not rest solely on
+the `atten` coercion — `π` already separates grades on the discrete part.
+
+== Deliverable 4 — veridicality discrimination, and why blindness is FORCED
+
+This is the keystone, and it sharpens the verdict from "our chosen `π` happens to be
+blind" to "no homomorphism can be otherwise".
+
+`forced_collapse_general` (depends on *no axioms at all*): for *any* commutative monoid
+`M` and *any* multiplicative `f : Fate → M`, `f dropped = f falsified`. Three lines:
+`dropped ▷ falsified = dropped` gives `f dropped = f dropped + f falsified`;
+`falsified ▷ dropped = falsified` gives `f falsified = f falsified + f dropped`;
+commutativity of `M` equates the right-hand sides, hence the left.
+
+Consequences:
+
+* `no_veridicality_faithful_hom` — there is *no* multiplicative `Fate → Δ` keeping
+  `dropped` apart from `falsified`. Outcome *(A) is impossible*, and not merely for the
+  chosen `Δ` — for *any* commutative cost-carrier whatsoever.
+* `pi_collapses_honest_deceptive : π gDropped = π gFalsified` — at grade level, `π`
+  cannot tell honest withholding from deception.
+
+Interpretation. `dropped` is honest withholding; `falsified` is a lie. A commutative
+cost cannot keep them apart, because the carrier records *which lie/withholding wins a
+composition by order*, and order is exactly what a commutative target discards. So the
+tropical cost faithfully tracks *how much fidelity was lost* but is structurally blind
+to *whether the fate-axis loss was honest or deceptive*.
+
+*Scope of the loss (a precision the impossibility itself demands).* The obstruction is a
+property of `Fate` specifically — the one coordinate with *two* disagreeing absorbing
+heads (`dropped`, `falsified`). It is *not* a statement about veridicality wholesale.
+`Bond` and `Merge` are *commutative* monoids (proved in `grade-boundary`), so their
+deceptive bottoms (`misbound`, `conflated`) carry no F2-style obstruction and *are*
+tropically separable. We mechanise this counterpoint: `psiBond_hom` is a genuine
+(unital) homomorphism `Bond → Δ`, and `psiBond_separates_honest_deceptive` proves it
+keeps the deceptive `misbound` apart from the honest `severed` (`total ≠ unknown`). Thus
+`π` drops bond/merge veridicality only as a *modelling choice* (it ignores those
+coordinates), whereas the *fate* honest/deceptive distinction is collapsed of
+*necessity*. The veridicality content that is genuinely non-tropical is exactly the
+fate-axis one; it lives in the non-commutative complement and needs separate handling.
+
+Mechanised, fold-agnostic form. `forced_collapse_grade` (depends on *no axioms*) lifts
+the obstruction to the whole grade: *any* multiplicative `f : Grade → M` into *any*
+commutative monoid `M` has `f gDropped = f gFalsified`, because `gDropped` and
+`gFalsified` are themselves a non-commuting pair (`gDropped ▷ gFalsified = gDropped`,
+`gFalsified ▷ gDropped = gFalsified`). So no choice of how to fold the coordinates — sum
+or otherwise, into `Δ` or any other commutative target — recovers the fate distinction.
+(This obstruction is against *strict*, total, *commutative-target* homomorphisms; relaxing
+strictness, totality, or commutativity of the target is exactly what "separate,
+non-tropical handling" would mean.)
+
+== Deliverable 5 — the complement: F2 confined
+
+`pi_blind_to_noncomm : π (a ▷ b) = π (b ▷ a)` for *all* `a, b` — immediate from `pi_hom`
+and commutativity of `Δ`. So `π` cannot see *any* non-commutativity; the carrier's F2
+non-commutativity is confined entirely to the complement of `π` (it never reaches the
+cost-quotient). The confinement is non-vacuous: `grade_F2_noncomm` proves the witness is
+genuinely non-commutative (`gDropped ▷ gFalsified ≠ gFalsified ▷ gDropped`), while
+`pi_collapses_F2` proves `π` identifies the two composites. The split is clean:
+*commutative fidelity cost-quotient* `×` *non-commutative veridicality complement*.
+
+== Deliverable 6 — falsifier harness (`just falsify`)
+
+* *6a* — `piV_not_hom` (and its fate-level `phiV_not_hom`) is the live failing example:
+  a verified theorem that the faithful candidate is not a homomorphism. `just falsify`
+  asserts both are present in the axiom audit.
+* *6b* — `phi0_hom` proves the trivial map (everything ↦ `Q 0`) *is* a homomorphism,
+  while `phi0_not_nontrivial` proves it collapses attenuation levels. Together they show
+  D3 does real work: a YES obtained only by collapsing everything is caught by
+  nontriviality.
+* *6c* — no sampling: `phi_hom` is by `cases a <;> cases b`, discharging every one of the
+  `5 × 5` pairings (the `atten` cases generic), and `phi_hom_heads` re-exposes the pure
+  absorbing-head subgrid explicitly.
+
+== Axiom audit
+
+Every theorem depends on *at most* `propext` and `Quot.sound`; three —
+`grade_F2_noncomm`, `forced_collapse_general`, `forced_collapse_grade` — depend on *no
+axioms at all*. No `sorryAx`, no `Classical.choice`, no user `axiom`, no `native`-evaluator
+`decide` bypass (plain kernel `decide`, as used here and throughout `grade-boundary`, is
+permitted). The `AxiomAudit` section of the source emits the per-theorem dependencies;
+`just falsify` greps the source for forbidden tactics and the audit for `sorryAx`.
+
+== Reproduction
+
+[source,sh]
+----
+cd verification/proofs/lean4/grade-factorisation
+just build      # green: imports grade-boundary, reuses the pinned mathlib build
+just falsify    # sorry-free, axiom-clean, both falsifier witnesses live
+just axioms     # per-theorem axiom dependencies
+just verdict    # names the load-bearing theorems for verdict (B)
+----
+
+== Fireline
+
+This probe establishes a *precondition only*. It shows the commutative cost-quotient
+exists (so the tropical route is not excluded for fidelity) and that veridicality cannot
+ride in that quotient (so the tropical route is, at best, partial). Recursion-factoring
+proper — whether the grade of a fixpoint actually lives in the commutative part —
+remains parked behind *CO-1 (an operational model)*, together with O4 (the limit
+carrier), admissibility, Scott-continuity, and `fix`/`lfp`. None of those is touched,
+addressed, or implied here. The fixpoint is *not* solved, handled, or addressed by this
+work.
