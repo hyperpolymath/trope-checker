@@ -293,10 +293,16 @@ from the merge coordinate alone to *every* coordinate's deceptive bottom
 consequence `grade_not_leftCancel`. Read together: v0.1's L5 is the merge-coordinate
 instance of the general left-absorption fact that R-2026-06-23-03 records.
 
-*L1–L4 are reinforced, not altered.* R-2026-06-23-01 records the L1–L2 monoid at
-full strength and adds the order discipline (non-commutativity) that L1's
-associativity alone does not capture. L3 (bottom-absorption) and L4 (monotonicity)
-are consistent with, and presupposed by, the tier structure of R-2026-06-23-03.
+*L1–L3 are reinforced; the L4 relationship is sharpened.* R-2026-06-23-01 records
+the L1–L2 monoid at full strength and adds the order discipline (non-commutativity)
+that L1's associativity alone does not capture. L3 (bottom-absorption) is the
+per-coordinate left-absorption that R-2026-06-23-03 makes precise. The tier
+stratification, however, is a *cancellation* property and does *not* presuppose the
+retention order: strict *L4 monotonicity is only lax — it fails on the fate
+coordinate* (machine-proved downstream as `fate-L4-fails`, the same F2×F4
+phenomenon), so tier-preservation is set-membership *closure*, not an
+order-homomorphism, and v0.1 §7's appeal to *strict* L4 to justify the `fix` grade
+needs the lax/closure route (part of CO-1, below).
 
 *O1 is untouched and remains open.* v0.1's *O1* — that the seven effects are
 *exhaustive* — is a separate completeness question and is *not* addressed,
@@ -358,7 +364,13 @@ not filled*.
   defined in v0.1 or in the grade-boundary harness. The obligation constrains an
   operation that does not yet exist. Whether to introduce it — and if so, with what
   typing rule — is for author review; until then R-2026-06-23-03 stands as a
-  *constraint-in-advance*.
+  *constraint-in-advance*. _Now elevated:_ integrating this addendum with the Agda
+  metatheory (Theorem B) showed OPEN-A and Theorem B's unreached `fix`/lfp
+  subject-reduction case to be *one and the same* underspecification — the calculus
+  defines no operational (reduction) model for its grade-routing / iterating
+  constructs beyond the β/let core — now tracked as the repository's central open
+  problem *CO-1* (itself gated by v0.1's O4, the limit carrier). See
+  `verification/proofs/INTEGRATION-REPORT.adoc` §4 and ADR 0003.
 
 * *OPEN-B — `Falsified` is absent from v0.1 §3.1.* The proved `Fate` coordinate is
   five-ary, but v0.1 §3.1's fate table lists four inhabitants and does not mention
@@ -368,6 +380,19 @@ not filled*.
   conflation-as-fault story
   for the *fate* coordinate — is a documentation-reconciliation decision, not one
   fixed by F1–F4.
+
+* *OPEN-B′ — `Misbound` is absent from v0.1 §3.2.* Surfaced when this addendum was
+  swept against the Agda metatheory (Theorem B): the bond coordinate carries a
+  *deceptive dual* `Misbound` — bond's order-bottom, the dual of honest `Severed` —
+  exactly as the fate coordinate carries `Falsified`, yet v0.1 §3.2 lists only three
+  bonds (`Intact`, `Withheld`, `Severed`) and omits it. This is the precise analogue
+  of OPEN-B for the bond coordinate; merge's deceptive bottom `Conflated` is, by
+  contrast, already present in v0.1 §3.3. The Idris2 core both enumerates the three
+  deceptive duals (`Trope.Veridicality.deceptiveDuals` = `(Falsified, Misbound,
+  Conflated)`) and proves each the *unique* deceptive inhabitant of its coordinate
+  (`Trope.Veridicality.bondDeceptiveUnique` for `Misbound`). Whether to amend v0.1
+  §3.2 is the same documentation-reconciliation decision as OPEN-B, to be taken
+  together with it.
 
 * *OPEN-C — tier-2 membership is recorded, not exhaustively proved.* The harness
   proves *representative* honest-but-lossy elements non-cancellative (`Predicated`,
