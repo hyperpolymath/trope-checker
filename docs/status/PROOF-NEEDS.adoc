@@ -67,6 +67,7 @@ These proofs come from the rsr-template-repo and MUST be present in every repo:
 | DOM-5 | Theorem B Target 4 — Honest Generation (HC-3): honesty closed under `▷`, deceptive grades unreachable | DOM | Agda | T1 | `verification/proofs/agda/theorem-b/TB/Honest.agda` — *PROVED*
 | DOM-6 | CO-1 — operational model for `fix`/routing (gated by O4); enables full subject reduction | DOM | — | T2 | named in `docs/status/PROOF-STATUS.adoc` — *OPEN, not attempted*
 | DOM-7 | Grade soundness for conservative lowering over fate (needs lax L4; strict L4 proved to fail) | ALG | — | T2 | named in `docs/status/PROOF-STATUS.adoc` — *OPEN*
+| DOM-8 | Tropical factorisation precondition — the grade admits a *nontrivial* monoid homomorphism onto the *commutative* fidelity carrier `Δ`, and *every* such map is forced to identify honest `dropped` with deceptive `falsified` (the commutative cost-quotient is *veridicality-blind* on the fate axis; bond/merge deception stays separable) | DOM/ALG | Lean 4 | T1 | `verification/proofs/lean4/grade-factorisation/GradeFactorisation.lean` — *PROVED* (verdict B; sorry-free; `propext`/`Quot.sound` only; four theorems axiom-free). *Precondition only* — does not address CO-1.
 |===
 
 == Dangerous Patterns (BANNED)

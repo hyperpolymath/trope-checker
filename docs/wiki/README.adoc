@@ -1,0 +1,29 @@
+// SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Wiki source (mirrored in-repo)
+
+These `.adoc` pages are the source for the project's GitHub wiki, kept in-repo so they
+are versioned, reviewed, and never lost.
+
+NOTE: The GitHub wiki is *enabled* (`has_wiki: true`) but was *never initialised*, so the
+`*.wiki.git` remote does not yet exist and cannot be pushed to. This is a one-time
+manual bootstrap:
+
+. In the GitHub UI, open *Wiki* and *Create the first page* (any content — it can be
+  empty; it just initialises the wiki git repo).
+. Then publish these pages:
++
+[source,sh]
+----
+git clone git@github.com:hyperpolymath/trope-checker.wiki.git /tmp/tc-wiki
+cp docs/wiki/Home.adoc docs/wiki/Tropical-Factorisation-Probe.adoc /tmp/tc-wiki/
+( cd /tmp/tc-wiki && git add -A && git commit -m "wiki: Home + Tropical Factorisation Probe" && git push )
+----
+
+Page ↔ file mapping (GitHub wiki uses the file basename as the page title):
+
+[cols="1,2"]
+|===
+| `Home.adoc` | Wiki landing page — verification streams, gates, honesty pointers.
+| `Tropical-Factorisation-Probe.adoc` | The probe write-up — verdict (B), proved theorems, the necessary-not-sufficient guard.
+|===

@@ -31,7 +31,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   operational model for `fix`/routing, gated by O4), and the divergence adjudication.
 - **Proposal.** `docs/proposals/panic-attack-signed-suppression.adoc`: an unforgeable, auto-stale
   signed-waiver design to replace forgeable inline suppression markers.
-- **Justfile recipes** `build-lean`, `build-agda`, `verify-all` (`build/just/proofs.just`).
+- **Tropical factorisation probe (Lean 4 + Mathlib).** `verification/proofs/lean4/grade-factorisation/`:
+  imports the grade-boundary carrier (no redefinition) and decides, purely algebraically, whether the
+  grade admits a homomorphic projection onto a commutative tropical cost. Verdict **(B) factors but
+  veridicality-blind** — a nontrivial monoid homomorphism onto commutative `Δ` exists, but every
+  multiplicative map into any commutative monoid is forced to identify honest `dropped` with deceptive
+  `falsified`; the blindness is co-located with the fate-axis non-commutativity (bond/merge deception
+  stays separable). Sorry-free; axiom-clean. A **precondition only** — does not touch CO-1. Tracked
+  next stage: issue #10.
+- **Justfile recipes** `build-lean`, `build-agda`, `verify-all` (`build/just/proofs.just`); `build-lean`
+  and the `verify-all` honesty gate now cover both Lean developments (grade-boundary + grade-factorisation).
 
 ### Changed
 

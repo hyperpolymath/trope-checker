@@ -16,6 +16,7 @@ the tools, not by reading status docs (see `AFFIRMATION.adoc` for the dated snap
 | Conformance | `just trope-build && bash tests/conformance/run.sh` | PASS (10/10, witnesses match)
 | Verified core | `idris2 --typecheck verification/proofs/idris2/trope.ipkg` | PASS (exit 0, no axioms)
 | Grade-boundary (Lean) | `just build-lean` | PASS (sorry-free; axioms `propext`/`Quot.sound` only)
+| Grade-factorisation (Lean) | `just build-lean` | PASS (tropical factorisation probe, verdict B; sorry-free; `propext`/`Quot.sound` only)
 | Theorem B (Agda) | `just build-agda` | PASS (`--safe --without-K`; zero postulates)
 | Unsound-construct scan | `just proof-scan-dangerous` (comment-aware, all provers) | CLEAN
 | Rust fast-core parity | `just trope-rust` | PASS (identical verdicts to the Idris2 reference)

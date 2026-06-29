@@ -1,0 +1,42 @@
+// SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= trope-checker wiki
+
+The trope-particularity checker: a portable IR + checker for the honest/deceptive
+*trope grade*, backed by machine-checked proofs across Idris2, Lean 4 + Mathlib, and
+Agda.
+
+== Verification streams
+
+* *Verified core* (Idris2) — `verification/proofs/idris2/`: the grade algebra reused by
+  the executable checker; the thing that runs is the thing that is proved.
+* *Grade-algebra ground truth* (Lean 4 + Mathlib) — `verification/proofs/lean4/grade-boundary/`:
+  the non-commutative product monoid, full-carrier conicality, and the three-tier strict
+  honest/deceptive cancellation boundary. Sorry-free; axioms `propext`/`Quot.sound` only.
+* *Tropical factorisation probe* (Lean 4 + Mathlib) — `verification/proofs/lean4/grade-factorisation/`:
+  see link:Tropical-Factorisation-Probe[Tropical Factorisation Probe]. Verdict *(B) factors
+  but veridicality-blind*. A precondition only.
+* *Calculus metatheory — Theorem B* (Agda `--safe --without-K`) — `verification/proofs/agda/theorem-b/`:
+  intrinsic graded calculus, value substitution, β/let subject reduction, Honest
+  Generation. Zero postulates. (`fix`/lfp open — CO-1.)
+
+== The central open problem
+
+*CO-1* — the calculus has no operational model for `fix`/routing dynamics (gated by
+v0.1's *O4*, the limit carrier). Tracked at issue #10 (CO-1), #12 (O4). See
+`verification/proofs/INTEGRATION-REPORT.adoc` §4 and ADR `docs/decisions/0003-split-reference-semantics.adoc`.
+
+== Gates
+
+[source,sh]
+----
+just verify-all   # both Lean developments + Theorem B (Agda) + honesty gate
+just build-lean   # grade-boundary + grade-factorisation + axiom audits
+just build-agda   # Theorem B (--safe --without-K)
+----
+
+== Honesty
+
+Status is ground-truthed by running the tools, not by reading prose. See
+`AFFIRMATION.adoc` (dated snapshot), `AUDIT.adoc` (release gate), and
+`docs/status/PROOF-NEEDS.adoc` (the proof ledger).

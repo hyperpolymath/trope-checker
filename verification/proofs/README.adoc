@@ -21,8 +21,10 @@ proofs/
 │   └── Types.idr    # Core data type well-formedness
 ├── lean4/           # Lean4 proofs (algebra, lattices)
 │   ├── ApiTypes.lean
-│   └── grade-boundary/      # grade-algebra GROUND TRUTH: the honest/deceptive cancellation
-│                            #   boundary (Lean 4 + Mathlib; sorry-free; propext/Quot.sound only)
+│   ├── grade-boundary/      # grade-algebra GROUND TRUTH: the honest/deceptive cancellation
+│   │                        #   boundary (Lean 4 + Mathlib; sorry-free; propext/Quot.sound only)
+│   └── grade-factorisation/ # tropical factorisation probe: imports the carrier; verdict (B)
+│                            #   factors but veridicality-blind (precondition only; not CO-1)
 ├── agda/            # Agda proofs (induction, metatheory)
 │   ├── Properties.agda
 │   └── theorem-b/           # Theorem B: calculus metatheory over the grade algebra
@@ -45,9 +47,11 @@ just proof-check-coq       # Coq only
 
 # The two pinned developments need a real build (lake+Mathlib / an All.agda entry),
 # not a bare per-file check — use these:
-just verify-all            # grade-boundary (Lean) + Theorem B (Agda): build both + honesty gate
-just build-lean            # Lean grade-boundary harness + axiom audit
+just verify-all            # grade-boundary + grade-factorisation (Lean) + Theorem B (Agda): build + honesty gate
+just build-lean            # both Lean harnesses (grade-boundary + grade-factorisation) + axiom audits
 just build-agda            # Agda Theorem B (--safe --without-K)
+# the probe also has its own subproject harness:
+( cd lean4/grade-factorisation && just falsify )   # sorry-free, axiom-clean, falsifier witnesses live
 ----
 
 == Banned Patterns
