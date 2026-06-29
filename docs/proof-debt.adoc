@@ -1,0 +1,54 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+= Proof-Debt Ledger — trope-checker
+:revdate: 2026-06-29
+
+Seeded per the schema in
+`hyperpolymath/standards/docs/TRUSTED-BASE-REDUCTION-POLICY.adoc`, in response to
+the Trusted-Base Reduction policy check (`check-trusted-base.sh`).
+
+== Summary
+
+*Net soundness-relevant escape hatches in this repository: 0.*
+
+The trusted-base scanner reports Idris2 `believe_me` markers (`Idr-blv=6`). On
+inspection, *every* one of those matches is a *convention comment* in a proof-file
+header that *names the construct in order to forbid it* — not a use of it. No proof
+in `verification/proofs/` invokes `believe_me`, `assert_total`, `idris_crash`, a
+top-level `partial`, `unsafePerformIO`, or `unsafeCoerce`; the Lean and Agda
+developments are likewise `sorry`-free / zero-`postulate` (audited separately —
+`verification/proofs/INTEGRATION-REPORT.adoc`). The matches are therefore *false
+positives* of a substring scanner that is not comment-aware (the same class of
+false positive recorded for the local `proof-scan-dangerous` recipe in the
+integration report).
+
+== Marker ledger
+
+Each scanner hit below is classified per the policy as: *(a)* discharged by proof,
+*(b)* covered by property-tests + refutation budget, *(c)* a known/necessary axiom,
+or *(FP)* a false positive (convention comment — construct forbidden, not used).
+
+[cols="3,2,1",options="header"]
+|===
+| Location | Marker text | Class
+
+| `verification/proofs/idris2/Types.idr:6`          | `-- All proofs MUST be constructive (no believe_me, no assert_total).` | FP
+| `verification/proofs/idris2/ABI/Foreign.idr:6`    | `-- All proofs MUST be constructive (no believe_me, no assert_total).` | FP
+| `verification/proofs/idris2/ABI/Pointers.idr:6`   | `-- All proofs MUST be constructive (no believe_me, no assert_total).` | FP
+| `verification/proofs/idris2/ABI/Platform.idr:6`   | `-- All proofs MUST be constructive (no believe_me, no assert_total).` | FP
+| `verification/proofs/idris2/ABI/Compliance.idr:6` | `-- All proofs MUST be constructive (no believe_me, no assert_total).` | FP
+| `verification/proofs/idris2/ABI/Layout.idr:6`     | `-- All proofs MUST be constructive (no believe_me, no assert_total).` | FP
+|===
+
+== Standing position
+
+* No escape hatch is admitted into the trusted base. The verified Idris2 core, the
+  Lean grade-algebra ground truth, and the Agda metatheory are all axiom-clean for
+  their claimed lemmas.
+* The convention comments are retained deliberately: they document the prohibition
+  at the point of work. The *root* fix for the scanner mismatch is to make
+  `check-trusted-base.sh` comment-aware upstream in `hyperpolymath/standards`
+  (solutions-at-source); this ledger records the local ground truth in the
+  meantime.
+* Should a genuine escape hatch ever be introduced, it MUST be added here under
+  class (a), (b), or (c) with its justification before the proof is accepted.
