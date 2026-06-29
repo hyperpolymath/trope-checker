@@ -7,6 +7,9 @@
 # Run with: adjust check
 # Fix with: adjust fix (applies deterministic patches; advisory otherwise)
 
+name = "adjustfile"  # identity (a2ml validate: required)
+version = "0.1.0"  # a2ml validate
+
 @abstract:
 Drift tolerances and corrective actions for rsr-template-repo. Unlike
 MUST (hard gate), ADJUST tracks cumulative drift against tolerance bands

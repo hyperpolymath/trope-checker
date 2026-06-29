@@ -7,6 +7,8 @@
 #
 # Reference: ADR-002 in standards/agentic-a2ml/docs/
 
+name = "methodology"  # identity (a2ml validate: required)
+
 [metadata]
 version = "1.0.0"
 last-updated = "2026-06-22"

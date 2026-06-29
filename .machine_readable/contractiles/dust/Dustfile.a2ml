@@ -9,6 +9,9 @@
 # This repository: rsr-template-repo is the canonical template.
 # Cleanup items here ensure the template itself remains pristine.
 
+name = "dustfile"  # identity (a2ml validate: required)
+version = "0.1.0"  # a2ml validate
+
 @abstract:
 Cleanup and hygiene items for rsr-template-repo. These are maintenance tasks
 that ensure the template repository remains clean and ready for distribution

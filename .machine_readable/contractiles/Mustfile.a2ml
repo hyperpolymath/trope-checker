@@ -6,6 +6,9 @@
 # Run with: must check
 # Fix with: must fix (where a deterministic fix exists)
 
+name = "mustfile"  # identity (a2ml validate: required)
+version = "0.1.0"  # a2ml validate
+
 @abstract:
 Physical-state invariants for rsr-template-repo. This is the canonical
 RSR template repository. These are hard requirements — CI and pre-commit

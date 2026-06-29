@@ -1,3 +1,11 @@
+K9!
+# SPDX-License-Identifier: MPL-2.0
+# K9 pedigree header (k9-validate). Body below is the session-policy payload.
+pedigree = {
+  metadata = { name = "coordination", version = "0.1.0" },
+  security = { leash = 'Kennel },
+}
+
 # Thin coordination bindings for central session-management standards
 
 session_management:

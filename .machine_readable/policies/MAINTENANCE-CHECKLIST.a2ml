@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: MPL-2.0
 # Cross-repo maintenance baseline (machine-readable canonical)
 
+name = "maintenance-checklist"  # identity (a2ml validate: required)
+
 [metadata]
 version = "1.1.0"
 last-updated = "2026-02-24"
