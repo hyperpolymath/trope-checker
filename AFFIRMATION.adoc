@@ -53,6 +53,26 @@ Generation, in Agda. Two recorded results: symmetric cut is *impossible* (F2); t
 *`fix`/lfp subject reduction is NOT-REACHED and not postulated*. There is *no full subject reduction
 and no operational model* for the calculus's `fix`/routing dynamics; this is the *central open
 problem (CO-1)*, gated by v0.1's O4 (the limit carrier). The grade algebra itself is not at fault.
+
+== As of 2026-06-29 — tropical factorisation probe (a precondition, nothing more)
+
+*Ground truth (commands actually run):* `just build-lean` → exit 0 over both
+`verification/proofs/lean4/grade-boundary/` and `verification/proofs/lean4/grade-factorisation/`;
+the latter's axiom audit reports `propext`/`Quot.sound` only (four theorems depend on *no* axioms) —
+*no `sorryAx`*, no user `axiom`, no `native`-evaluator `decide`. `just falsify` (in the subproject)
+PASS.
+
+*Proved, machine-checked:* a *nontrivial monoid homomorphism* `π : Grade → Δ` onto the commutative
+tropical fidelity carrier exists (verdict **(B) FACTORS but VERIDICALITY-BLIND**), but *every*
+multiplicative map from `Fate` — and from `Grade` — into *any* commutative monoid is *forced* to
+identify the honest `dropped` with the deceptive `falsified` (`forced_collapse_general`,
+`forced_collapse_grade`). The blindness is co-located with the fate-axis non-commutativity; the
+commutative `Bond`/`Merge` deceptions remain tropically separable (`psiBond_*`).
+
+*NOT claimed (the honest boundary, stated plainly):* this is a *necessary-not-sufficient precondition*.
+It does *not* solve, handle, or address recursion. Whether a fixpoint's grade actually lives in the
+commutative part needs the operational model *CO-1* and stays parked behind it (and O4). The probe can
+only narrow or fail to kill the tropical route; it cannot confirm it.
 Documentation gaps OPEN-B/B′ (`Falsified`/`Misbound` absent from v0.1 §3.1/§3.2) and OPEN-C
 (`Withheld`/`Fused` tier-2 membership not individually witnessed) are recorded, not filled. Full
 proved-vs-missing picture: `verification/proofs/INTEGRATION-REPORT.adoc`.

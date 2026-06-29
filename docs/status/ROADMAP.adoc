@@ -27,6 +27,10 @@ statuses: `docs/status/PROOF-STATUS.adoc`, `AFFIRMATION.adoc`,
 * [x] Theorem B (Agda, `--safe --without-K`, zero postulates): Targets 1/2/4 PROVED.
 * [~] Theorem B Target 3 (subject reduction respecting the boundary): *PARTIAL* — β/let proved;
   `fix`/lfp NOT-REACHED (blocked on CO-1).
+* [x] Tropical factorisation probe (`grade-factorisation/`, Lean 4 + Mathlib): verdict *(B) factors but
+  veridicality-blind* — a nontrivial commutative cost-quotient exists, but every commutative-target hom
+  is forced to collapse honest `dropped` / deceptive `falsified` (blindness co-located with the fate-axis
+  non-commutativity). A *precondition only*; recursion stays parked behind CO-1 (issue #10).
 
 == Open problems (named, not solved)
 

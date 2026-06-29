@@ -174,11 +174,15 @@ proof-status:
 build-lean:
     #!/usr/bin/env bash
     set -euo pipefail
+    ROOT="$(pwd)"
     echo "=== build-lean: grade-boundary (Lean 4 + Mathlib, pinned) ==="
-    cd verification/proofs/lean4/grade-boundary
-    lake build
+    ( cd "$ROOT/verification/proofs/lean4/grade-boundary" && lake build )
     echo "--- axiom audit (expect propext / Quot.sound only; NO sorryAx) ---"
-    lake build 2>&1 | grep -E "depends on axioms|does not depend" || true
+    ( cd "$ROOT/verification/proofs/lean4/grade-boundary" && lake build 2>&1 | grep -E "depends on axioms|does not depend" || true )
+    echo "=== build-lean: grade-factorisation (tropical factorisation probe; imports grade-boundary) ==="
+    ( cd "$ROOT/verification/proofs/lean4/grade-factorisation" && lake build )
+    echo "--- axiom audit (expect propext / Quot.sound only; NO sorryAx) ---"
+    ( cd "$ROOT/verification/proofs/lean4/grade-factorisation" && lake build 2>&1 | grep -E "depends on axioms|does not depend" || true )
 
 # `--safe` already guarantees no postulate / trustMe / TERMINATING, so this IS the Agda honesty gate.
 #
@@ -200,9 +204,12 @@ verify-all: build-lean build-agda
     #!/usr/bin/env bash
     set -euo pipefail
     echo "=== verify-all: Lean source honesty gate ==="
-    cd verification/proofs/lean4/grade-boundary
-    if grep -nE '(:=|by|;|<;>|=>|\|)[[:space:]]*(sorry|admit)\b|\bnative_decide\b' GradeBoundary.lean; then
-        echo "FAIL: forbidden Lean tactic (sorry/admit/native_decide)"; exit 1; fi
-    if grep -nE '^[[:space:]]*axiom\b' GradeBoundary.lean; then
-        echo "FAIL: user axiom declared"; exit 1; fi
+    for f in verification/proofs/lean4/grade-boundary/GradeBoundary.lean \
+             verification/proofs/lean4/grade-factorisation/GradeFactorisation.lean; do
+        echo "--- gating $f ---"
+        if grep -nE '(:=|by|;|<;>|=>|\|)[[:space:]]*(sorry|admit)\b|\bnative_decide\b' "$f"; then
+            echo "FAIL: forbidden Lean tactic (sorry/admit/native_decide) in $f"; exit 1; fi
+        if grep -nE '^[[:space:]]*axiom\b' "$f"; then
+            echo "FAIL: user axiom declared in $f"; exit 1; fi
+    done
     echo "PASS: verify-all — Lean green & axiom-clean (propext/Quot.sound only); Agda --safe --without-K green."
