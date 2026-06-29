@@ -13,3 +13,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- Run: just changelog -->
 
 ## [Unreleased]
+
+### Added
+
+- **Grade-algebra ground truth (Lean 4 + Mathlib).** `verification/proofs/lean4/grade-boundary/`:
+  a sorry-free, axiom-clean (`propext`/`Quot.sound` only) formalisation of the honest/deceptive
+  cancellation boundary — the non-commutative product monoid, full-carrier conicality, and the
+  three-tier strict cancellation boundary (cancellation only on the finite-fidelity core).
+- **Theorem B — calculus metatheory (Agda, `--safe --without-K`, zero postulates).**
+  `verification/proofs/agda/theorem-b/`: intrinsic graded calculus; grade-exact value substitution;
+  subject reduction for β/let (`fix`/lfp open); Honest Generation (HC-3). Records the F2 result that
+  symmetric cut is impossible and the F2×F4 result that tier-preservation is closure, not a homomorphism.
+- **Spec v0.2 draft addendum.** `spec/calculus-v0.2-draft.adoc`: obligations `R-2026-06-23-01..04`
+  binding each proved fact to its governing Lean theorem; does not edit v0.1.
+- **Integration report.** `verification/proofs/INTEGRATION-REPORT.adoc`: the unified
+  R-id ↔ Lean ↔ Agda ↔ status table, the convergence analysis (central open problem CO-1: no
+  operational model for `fix`/routing, gated by O4), and the divergence adjudication.
+- **Proposal.** `docs/proposals/panic-attack-signed-suppression.adoc`: an unforgeable, auto-stale
+  signed-waiver design to replace forgeable inline suppression markers.
+- **Justfile recipes** `build-lean`, `build-agda`, `verify-all` (`build/just/proofs.just`).
+
+### Changed
+
+- `proof-scan-dangerous` is now **comment-aware** (strips comments before matching, excludes vendored
+  `.lake/`/`_build/`) — verified to still catch genuine `postulate`/`sorry`/`Admitted`/`believe_me`
+  constructs. Fixes long-standing false positives on honest convention prose.
+- `docs/status/PROOF-STATUS.adoc`, `AFFIRMATION.adoc`, `AUDIT.adoc`, and the READMEs updated for the
+  new developments and the central open problem.
+- `.gitignore` now excludes `.lake/` (Lean build artifacts + vendored Mathlib clones).

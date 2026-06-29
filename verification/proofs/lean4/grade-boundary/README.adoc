@@ -1,0 +1,132 @@
+// SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Grade-algebra harness: the honest/deceptive cancellation boundary
+:revnumber: 0.1
+:revdate: 2026-06-23
+:toc: macro
+
+A sorry-free Lean 4 + Mathlib formalisation of the trope-particularity grade
+algebra (`Grade.idr`, calculus `spec/calculus.adoc` `:revnumber: 0.1`), targeting
+the *honest/deceptive cancellation boundary*. The single source of truth is
+`GradeBoundary.lean`; this file is the prose companion.
+
+toc::[]
+
+== Toolchain (pinned, recorded)
+
+[cols="1,3"]
+|===
+| Lean        | `leanprover/lean4:v4.16.0` (`./lean-toolchain`)
+| Mathlib     | `v4.16.0` (`./lakefile.toml`, `./lake-manifest.json`)
+| Build       | `just build`  (≡ `lake build`)
+| Anti-test   | `just falsify` (sorry-free + axiom-clean + green)
+| Axiom audit | `just axioms`
+|===
+
+The canonically-ordered hierarchy was verified empirically in this rev:
+`CanonicallyOrderedAddCommMonoid` is *deprecated* in favour of the mixin
+`[OrderedAddCommMonoid α] [CanonicallyOrderedAdd α]`. This development does not need
+it; the fidelity coordinate is `WithTop (WithTop ℕ)` and uses only that additive
+monoid plus its absorption lemmas (`top_add`, `add_top`).
+
+== Step 0 — provenance (invent nothing)
+
+* Spec is `:revnumber: 0.1`. There is **no v0.2**. v0.1 "O1" (completeness of the
+  seven effects) is **out of scope** and untouched.
+* `grep -niE 'frobenius|cancellat|conical|coordinate.fact' spec/calculus.adoc` →
+  the only hit is **O3** (the produce/demand *adjunction* open question), which is
+  unrelated. So **no Frobenius / cancellative / conical framing exists in the
+  spec**. This harness is **new work**.
+* **CF-as-universal is refuted by L5.** Every composition is a meet with an
+  absorbing *deceptive bottom*, so the carrier is **non-cancellative by design**:
+  deception must be irreversible (cancellation would let a lie be subtracted back
+  out, i.e. forged away). The deliverable is therefore not "prove CF" but to
+  characterise the boundary — a sharper, true theorem.
+
+=== Carrier confirmed against the Idris2 source
+
+* `Fidelity.idr`: `Delta = Q ℕ | Total | Unknown`, tropical add, `Unknown` absorbs
+  `Total` absorbs finite, unit `Q 0`. Structurally `WithTop (WithTop ℕ)`
+  (`Q n ↔ ↑↑n`, `Total ↔ ↑⊤`, `Unknown ↔ ⊤`, `dplus = (+)`, `Q 0 = 0`).
+* `Coords.idr`: `Fate` / `Bond` / `Merge` with componentwise `▷` and `⊑`; each
+  coordinate has *exactly one* deceptive inhabitant = its unique order-bottom.
+* `Grade.idr`: flat record `Fate⁴ × Bond × Merge`, fully independent fields.
+
+=== Discrepancy with the task brief's partition (resolved in favour of the SOURCE)
+
+The brief listed deceptive = `{Dropped, Falsified, Misbound, Conflated, Unknown,
+Total}`. The **carrier** says deceptive = the unique absorbing order-bottom per
+coordinate only: `Falsified` (fate), `Misbound` (bond), `Conflated` (merge), with
+`Unknown` the fidelity bottom. Two reclassifications follow from the source:
+
+* **`Dropped` is honest**, not deceptive — "withheld entirely" (an honest
+  omission). Its *deceptive dual* is `Falsified`. In `fateLte` it sits strictly
+  above the `Falsified` bottom and is incomparable to `Predicated`.
+* **`Total` is honest** — the "∞ total loss" (`Fidelity.idr` l.4); absorbing over
+  finite δ but not a lie. `Unknown` (loss of *unknown* amount) is the deceptive
+  bottom.
+
+This discrepancy is not a footnote: it is *precisely why* "cancellation fails ⇔
+deceptive" is **false**. `Dropped`, `Total`, `severed`, `predicated` are
+non-deceptive yet non-cancellative.
+
+== Deliverables (all green, all sorry-free)
+
+=== D1 — Discriminator: DEGENERATE-TO-PRODUCT — *confirmed*, with a refinement
+
+`instance instMonoid : Monoid Grade` is the componentwise product of the coordinate
+monoids and type-checks with all laws discharged from the per-coordinate laws — the
+verdict is reconfirmed constructively.
+
+**Refinement discovered against the carrier:** the product is **non-commutative**
+(`grade_mul_not_comm`). `Fate` has *two* distinct left-absorbing heads — `Dropped`
+and `Falsified` — that disagree (`Dropped ▷ Falsified = Dropped` but
+`Falsified ▷ Dropped = Falsified`). Hence `CommMonoid`/`AddCommMonoid` **cannot**
+model `▷`. This sharpens, but does not overturn, DEGENERATE-TO-PRODUCT: the carrier
+is a product *monoid*, just not a commutative one. (Where the brief expected
+`AddCommMonoid` to construct, the honest outcome is the captured non-commutativity.)
+
+=== D2 — Conicality (full carrier)
+
+`grade_conical : a * b = 1 → a = 1 ∧ b = 1`. Proven from per-coordinate conicality
+(`Fate.conical`, `Bond.conical`, `Merge.conical`). The unit ε is reachable under `▷`
+only from ε ▷ ε.
+
+=== D3 — The honest/deceptive cancellation boundary (the target)
+
+* **L5 — deception is irreversible.** Each deceptive bottom is a *left zero*
+  (absorbing): `Fate.falsified_absorbing`, `Bond.misbound_absorbing`,
+  `Merge.conflated_absorbing`, `Delta.unknown_absorbing`. Hence the full carrier is
+  **non-left-cancellative** (`grade_not_leftCancel`), witnessed at a deceptive
+  grade. A lie composed with anything stays that same lie — it cannot be cancelled
+  back out.
+* **The cancellative core.** `Delta.Q` embeds `(ℕ,+,0)` injectively and additively
+  (`Delta.Q_add`, `Delta.Q_injective`, `Delta.Q_zero`) and right-cancels on its
+  image (`honest_fidelity_cancel`, inherited from `ℕ`). This finite-fidelity region
+  is the cancellative submonoid that survives the refutation of CF-as-universal.
+* **The boundary is three-tier, not two-tier.** Honest-but-lossy elements are *also*
+  non-cancellative — `Bond.severed_honest_not_cancel`,
+  `Fate.predicated_honest_not_cancel`, `fidelity_total_honest_not_cancel`. So:
++
+[cols="1,3"]
+|===
+| Tier 1 — cancellative core | finite fidelity `Q ℕ ≅ (ℕ,+,0)`, and the units
+| Tier 2 — honest, non-cancellative | `Dropped`, `Predicated`, `Severed`, `Withheld`, `Fused`, `Total` (lossy meets/collapses)
+| Tier 3 — deceptive, absorbing bottoms | `Falsified`, `Misbound`, `Conflated`, `Unknown`
+|===
++
+The non-cancellative set (tiers 2 ∪ 3) strictly contains the deceptive set
+(tier 3). L5 = "tier 3 is absorbing ⇒ irreversible". CF-as-universal fails because
+tiers 2 ∪ 3 are all non-cancellative — cancellation holds *only* on tier 1.
+
+== Axiom audit
+
+`just axioms` shows every deliverable depends only on standard Lean/Mathlib axioms
+(`propext`, `Quot.sound`) — **no `sorryAx`, no user `axiom`, no `native_decide`**.
+
+== Out of scope (noted for the downstream Agda task — Theorem B)
+
+Substitution, frame soundness, subject reduction, Honest Generation (HC-*) and
+Veridicality (L-*) are a separate Agda development. The boundary proved here —
+*deception is absorbing/irreversible; cancellation lives only on the finite-fidelity
+core* — is a structural fact that subject reduction will later have to respect.

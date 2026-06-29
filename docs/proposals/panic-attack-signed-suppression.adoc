@@ -1,0 +1,195 @@
+// SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Proposal — unforgeable, auto-stale finding suppression for panic-attack (replace inline accept-markers)
+:revdate: 2026-06-24
+:toc: macro
+:sectnums:
+:sectnumlevels: 3
+
+toc::[]
+
+== Status
+
+*Proposed.* Authored from `trope-checker` (originating repo) for the estate-wide
+`panic-attack` tool (separate, owner-gated repo `hyperpolymath/panic-attack`). Not
+filed upstream yet — this is the design record; filing it as an issue/ADR there is an
+outward action for the owner to take.
+
+NOTE: The "current state" below reflects an understanding of panic-attack ~2.5.5
+(suppression via inline `// panic-attack: accepted` markers, line-gated, kanren
+engine; `assail-classifications.a2ml` now audit-only). *Verify against panic-attack's
+own docs before acting* — the design holds regardless, but the migration step depends
+on the exact current mechanism.
+
+== Context — the problem, and a tempting-but-wrong fix
+
+`panic-attack assail` is a *blocking, estate-wide, heuristic* gate: in
+`trope-checker`'s `.github/workflows/static-analysis-gate.yml` it fails the build on
+`critical > 0`. A blocking heuristic gate inevitably produces some false positives, so
+it *needs* a suppression channel. Today that channel is an *inline marker* —
+`// panic-attack: accepted` on (or near) the flagged line.
+
+An inline marker is *authorisation-by-presence-of-a-string*: anyone with commit access
+can write the magic comment on any line, and the finding vanishes. There is no
+authorisation, no review focal point, no staleness, and the markers scatter through
+the tree. It is, structurally, a *forgeable escape hatch* — precisely the failure this
+proposal removes.
+
+[IMPORTANT]
+.The tempting fix that is *itself* the vulnerability
+====
+A natural-sounding idea is: "only honour a suppression marker if it carries a hash
+(BLAKE3 / SHAKE256 / …) matching the repo's current *release value*, so the marker is
+release-specific and goes stale." *This does not solve the problem — it re-creates
+it.*
+
+A *hash binds content; it does not authorise anyone.* The release value is *public*.
+So if a finding is suppressed whenever its marker carries `hash(release_value)` (or
+`hash(finding ‖ release)`), then *anybody who can read the release tag can compute the
+valid marker and suppress any finding at will.* The hash buys *staleness/specificity*
+(the marker stops matching at the next release) but *zero authorisation* — and
+authorisation is the entire point of "do not let the pattern be used to escape
+checks."
+
+*Binding and authorisation are different properties and need different primitives:*
+
+* *Binding* (tamper-evidence / staleness) → a *hash* of the exact flagged content +
+  the release/commit.
+* *Authorisation* (unforgeability) → a *secret*: either an asymmetric *signature*
+  verified against a trusted public key, or a keyed *MAC*. A plain hash of public data
+  provides neither.
+
+*You need both. The hash alone is the hole.*
+====
+
+=== Cryptographic primitive selection (correcting common shorthands)
+
+[cols="1,3",options="header"]
+|===
+| Mention | Correct primitive and role
+
+| "BLAKE4" | No such thing → *BLAKE3* (or BLAKE2). A fast hash; use it for the
+*content-binding* `span_hash` only. Hashing ≠ authorisation.
+| "SHAKE-512" | Not a NIST primitive. The SHA-3 XOFs are *SHAKE128 / SHAKE256*; for a
+512-bit digest use *SHAKE256* (512-bit output) or *SHA3-512*. Already
+quantum-resistant (Grover only halves preimage strength; SHA3-256 suffices).
+| "Kyber-1024" | *ML-KEM — a key-encapsulation mechanism, not a hash and not a
+signature.* It cannot hash or sign; it has *no role* here.
+| (the authorisation primitive) | A *signature*. Classical: *Ed25519* (reuse the
+estate SSH/GPG signing key `~/.ssh/id_ed25519_signing`, `gpg.format=ssh` — works
+today). Post-quantum, on-theme with the quantum-safe-provenance badge: *SLH-DSA /
+SPHINCS+* (hash-based, conservative) or *ML-DSA / Dilithium*.
+|===
+
+== Decision — sign-and-bind, do not mark; and prefer advisory over blocking
+
+Two layered decisions.
+
+=== D1 — Architectural: only *blocking heuristic* checks may suppress at all
+
+The need for a suppression channel is a *consequence of a check being both blocking
+and imprecise*. Remove either property and the channel becomes unnecessary:
+
+* *Precise gate (a typechecker).* `agda --safe` rejects `postulate`/`trustMe`/
+  `TERMINATING` at typecheck; a Lean axiom audit catches `sorry`/`sorryAx` regardless
+  of surrounding text. These are *exact* — there is no false positive to waive. Make
+  *these* the blocking gate. They cannot be comment-tricked because they do not read
+  markers; they typecheck. This is the unforgeable floor.
+* *Heuristic check that need not block.* A grep/lint with possible false positives
+  should be *advisory* (annotate, never fail the build). An advisory check needs no
+  suppression — it does not block, so a false positive costs nothing but a note. (This
+  is the route taken for `trope-checker`'s local `proof-scan-dangerous`: made
+  comment-aware, kept out of CI, no suppression token exists to forge.)
+* *Heuristic check that *must* block* (a security gate like `panic-attack assail`):
+  *here, and only here, a suppression channel is justified* — and it must be the
+  unforgeable, auto-stale design of D2, never an inline marker.
+
+Rule of thumb: *eliminate the suppression token where the check can be advisory;
+sign-and-bind the token where the check must block.*
+
+=== D2 — Mechanism: a single signed, content-bound, auto-stale waiver file
+
+Replace inline markers with one reviewed file per repo, e.g.
+`.panic-attack/waivers.toml`:
+
+[source,toml]
+----
+# Each waiver suppresses exactly ONE finding-class at ONE site. No wildcards.
+[[waiver]]
+rule        = "UncheckedAllocation"   # the panic-attack rule id (exact)
+path        = "src/alloc/pool.rs"     # exact file (no globs)
+span_hash   = "blake3:9f2c…"          # hash of the NORMALISED flagged span
+bound_commit= "e74dfe1…"              # commit/release the waiver was reviewed against
+reason      = "arena reset on drop; pool never outlives frame — see PR #41"  # required, non-empty
+expires     = "2026-09-01"            # OPTIONAL hard TTL (belt-and-braces)
+----
+
+Authorisation is a *detached signature over the whole file*:
+`.panic-attack/waivers.toml.sig` (Ed25519/SSH now; SLH-DSA as the PQ upgrade),
+verified against a *committed, branch-protected* trusted-key allowlist
+(`.panic-attack/trusted-keys`), itself living in the owner-gated L1 registry so the
+key set cannot be rewritten by an ordinary PR.
+
+==== Verification algorithm (fail-closed throughout)
+
+. *No waiver file* → suppress nothing. (Default-deny.)
+. *Waiver file present but signature missing / not verifiable against a trusted key* →
+  *suppress nothing, and emit an error* that an unauthorised waiver file is present.
+  (A stripped or unknown-key signature must never fail *open*.)
+. *Verifier unavailable / parse error* → suppress nothing. (Downgrade attacks fail
+  closed.)
+. For each finding, suppress *iff* there exists a waiver where: `rule` matches *and*
+  `path` matches *and* `span_hash` equals the hash of the *current* flagged span *and*
+  the waiver is not `expires`-d *and* (per policy) `bound_commit` is the current
+  commit or an ancestor within an allowed window.
+. Any waiver whose `span_hash` no longer matches the current code → *stale → ignored*;
+  the finding *re-surfaces*. This is the automatic expiry: editing the code, or a new
+  release, drops the waiver.
+
+==== Why this closes every escape the inline marker leaves open
+
+[cols="1,3",options="header"]
+|===
+| Attack | Why it fails
+
+| *Forge a waiver* (no private key) | Signature verification fails → not suppressed.
+| *Replay / carry a stale waiver forward* | `span_hash` no longer matches after any
+edit, and `bound_commit`/`expires` lapse → finding re-surfaces.
+| *Blanket-suppress everything* | Each waiver is `(rule, path, span_hash)`-specific;
+no globs/wildcards → cannot waive a class wholesale.
+| *Tamper with one waiver line* | The signature covers the whole file → any edit
+invalidates all of it until re-signed by a trusted key.
+| *Strip the verifier / drop the key* | Suppression is fail-closed: missing or
+unverifiable ⇒ nothing suppressed (findings stand), never fail-open.
+| *Public-hash "release marker"* (the rejected idea) | N/A — there is no
+authorise-by-hash path; suppression requires a signature.
+|===
+
+== Consequences
+
+* *Positive:* suppressions become unforgeable, centrally reviewable (one diff in the
+  PR), self-documenting (`reason` required), and self-expiring (content + release
+  bound). The blocking gate keeps its teeth while gaining a safe exception channel.
+* *Cost:* a signature-verification path, a trusted-key allowlist with a rotation
+  story, and a one-off migration from inline markers (scan for existing
+  `// panic-attack: accepted`, convert each to a reviewed, signed waiver entry, then
+  *retire the inline-marker code path* so the forgeable channel is gone).
+* *Estate fit:* reuses the existing signing key and `gpg.format=ssh`; the PQ upgrade
+  (SLH-DSA) realises the quantum-safe-provenance badge; the trusted-key allowlist sits
+  in the L1 owner-gated registry, consistent with the anti-assimilation / front-door
+  governance model.
+
+== Migration
+
+. Inventory inline markers estate-wide (`grep -rn 'panic-attack: accepted'`).
+. For each, create a signed `.panic-attack/waivers.toml` entry (with a real `reason`);
+  delete the inline comment.
+. Ship the verifier with *fail-closed* semantics and the trusted-key allowlist.
+. *Remove* the inline-marker acceptance path from panic-attack (the breaking change
+  that actually closes the hole; until then the forgeable channel still exists).
+. Default new repos to *no waiver file* (default-deny).
+
+'''
+_Originating repo: trope-checker. Target: the panic-attack tool. Nothing here is
+committed or filed upstream; this is the design record for owner review._

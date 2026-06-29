@@ -1,23 +1,48 @@
 // SPDX-License-Identifier: CC-BY-SA-4.0
 // Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
-= YOUR Template Repo Roadmap
+= Trope-checker Roadmap
 
-== Current Status
+== Current status
 
-Initial development phase.
+Alpha. The schema, executable checker (Idris2), and conformance suite are green; the
+verified core typechecks with no axioms behind its claimed lemmas. The grade-algebra
+*honest/deceptive cancellation boundary* is proved in Lean (sorry-free, axiom-clean)
+and its metatheory partially developed in Agda (Theorem B). Ground truth and true
+statuses: `docs/status/PROOF-STATUS.adoc`, `AFFIRMATION.adoc`,
+`verification/proofs/INTEGRATION-REPORT.adoc`.
 
-== Milestones
+== Shipped (v0.1)
 
-=== v0.1.0 - Foundation
-* [ ] Core functionality
-* [ ] Basic documentation
-* [ ] CI/CD pipeline
+* [x] Normative calculus (`spec/calculus.adoc`) + Trope IR spec + JSON Schema (the trust boundary).
+* [x] Executable checker (Idris2) reusing the verified core; conformance suite green (10/10).
+* [x] Verified core (Idris2): L1/L2/⊑ decidability, Veridicality, Honest Generation — no axioms.
+* [x] Soundness advance: ⊑-preorder, verdict-soundness corollary, T-Sub soundness, grade
+  soundness for *exact* faithful lowering (machine-checked).
 
-=== v1.0.0 - Stable Release
-* [ ] Full feature set
-* [ ] Comprehensive tests
-* [ ] Production ready
+== In progress (v0.2 — grade algebra + metatheory)
 
-== Future Directions
+* [x] Grade-algebra boundary proved in Lean 4 + Mathlib (`grade-boundary/`): non-commutative
+  product monoid; full-carrier conicality; three-tier strict cancellation boundary.
+* [x] Spec v0.2 addendum: obligations `R-2026-06-23-01..04` bound to the governing Lean theorems.
+* [x] Theorem B (Agda, `--safe --without-K`, zero postulates): Targets 1/2/4 PROVED.
+* [~] Theorem B Target 3 (subject reduction respecting the boundary): *PARTIAL* — β/let proved;
+  `fix`/lfp NOT-REACHED (blocked on CO-1).
 
-_To be determined based on community feedback._
+== Open problems (named, not solved)
+
+* *CO-1 (central):* the calculus has *no operational model* for `fix`/routing dynamics — there is
+  no reduction rule for `fix` and no observed-retention `ρ`. Gated additionally by v0.1's *O4* (the
+  limit carrier for ordering iterated attenuation beyond ω, the `Conat`-vs-tag fork). Resolving CO-1
+  unblocks full subject reduction (Theorem B Target 3).
+* Grade soundness for *conservative* (inexact) lowering over fate — needs the lax-L4 argument
+  (strict L4 is machine-proved to fail on fate).
+* *O1* exhaustiveness of the seven effects; *O2* per-front-end lowering correctness; *O3* the
+  produce/demand adjunction.
+* Documentation reconciliation: *OPEN-B/B′* (`Falsified`/`Misbound` absent from v0.1 §3.1/§3.2);
+  *OPEN-C* (`Withheld`/`Fused` tier-2 membership not individually witnessed).
+
+== Deferred
+
+* Full Haec compiler / codegen / runtime (the `haec` repo).
+* Rust fast-core hardening (drafted in `src/rust/`, dep-free, validated against the Idris2 reference).
+* Filing the panic-attack signed-suppression proposal (`docs/proposals/`) upstream.

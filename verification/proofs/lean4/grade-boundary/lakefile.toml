@@ -1,0 +1,16 @@
+name = "gradeBoundary"
+defaultTargets = ["GradeBoundary"]
+
+# Pinned recent-stable Mathlib. v4.16.0 carries the refactored canonically-ordered
+# hierarchy: `CanonicallyOrderedAddCommMonoid` is DEPRECATED in favour of the mixin
+# `[OrderedAddCommMonoid α] [CanonicallyOrderedAdd α]` (verified empirically in this
+# rev). This development does not depend on that hierarchy; it uses only the
+# `WithTop` additive monoid + its absorption (`top_add`/`add_top`) for the fidelity
+# coordinate. Toolchain leanprover/lean4:v4.16.0 (see ./lean-toolchain).
+[[require]]
+name = "mathlib"
+git = "https://github.com/leanprover-community/mathlib4.git"
+rev = "v4.16.0"
+
+[[lean_lib]]
+name = "GradeBoundary"

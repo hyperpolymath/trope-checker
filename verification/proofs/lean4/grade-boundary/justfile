@@ -1,0 +1,27 @@
+# SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+# SPDX-License-Identifier: MPL-2.0
+# Grade-boundary Lean harness. Run from this directory.
+set shell := ["bash", "-uc"]
+
+# Build the Lean development (Lean 4 v4.16.0 + Mathlib v4.16.0, pinned).
+build *args:
+    lake build {{args}}
+
+# Falsify: the anti-test. A proof is only worth its axioms — this fails the run if
+# the development is not sorry-free, smuggles axioms/native_decide, or stops building.
+falsify:
+    @echo "[falsify] no forbidden tactics/axioms in source…"
+    @! grep -nE '(:=|by|;|<;>|=>|\|)[[:space:]]*(sorry|admit)\b|\bnative_decide\b' GradeBoundary.lean || (echo "FAIL: forbidden tactic" && exit 1)
+    @! grep -nE '^[[:space:]]*axiom\b' GradeBoundary.lean || (echo "FAIL: user axiom declared" && exit 1)
+    @echo "[falsify] build is green…"
+    lake build
+    @echo "[falsify] axiom audit contains no sorryAx…"
+    @if lake build 2>&1 | grep -E "depends on axioms|does not depend" | tee /dev/stderr | grep -q "sorryAx"; then echo "FAIL: sorryAx present" && exit 1; fi
+    @echo "[falsify] PASS — sorry-free, axiom-clean, green."
+
+# Print the axiom dependencies of every deliverable theorem.
+axioms:
+    @lake build 2>&1 | grep -E "depends on axioms|does not depend"
+
+clean:
+    lake clean

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: CC-BY-SA-4.0
 // SPDX-License-Identifier: CC-BY-SA-4.0
 = AUDIT — trope-checker release gate
-:revdate: 2026-06-22
+:revdate: 2026-06-24
 
 The release-audit gate: what must be green before a tag. Ground-truth by running
 the tools, not by reading status docs (see `AFFIRMATION.adoc` for the dated snapshot).
@@ -11,13 +11,15 @@ the tools, not by reading status docs (see `AFFIRMATION.adoc` for the dated snap
 
 [cols="1,3,1",options="header"]
 |===
-| Check | Command | State 2026-06-22
+| Check | Command | State (2026-06-24)
 | Schema-invalid rejection | `bash tests/conformance/run.sh` (Idris decoder) | PASS (8 rejected at coordinate)
 | Conformance | `just trope-build && bash tests/conformance/run.sh` | PASS (10/10, witnesses match)
 | Verified core | `idris2 --typecheck verification/proofs/idris2/trope.ipkg` | PASS (exit 0, no axioms)
-| Unsound-construct scan | `grep -rE 'believe_me\|assert_total\|postulate' verification/proofs/idris2/Trope` | CLEAN
+| Grade-boundary (Lean) | `just build-lean` | PASS (sorry-free; axioms `propext`/`Quot.sound` only)
+| Theorem B (Agda) | `just build-agda` | PASS (`--safe --without-K`; zero postulates)
+| Unsound-construct scan | `just proof-scan-dangerous` (comment-aware, all provers) | CLEAN
 | Rust fast-core parity | `just trope-rust` | PASS (identical verdicts to the Idris2 reference)
-| Aggregate | `just check` | PASS
+| Aggregate | `just check` / `just verify-all` | PASS
 |===
 
 == Out of scope for this gate (named, not blocking)

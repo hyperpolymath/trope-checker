@@ -53,14 +53,20 @@ These proofs come from the rsr-template-repo and MUST be present in every repo:
 
 == Project-Specific Proofs
 
-// Fill in proofs specific to this project. Copy from PROOF-REQUIREMENTS-MASTER.adoc
-// Delete this section for T4/T5 repos
+// The grade algebra (DOM/ALG) and its calculus metatheory. Statuses are the live
+// truth from docs/status/PROOF-STATUS.adoc + verification/proofs/INTEGRATION-REPORT.adoc.
 
 [cols="1,3,1,1,1,2", options="header"]
 |===
 | # | Proof Needed | Category | Prover | Priority | File(s)
 
-| | | | | |
+| DOM-1 | Grade-algebra honest/deceptive cancellation boundary (non-commutative product monoid; full-carrier conicality; three-tier strict boundary, cancellation only on the finite-fidelity core) | DOM/ALG | Lean 4 | T1 | `verification/proofs/lean4/grade-boundary/GradeBoundary.lean` — *PROVED* (sorry-free; `propext`/`Quot.sound` only)
+| DOM-2 | Theorem B Target 1 — intrinsic graded calculus over the non-commutative `▷` | DOM | Agda | T1 | `verification/proofs/agda/theorem-b/TB/{Grade,Syntax,Order}.agda` — *PROVED*
+| DOM-3 | Theorem B Target 2 — grade-exact value substitution ("tropes follow values through cut"); symmetric cut impossible | DOM | Agda | T1 | `verification/proofs/agda/theorem-b/TB/Substitution.agda` — *PROVED (+ refutation)*
+| DOM-4 | Theorem B Target 3 — subject reduction respecting the three-tier boundary | DOM | Agda | T1 | `verification/proofs/agda/theorem-b/TB/{Reduction,Tier}.agda` — *PARTIAL* (β/let proved; `fix`/lfp NOT-REACHED, blocked on CO-1)
+| DOM-5 | Theorem B Target 4 — Honest Generation (HC-3): honesty closed under `▷`, deceptive grades unreachable | DOM | Agda | T1 | `verification/proofs/agda/theorem-b/TB/Honest.agda` — *PROVED*
+| DOM-6 | CO-1 — operational model for `fix`/routing (gated by O4); enables full subject reduction | DOM | — | T2 | named in `docs/status/PROOF-STATUS.adoc` — *OPEN, not attempted*
+| DOM-7 | Grade soundness for conservative lowering over fate (needs lax L4; strict L4 proved to fail) | ALG | — | T2 | named in `docs/status/PROOF-STATUS.adoc` — *OPEN*
 |===
 
 == Dangerous Patterns (BANNED)
