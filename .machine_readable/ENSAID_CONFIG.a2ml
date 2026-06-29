@@ -14,6 +14,8 @@
 # ─────────────────────────────────────────────────────────────────
 # [ensaid] — Core eNSAID identity and version
 # ─────────────────────────────────────────────────────────────────
+name = "ensaid_config"  # identity (a2ml validate: required)
+
 [ensaid]
 version = "1.0.0"
 tool = "panll"

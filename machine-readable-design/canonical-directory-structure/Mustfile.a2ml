@@ -5,6 +5,9 @@
 # Run with: must check
 # Fix with: must fix (where a deterministic fix exists)
 
+name = "mustfile"  # identity (a2ml validate: required)
+version = "0.1.0"  # a2ml validate
+
 @abstract:
 GENERIC TEMPLATE: Physical-state invariants. Replace all checks below
 with project-specific requirements. These are hard requirements —

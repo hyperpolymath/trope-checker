@@ -7,6 +7,7 @@
 ; See: https://github.com/hyperpolymath/standards/tree/main/groove-protocol
 
 (groove-manifest
+  (name "groove")
   (version "1.0")
 
   ; Service identity — replace trope-checker with your project name
