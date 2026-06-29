@@ -10,6 +10,7 @@ K9!
 
 let methodology_guard = {
   pedigree = {
+    name = "methodology-guard",
     metadata = { name = "methodology-guard", version = "1.0.0" },
     security = { leash = 'Kennel },
   },

@@ -2,6 +2,7 @@ K9!
 # SPDX-License-Identifier: MPL-2.0
 # K9 pedigree header (k9-validate). Body below is the session-policy payload.
 pedigree = {
+  name = "custom-checks",
   metadata = { name = "custom-checks", version = "0.1.0" },
   security = { leash = 'Kennel },
 }

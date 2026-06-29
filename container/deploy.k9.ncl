@@ -144,7 +144,12 @@ echo "K9: Rollback complete."
 
 # Export the component
 {
-  pedigree = component_pedigree & { metadata = { name = "trope-checker-deploy", version = "0.1.0" }, security = { leash = 'Hunt, signature_required = true } },
+  pedigree = component_pedigree & {
+    name = "trope-checker-deploy",
+    version = "0.1.0",
+    leash = 'Hunt,
+    signature_required = true,
+  },
   deployment = deployment,
   scripts = scripts,
 
