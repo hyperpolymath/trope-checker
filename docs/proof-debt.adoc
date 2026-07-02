@@ -11,16 +11,21 @@ the Trusted-Base Reduction policy check (`check-trusted-base.sh`).
 
 *Net soundness-relevant escape hatches in this repository: 0.*
 
-The trusted-base scanner reports Idris2 `believe_me` markers (`Idr-blv=6`). On
-inspection, *every* one of those matches is a *convention comment* in a proof-file
-header that *names the construct in order to forbid it* — not a use of it. No proof
-in `verification/proofs/` invokes `believe_me`, `assert_total`, `idris_crash`, a
-top-level `partial`, `unsafePerformIO`, or `unsafeCoerce`; the Lean and Agda
-developments are likewise `sorry`-free / zero-`postulate` (audited separately —
-`verification/proofs/INTEGRATION-REPORT.adoc`). The matches are therefore *false
-positives* of a substring scanner that is not comment-aware (the same class of
-false positive recorded for the local `proof-scan-dangerous` recipe in the
-integration report).
+`check-trusted-base.sh` flags two `lean-sorry-or-axiom` markers — the Lean
+axiom-audit doc-comment headings `## Axiom audit (sorry-free …)`, in which the
+substring `sorry` (of `sorry-free`) trips the scanner's `\bsorry\b` pass. That
+pass, *unlike* the scanner's Idris pass, applies *no comment exemption*, so an
+audit comment that asserts the *absence* of `sorry` is itself counted as a hit.
+Every flagged line is such an audit comment — a claim that the construct is *not*
+used — not a use of it. No proof in `verification/proofs/` uses `sorry`, a user
+`axiom`, `believe_me`, `assert_total`, a top-level `partial`, `unsafePerformIO`,
+or `unsafeCoerce`; the Lean and Agda developments are `sorry`-free /
+zero-`postulate`, audited separately (`verification/proofs/INTEGRATION-REPORT.adoc`).
+The matches are therefore *false positives* of a substring scanner that is not
+comment-aware for Lean — the same class of false positive recorded for the local
+`proof-scan-dangerous` recipe in the integration report. The six Idris2
+`believe_me` convention comments are listed below too for completeness, though the
+scanner's Idris pass already exempts them.
 
 == Marker ledger
 
@@ -38,6 +43,8 @@ or *(FP)* a false positive (convention comment — construct forbidden, not used
 | `verification/proofs/idris2/ABI/Platform.idr:6`   | `-- All proofs MUST be constructive (no believe_me, no assert_total).` | FP
 | `verification/proofs/idris2/ABI/Compliance.idr:6` | `-- All proofs MUST be constructive (no believe_me, no assert_total).` | FP
 | `verification/proofs/idris2/ABI/Layout.idr:6`     | `-- All proofs MUST be constructive (no believe_me, no assert_total).` | FP
+| `verification/proofs/lean4/grade-boundary/GradeBoundary.lean:407` | `/-! ## Axiom audit (sorry-free check)` — audit doc-comment; `sorry` in `sorry-free` trips the un-exempted Lean scan | FP
+| `verification/proofs/lean4/grade-factorisation/GradeFactorisation.lean:401` | `/-! ## Axiom audit (sorry-free, axiom-clean check)` — same audit-comment false positive | FP
 |===
 
 == Standing position
