@@ -111,16 +111,31 @@ stem:[\top] is loss of *unknown amount*.
 | `Present`            | The field survives faithfully. (Lattice top.)
 | `Attenuated(δ)`      | Survives, fidelity degraded by stem:[\delta]. `Attenuated(0) = Present`.
 | `Predicated(P)`      | (`quality` only.) Survives *only* as the value of predicate `P` over it — the checkbox.
-| `Dropped`            | Withheld entirely. (Lattice bottom.)
+| `Dropped`            | Withheld entirely. (Honest bottom.)
+| `Falsified`          | *Deceptive dual:* a value asserted faithful that is in fact false. (Lattice bottom; fails every honest floor. Not writable in source — a lowering fault, §6.)
 |===
 
-The fate order is a *lattice, not a chain*. `Present` is top; `Dropped` is
-bottom; `Attenuated(δ)` decreases as stem:[\delta] increases, with
+The fate order is a *lattice, not a chain*. `Present` is top; `Falsified` is
+the bottom, with `Dropped` the *honest* bottom strictly above it;
+`Attenuated(δ)` decreases as stem:[\delta] increases, with
 `Attenuated(⊤)` below every finite attenuation. `Predicated(P)` is *incomparable*
 to `Dropped`: a dropped quality is absent but cleanly so; a predicated quality is
 present-as-a-bit. A use-model needing the full quality rejects both; a use-model
 needing only the predicate accepts `Predicated(P)` but rejects `Dropped`. The
 incomparability is intentional and load-bearing.
+
+[NOTE]
+====
+*Two reconciliation flags (2026-07-07, see `spec/notes/2026-07-07-l4-boundary-and-atoms.adoc`).*
+(i) The verified carrier (`Trope/Coords.idr`) does *not* impose the
+`Attenuated(0) = Present` identification above — they are distinct carrier
+values, and the cancellation classification is sensitive to the difference;
+either impose the quotient in the carrier and validator, or strike the
+identification. (ii) The `Predicated ∥ Dropped` antichain is one of the two
+proved sources of L4 failure; amendment (A2) (`Dropped ⊑ Predicated`) is
+proposed there, and preserves the load-bearing behaviour in this section
+(a floor of `Predicated(P)` still rejects `Dropped`).
+====
 
 `Predicated` is well-formed *only* on the `quality` field. A grade asserting
 `Predicated` on any other field is malformed (§6).
@@ -135,10 +150,11 @@ The *bond* records the constitutive quality–bearer tie.
 
 | `Intact`   | Bearer present, tie holds. (Top.)
 | `Withheld` | Bearer field dropped by projection; tie *recoverable in principle*.
-| `Severed`  | Tie cut, quality asserted free-standing; *irrecoverable*. (Bottom.)
+| `Severed`  | Tie cut, quality asserted free-standing; *irrecoverable*. (Honest bottom.)
+| `Misbound` | *Deceptive dual:* the quality presented as borne by a bearer that is not in fact its bearer. (Lattice bottom; fails every honest floor. Not writable in source — a lowering fault, §6.)
 |===
 
-Ordered `Intact ⊐ Withheld ⊐ Severed`. The distinction between `Withheld` and
+Ordered `Intact ⊐ Withheld ⊐ Severed ⊐ Misbound`. The distinction between `Withheld` and
 `Severed` is the whole content of detaching versus projecting-away-the-bearer:
 both leave no bearer, but the former is a clean named drop and the latter is a
 constitutive severance. *This distinction surfaces in the type, not only the
@@ -220,8 +236,8 @@ The laws stem:[g] must satisfy, to be enforced by the verified core (§8):
 
 | *L1 (associativity)* | stem:[(g_1 \triangleright g_2)\triangleright g_3 = g_1 \triangleright (g_2 \triangleright g_3)].
 | *L2 (unit)*          | stem:[\varepsilon \triangleright g = g = g \triangleright \varepsilon].
-| *L3 (bottom-absorption)* | In each coordinate, the lattice bottom is absorbing under that coordinate's composition: `Dropped`, `Severed`, and `Conflated` are each fixed under stem:[\triangleright] from the left. `Attenuated(⊤)` is absorbing within the fidelity dimension.
-| *L4 (monotonicity)*  | stem:[\triangleright] is monotone in each argument w.r.t. the retention order stem:[\sqsubseteq] (§5). Composing after more loss never yields more retention.
+| *L3 (bottom-absorption)* | In each coordinate, the *deceptive* lattice bottom is absorbing under that coordinate's composition: `Falsified`, `Misbound`, and `Conflated` are each fixed under stem:[\triangleright] from the left. The *honest* bottoms (`Dropped`, `Severed`) also absorb from the left within the honest fragment, and `Attenuated(⊤)` is absorbing within the fidelity dimension. (Whether `Dropped` may absorb a downstream `Falsified` — as the current carrier has it — or the deceptive bottoms must be two-sided zeros is amendment (A1), under review: see `spec/notes/2026-07-07-l4-boundary-and-atoms.adoc`.)
+| *L4 (monotonicity)*  | stem:[\triangleright] is monotone in each argument w.r.t. the retention order stem:[\sqsubseteq] (§5). Composing after more loss never yields more retention. (*Machine-refuted as stated* on the fate coordinate — every counterexample passes through the `Predicated ∥ Dropped` antichain or the `Dropped ▷ Falsified` clause; amendments (A1)+(A2) restore it in full. Until ratified, L4 holds on bond, merge, fidelity, and the antichain-free fate fragment. See `spec/notes/2026-07-07-l4-boundary-and-atoms.adoc`.)
 | *L5 (conflation infectiousness)* | Once the merge coordinate is `Conflated`, no composition restores `Fused` or `Single`. (A corollary of L3, stated separately because it is the non-compositionality-of-deceptive-channels result and the moral core.)
 |===
 
