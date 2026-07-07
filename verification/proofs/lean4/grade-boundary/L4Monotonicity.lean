@@ -38,10 +38,14 @@ Idris2 stream already recorded that *strict* L4 fails on the fate coordinate
    cancellation boundary of `GradeBoundary.lean` is **preserved**
    (`FateA.falsified_two_sided_zero`, `FateA.dropped_still_not_cancel`).
 
-The shipped carrier is **not** changed by this file; `FateA` is a probe, like
-`grade-factorisation`. Adopting (A1)/(A2) is an owner decision (they touch the
-duck check and would *retire* `grade_mul_not_comm` — non-commutativity is an
-artifact of the unamended clause, not intrinsic to loss-shape grading).
+**Status update (R-2026-07-07, ADR 0004): (A1) and (A2) were RATIFIED.**
+`FateA` is therefore no longer a probe — it is the Lean statement of the
+*ratified* fate coordinate, and the Idris2 ground truth (`Trope/Coords.idr`)
+now implements it. The failure witnesses in the `Fate` namespace below remain
+theorems about the pre-ratification carrier (mirrored in `GradeBoundary.lean`),
+kept for the historical record; `grade_mul_not_comm` is likewise
+pre-ratification-only — non-commutativity was an artifact of the unamended
+clause, not intrinsic to loss-shape grading.
 -/
 
 namespace Trope

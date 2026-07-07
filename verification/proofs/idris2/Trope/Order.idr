@@ -3,8 +3,10 @@
 ||| ⊑ is a PREORDER (reflexivity in Trope.Coords + transitivity here) and ▷ is
 ||| ⊑-MONOTONE in both arguments (L4). These are the two algebraic facts the
 ||| grade-soundness argument rests on (Trope.Soundness). Bond/Merge are proved
-||| exhaustively; Delta (Nat) and Fate (the non-chain coordinate) by structured
-||| case analysis. No axioms.
+||| exhaustively; Delta (Nat) and Fate by structured case analysis. Since
+||| R-2026-07-07 (A2) the fate coordinate is a CHAIN (Falsified ⊏ Dropped ⊏
+||| Predicated ⊏ Atten δ ⊏ Present), so its transitivity is that of a total
+||| order. No axioms.
 module Trope.Order
 
 import Data.Nat
@@ -83,7 +85,13 @@ fateLteTrans Dropped (Atten y) (Atten z) _ _ = Refl
 fateLteTrans Dropped (Atten y) Predicated _ q = absurd q
 fateLteTrans Dropped (Atten y) Dropped _ q = absurd q
 fateLteTrans Dropped (Atten y) Falsified _ q = absurd q
-fateLteTrans Dropped Predicated c p _ = absurd p
+-- R-2026-07-07 (A2): Dropped ⊑ Predicated is now True, so these clauses carry
+-- real proof obligations (split on c) instead of an absurd premise.
+fateLteTrans Dropped Predicated Present _ _ = Refl
+fateLteTrans Dropped Predicated (Atten z) _ _ = Refl
+fateLteTrans Dropped Predicated Predicated _ _ = Refl
+fateLteTrans Dropped Predicated Dropped _ q = absurd q
+fateLteTrans Dropped Predicated Falsified _ q = absurd q
 fateLteTrans Dropped Dropped c _ q = q
 fateLteTrans Dropped Falsified c p _ = absurd p
 
