@@ -1,5 +1,5 @@
 name = "gradeBoundary"
-defaultTargets = ["GradeBoundary"]
+defaultTargets = ["GradeBoundary", "TierTwoComplete", "L4Monotonicity", "EffectAtoms"]
 
 # Pinned recent-stable Mathlib. v4.16.0 carries the refactored canonically-ordered
 # hierarchy: `CanonicallyOrderedAddCommMonoid` is DEPRECATED in favour of the mixin
@@ -14,3 +14,16 @@ rev = "v4.16.0"
 
 [[lean_lib]]
 name = "GradeBoundary"
+
+# Issue #14 (OPEN-C): exhaustive tier-2 membership + the cancellation classification.
+[[lean_lib]]
+name = "TierTwoComplete"
+
+# The L4 monotonicity boundary: witnesses of failure on the shipped carrier, and the
+# two-amendment repaired carrier (probe — the shipped carrier is unchanged).
+[[lean_lib]]
+name = "L4Monotonicity"
+
+# O1 (relative to the carrier): atom factorization and the nine effect families.
+[[lean_lib]]
+name = "EffectAtoms"

@@ -11,8 +11,8 @@ build *args:
 # the development is not sorry-free, smuggles axioms/native_decide, or stops building.
 falsify:
     @echo "[falsify] no forbidden tactics/axioms in source…"
-    @! grep -nE '(:=|by|;|<;>|=>|\|)[[:space:]]*(sorry|admit)\b|\bnative_decide\b' GradeBoundary.lean || (echo "FAIL: forbidden tactic" && exit 1)
-    @! grep -nE '^[[:space:]]*axiom\b' GradeBoundary.lean || (echo "FAIL: user axiom declared" && exit 1)
+    @! grep -nE '(:=|by|;|<;>|=>|\|)[[:space:]]*(sorry|admit)\b|\bnative_decide\b' *.lean || (echo "FAIL: forbidden tactic" && exit 1)
+    @! grep -nE '^[[:space:]]*axiom\b' *.lean || (echo "FAIL: user axiom declared" && exit 1)
     @echo "[falsify] build is green…"
     lake build
     @echo "[falsify] axiom audit contains no sorryAx…"
