@@ -1,6 +1,6 @@
 {
   "$schema": "https://github.com/hyperpolymath/trope-checker/schemas/trope-ir.schema.json",
-  "$comment": "SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>. SPDX-License-Identifier: MPL-2.0",
+  "$comment": "SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>. SPDX-License-Identifier: MPL-2.0. A3 twin of atten-zero-normalizes.ir.json: quality written as Present instead of Attenuated(0). MUST grade identically (same verdict, witness, coordinate).",
   "version": "0.2",
   "profile": "prevent",
   "nodes": [
@@ -36,16 +36,13 @@
       "grade": {
         "fate": {
           "quality": {
-            "k": "Attenuated",
-            "delta": "top"
+            "k": "Present"
           },
           "bearer": {
-            "k": "Attenuated",
-            "delta": "top"
+            "k": "Present"
           },
           "context": {
-            "k": "Attenuated",
-            "delta": "top"
+            "k": "Present"
           },
           "record": {
             "k": "Attenuated",
@@ -59,7 +56,7 @@
           "k": "Single"
         }
       },
-      "note": "heavily compressed; couldn't say which strokes were lost"
+      "note": "the same no-op recompression, quality written as Present; record loss unquantified"
     }
   ],
   "use_model": {
@@ -67,6 +64,9 @@
     "floor": {
       "fate": {
         "quality": {
+          "k": "Present"
+        },
+        "record": {
           "k": "Attenuated",
           "delta": 5
         }

@@ -7,16 +7,23 @@
 -- the claimed types. (Same discipline as echo-types/Smoke.agda.)
 module Smoke where
 
--- Target 1 — the grade as a NON-COMMUTATIVE graded structure (F1/F2/F3 + F4 atoms).
+-- Target 1 — the grade algebra on the RATIFIED carrier (R-2026-07-07 (A1)/(A2),
+-- ADR 0004): F1/F2′/F3 + F4 atoms.
 open import TB.Grade using
   ( Grade ; ε ; _▷_
   ; gmonoid-assoc ; gmonoid-unitL ; gmonoid-unitR   -- F1: Monoid
-  ; grade-not-comm                                  -- F2: NON-commutative (mandatory)
+  ; grade-comm                                      -- F2′: COMMUTATIVE (A1; replaces grade-not-comm)
   ; grade-conical                                   -- F3: conical
-  ; falsified-absorbL ; dropped-absorbL ; misbound-absorbL ; conflated-absorbL ; unknown-absorbL )
+  ; falsified-absorbL ; falsified-absorbR           -- L5: two-sided zero (A1)
+  ; dropped▷falsified ; dropped-absorbs-honest      -- the (A1) clause, pinned
+  ; misbound-absorbL ; conflated-absorbL ; unknown-absorbL )
 
--- Target 1 — the retention order ⊑ (T-Sub), leaf-only.
-open import TB.Order using ( _⊑_ ; ⊑-refl )
+-- Target 1 — the retention order ⊑ (T-Sub; chain since (A2)) + L4 restored.
+open import TB.Order using
+  ( _⊑_ ; ⊑-refl
+  ; fateDroppedLtePredicated ; fatePredicatedNotLteDropped  -- (A2) chain facts
+  ; dplusMonoR ; dplusMonoL                                 -- fidelity monotonicity
+  ; fateL4MonoR ; fateL4MonoL )                             -- L4, both arguments
 
 -- F4 — the three-tier boundary, dynamically (closure, NOT homomorphism).
 open import TB.Tier using
@@ -27,8 +34,7 @@ open import TB.Tier using
   ; unknown-not-cancel ; total-honest-not-cancel
   ; falsified-not-cancel ; dropped-honest-not-cancel
   ; predicated-honest-not-cancel ; severed-honest-not-cancel  -- three-tier strictness
-  ; fate-tier-meet-hom-fails  -- THE FINDING (F2×F4)
-  ; fate-L4-fails )           -- the L4 tripwire
+  ; fate-tier-meet-hom-fails )  -- THE FINDING (new witness post-A1; fate-L4-fails RETIRED — L4 holds)
 
 -- Target 1 — the intrinsic graded calculus.
 open import TB.Syntax using
@@ -39,9 +45,9 @@ open import TB.Syntax using
 open import TB.Substitution using
   ( subst                       -- grade-EXACT value substitution lemma
   ; _[_] ; cut-preserves-grade  -- single cut, grade preserved
-  ; cut-left-grade              -- oriented cut g₁ ▷ g₂
-  ; cut-orientation-matters     -- REFUTATION: orientation matters (F2)
-  ; cut-symmetric-fails )       -- symmetric cut impossible
+  ; cut-left-grade              -- oriented cut g₁ ▷ g₂ (CBV convention)
+  ; cut-grade-comm )            -- orientations agree (A1; replaces the retired
+                                -- cut-orientation-matters / cut-symmetric-fails)
 
 -- Target 3 — subject reduction respecting the F4 tiers.
 open import TB.Reduction using

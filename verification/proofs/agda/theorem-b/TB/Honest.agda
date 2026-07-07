@@ -7,6 +7,10 @@
 -- the calculus: the writable effect atoms are honest, and honesty is closed
 -- under ▷, so a well-formed term NEVER produces a deceptive grade (HC-3 / the
 -- prevent-variant: the dangerous deceptive states are unreachable by construction).
+-- Migrated to the ratified carrier (R-2026-07-07 (A1), ADR 0004): honesty
+-- closure survives — (A1) only strengthens L5 (falsified now two-sided), so
+-- the dropped ▷f falsified clause moves the composite to falsified exactly
+-- when an operand was already deceptive.
 --
 -- This target is reached because Targets 1–3 landed. The algebra facts port as
 -- pure finite case analyses; the calculus metatheorem (honesty closed under the
@@ -131,7 +135,9 @@ genMerge conflated neq = ⊥-elim (neq refl)
 --------------------------------------------------------------------------------
 -- THE CALCULUS METATHEOREM — Honest Generation: honesty is closed under ▷, so a
 -- term built from honest atoms can never produce a deceptive grade (HC-3).
--- Per-coordinate first, then lifted; the fate case is the F2-non-commutative one.
+-- Per-coordinate first, then lifted; the fate case carries the R-2026-07-07 (A1)
+-- clause (dropped ▷f falsified = falsified — deception never appears without a
+-- deceptive operand, in either position).
 --------------------------------------------------------------------------------
 
 fate-honest : ∀ a b → a ≢ falsified → b ≢ falsified → (a ▷f b) ≢ falsified
@@ -146,7 +152,13 @@ fate-honest predicated (atten e)  anf bnf = λ ()
 fate-honest predicated predicated anf bnf = λ ()
 fate-honest predicated dropped    anf bnf = λ ()
 fate-honest predicated falsified  anf bnf = λ _ → bnf refl
-fate-honest dropped    b          anf bnf = λ ()
+-- dropped now splits on the tail: per R-2026-07-07 (A1) dropped ▷f falsified
+-- = falsified, so the falsified tail discharges via bnf (as for atten/predicated).
+fate-honest dropped    present    anf bnf = λ ()
+fate-honest dropped    (atten e)  anf bnf = λ ()
+fate-honest dropped    predicated anf bnf = λ ()
+fate-honest dropped    dropped    anf bnf = λ ()
+fate-honest dropped    falsified  anf bnf = λ _ → bnf refl
 fate-honest falsified  b          anf bnf = λ _ → anf refl
 
 bond-honest : ∀ a b → a ≢ misbound → b ≢ misbound → (a ▷b b) ≢ misbound
@@ -174,7 +186,7 @@ Honest g = (fQuality g ≢ falsified) × (fBearer g ≢ falsified)
          × (fContext g ≢ falsified) × (fRecord g ≢ falsified)
          × (gBond g ≢ misbound) × (gMerge g ≢ conflated)
 
--- Honesty is CLOSED under the non-commutative composition ▷.
+-- Honesty is CLOSED under the composition ▷ (commutative since R-2026-07-07 (A1)).
 honest-closed-▷ : ∀ g h → Honest g → Honest h → Honest (g ▷ h)
 honest-closed-▷ (mkGrade q₁ b₁ c₁ r₁ bo₁ m₁) (mkGrade q₂ b₂ c₂ r₂ bo₂ m₂)
   (hq₁ , hb₁ , hc₁ , hr₁ , hbo₁ , hm₁) (hq₂ , hb₂ , hc₂ , hr₂ , hbo₂ , hm₂) =

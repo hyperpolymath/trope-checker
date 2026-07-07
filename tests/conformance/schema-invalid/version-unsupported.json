@@ -1,11 +1,11 @@
 {
   "$schema": "https://github.com/hyperpolymath/trope-checker/schemas/trope-ir.schema.json",
-  "$comment": "SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>. SPDX-License-Identifier: MPL-2.0",
-  "version": "0.2",
+  "$comment": "SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>. SPDX-License-Identifier: MPL-2.0. An unsupported version MUST be rejected at validation with the coordinate named (accepted: 0.1, 0.2).",
+  "version": "0.3",
   "profile": "prevent",
   "nodes": [
     {
-      "id": "letter",
+      "id": "duck",
       "type": "Trope",
       "present": [
         "quality",
@@ -15,7 +15,7 @@
       ]
     },
     {
-      "id": "scan",
+      "id": "rec",
       "type": "Trope",
       "present": [
         "quality",
@@ -27,29 +27,25 @@
   ],
   "edges": [
     {
-      "id": "e_attenuate",
-      "effect": "attenuate",
+      "id": "e_preserve",
+      "effect": "preserve",
       "inputs": [
-        "letter"
+        "duck"
       ],
-      "output": "scan",
+      "output": "rec",
       "grade": {
         "fate": {
           "quality": {
-            "k": "Attenuated",
-            "delta": "top"
+            "k": "Present"
           },
           "bearer": {
-            "k": "Attenuated",
-            "delta": "top"
+            "k": "Present"
           },
           "context": {
-            "k": "Attenuated",
-            "delta": "top"
+            "k": "Present"
           },
           "record": {
-            "k": "Attenuated",
-            "delta": "top"
+            "k": "Present"
           }
         },
         "bond": {
@@ -59,16 +55,16 @@
           "k": "Single"
         }
       },
-      "note": "heavily compressed; couldn't say which strokes were lost"
+      "note": "lossless audio + ring number, pond, date, weather"
     }
   ],
   "use_model": {
-    "output": "scan",
+    "output": "rec",
     "floor": {
       "fate": {
         "quality": {
           "k": "Attenuated",
-          "delta": 5
+          "delta": 3
         }
       }
     }
