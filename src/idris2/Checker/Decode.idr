@@ -27,13 +27,22 @@ decodeDelta path (JStr "inf") = Right Total
 decodeDelta path (JStr "top") = Right Unknown
 decodeDelta path _ = Left (path ++ ": delta must be a non-negative integer or \"inf\"/\"top\"")
 
+||| R-2026-07-07-03 (A3, ADR 0004): the spec's `Attenuated(0) = Present`
+||| identification is imposed by NORMALIZATION AT IR INGEST — `Atten (Q 0)` is
+||| rewritten to `Present` here, before any grading. Composition preserves
+||| normal forms (finite tropical addition reaches 0 only from 0 + 0), so the
+||| verified core's algebra is untouched.
+normFate : Fate -> Fate
+normFate (Atten (Q 0)) = Present
+normFate f             = f
+
 ||| isQ = is this the quality field (Predicated allowed only there).
 decodeFate : String -> Bool -> JValue -> Either String Fate
 decodeFate path isQ v = case kOf v of
   Just "Present"    => Right Present
   Just "Dropped"    => Right Dropped
   Just "Attenuated" => case field "delta" v of
-                         Just d  => map Atten (decodeDelta (path ++ "/delta") d)
+                         Just d  => map (normFate . Atten) (decodeDelta (path ++ "/delta") d)
                          Nothing => Left (path ++ ": Attenuated requires delta")
   Just "Predicated" => if isQ then Right Predicated
                               else Left (path ++ ": Predicated is well-formed only on the quality field")
@@ -147,9 +156,19 @@ mapM' : (a -> Either String b) -> List a -> Either String (List b)
 mapM' f [] = Right []
 mapM' f (x :: xs) = do y <- f x; ys <- mapM' f xs; Right (y :: ys)
 
+||| Accepted document versions (IR 0.2, R-2026-07-07). "0.1" stays accepted:
+||| the wire format is identical, and 0.1 documents are normalized and graded
+||| under the same (0.2) semantics.
+acceptedVersions : List String
+acceptedVersions = ["0.1", "0.2"]
+
 export
 decodeDoc : JValue -> Either String Document
 decodeDoc v = do
+  ver <- maybe (Left "missing \"version\"") Right (field "version" v >>= asStr)
+  if elem ver acceptedVersions
+     then Right ()
+     else Left ("version: unsupported \"" ++ ver ++ "\" (accepted: 0.1, 0.2)")
   ns <- maybe (Left "missing nodes") Right (field "nodes" v >>= asArr) >>= mapM' decodeNode
   es <- maybe (Left "missing edges") Right (field "edges" v >>= asArr) >>= mapM' decodeEdge
   um <- maybe (Left "missing use_model") Right (field "use_model" v)

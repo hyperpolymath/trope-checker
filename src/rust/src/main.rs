@@ -226,8 +226,15 @@ fn dec_fate(path: &str, is_q: bool, v: &Json) -> Result<Fate, String> {
     match v.field("k").and_then(|k| k.as_str()) {
         Some("Present") => Ok(Fate::Present),
         Some("Dropped") => Ok(Fate::Dropped),
+        // R-2026-07-07-03 (A3, ADR 0004): `Attenuated(0) = Present` is imposed by
+        // NORMALIZATION AT IR INGEST — Atten(Q 0) is rewritten to Present here,
+        // before any grading. Composition preserves normal forms (finite tropical
+        // addition reaches 0 only from 0 + 0), so the algebra mirror is untouched.
         Some("Attenuated") => match v.field("delta") {
-            Some(d) => Ok(Fate::Atten(dec_delta(&format!("{}/delta", path), d)?)),
+            Some(d) => Ok(match dec_delta(&format!("{}/delta", path), d)? {
+                Delta::Q(0) => Fate::Present,
+                dl => Fate::Atten(dl),
+            }),
             None => Err(format!("{}: Attenuated requires delta", path)),
         },
         Some("Predicated") => if is_q { Ok(Fate::Predicated) }
@@ -308,6 +315,14 @@ fn dec_floor(v: &Json) -> Result<Floor, String> {
     Ok(Floor { q: ff("quality", true)?, b: ff("bearer", false)?, c: ff("context", false)?, r: ff("record", false)?, bond: bo, merge: me })
 }
 fn dec_doc(v: &Json) -> Result<Doc, String> {
+    // Accepted document versions (IR 0.2, R-2026-07-07). "0.1" stays accepted:
+    // the wire format is identical, and 0.1 documents are normalized and graded
+    // under the same (0.2) semantics.
+    match v.field("version").and_then(Json::as_str) {
+        Some("0.1") | Some("0.2") => {}
+        Some(o) => return Err(format!("version: unsupported \"{}\" (accepted: 0.1, 0.2)", o)),
+        None => return Err("missing \"version\"".into()),
+    }
     let nodes = v.field("nodes").and_then(Json::as_arr).ok_or("missing nodes")?.iter().map(dec_node).collect::<Result<Vec<_>, _>>()?;
     let edges = v.field("edges").and_then(Json::as_arr).ok_or("missing edges")?.iter().map(dec_edge).collect::<Result<Vec<_>, _>>()?;
     let um = v.field("use_model").ok_or("missing use_model")?;

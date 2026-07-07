@@ -3,23 +3,27 @@
 -- SPDX-License-Identifier: MPL-2.0
 --
 -- Theorem B, Target 1 (encoding) — the trope-particularity calculus, INTRINSICALLY
--- typed, as a graded deductive system over the NON-COMMUTATIVE grade monoid ▷.
+-- typed, as a graded deductive system over the grade monoid ▷ (COMMUTATIVE on
+-- the ratified carrier, R-2026-07-07 (A1), ADR 0004).
 --
 -- The judgement is Γ ⊢ A ! g ("produces an A with trope-effect grade g",
 -- calculus §6). Terms are intrinsically indexed by BOTH the type A and the grade
 -- g, so a derivation IS a well-typed-and-well-graded term: no separate typing
 -- relation, no separate grade-soundness side condition.
 --
--- DESIGN (per the FROZEN INTERFACE + design-panel findings):
+-- DESIGN (per the interface + design-panel findings, as amended R-2026-07-07):
 --   * variables carry ε (the unit) by construction;
 --   * each UNARY effect former POST-composes its atom on the RIGHT (g ▷ atom),
 --     exactly the spec's `g ▷ drop(...)`, `g ▷ sever`, `g ▷ ε` shapes;
 --   * the binary seams `app`/`let` put the EARLIER effect on the LEFT of ▷
---     (CBV: argument-first), `gx ▷ gf ▷ g` and `g₁ ▷ g₂` — F2 makes this ORDER
---     load-bearing and not reorderable (see TB.Substitution.cut-not-reorderable);
---   * T-Sub is a LEAF constructor, one-sided (downward in retention, g′ ⊑ g);
---     it is deliberately NOT pushed through the formers (that would assume the
---     monotonicity that fate refutes, TB.Tier.fate-L4-fails).
+--     (CBV: argument-first), `gx ▷ gf ▷ g` and `g₁ ▷ g₂`. HISTORICAL: under
+--     the pre-ratification F2 this order was load-bearing; on the ratified
+--     carrier ▷ is commutative (TB.Grade.grade-comm), so the orientation is
+--     now a convention (see TB.Substitution.cut-grade-comm);
+--   * T-Sub is a LEAF constructor, one-sided (downward in retention, g′ ⊑ g).
+--     It is still not pushed through the formers — a DESIGN CHOICE for a
+--     minimal core. (The historical justification — fate refutes ⊑-monotonicity
+--     of ▷ — is retired: L4 now HOLDS, TB.Order.fateL4Mono{R,L}.)
 --
 -- SCOPE (honest): the field-presence indexing of Trope[S] (the S ⊆ Φ subtyping
 -- and FloatingQuality presence-tracking) is modelled at coarse granularity — a
