@@ -1,6 +1,6 @@
 {
   "$schema": "https://github.com/hyperpolymath/trope-checker/schemas/trope-ir.schema.json",
-  "$comment": "SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>. SPDX-License-Identifier: MPL-2.0",
+  "$comment": "SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>. SPDX-License-Identifier: MPL-2.0. A3 (R-2026-07-07-03): Attenuated(0) on quality is normalized to Present at ingest, so the Present floor on quality is met; only fate.record (top below finite 5) fails. Twin: atten-zero-present-twin.ir.json — identical but for quality written as Present — MUST grade identically (same verdict, witness, coordinate).",
   "version": "0.2",
   "profile": "prevent",
   "nodes": [
@@ -37,15 +37,13 @@
         "fate": {
           "quality": {
             "k": "Attenuated",
-            "delta": "top"
+            "delta": 0
           },
           "bearer": {
-            "k": "Attenuated",
-            "delta": "top"
+            "k": "Present"
           },
           "context": {
-            "k": "Attenuated",
-            "delta": "top"
+            "k": "Present"
           },
           "record": {
             "k": "Attenuated",
@@ -59,7 +57,7 @@
           "k": "Single"
         }
       },
-      "note": "heavily compressed; couldn't say which strokes were lost"
+      "note": "a no-op recompression: zero quality loss (Attenuated(0) ≡ Present), record loss unquantified"
     }
   ],
   "use_model": {
@@ -67,6 +65,9 @@
     "floor": {
       "fate": {
         "quality": {
+          "k": "Present"
+        },
+        "record": {
           "k": "Attenuated",
           "delta": 5
         }
