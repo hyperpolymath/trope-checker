@@ -2,12 +2,51 @@
 // SPDX-License-Identifier: MPL-2.0
 // SPDX-License-Identifier: CC-BY-SA-4.0
 = Theorem B — interface report (metatheory of the trope-particularity calculus, Agda)
-:revnumber: 1.0
-:revdate: 2026-06-23
+:revnumber: 1.1
+:revdate: 2026-07-07
 :toc: macro
 :sectnums:
 
 toc::[]
+
+== Amendment R-2026-07-07 (ADR 0004) — carrier migration
+
+[IMPORTANT]
+====
+This development was MIGRATED (rev 1.1) to the *ratified carrier* of
+`docs/decisions/0004-ratified-carrier-amendments.adoc`: *(A1)* `Dropped ▷
+Falsified = Falsified` (every deceptive bottom is a two-sided zero; L5
+strengthened) and *(A2)* `Dropped ⊑ Predicated` (the fate order is now a
+chain). The Idris2 verified core (`Trope/{Fidelity,Coords,Soundness}.idr`) and
+the Lean amendment probe (`L4Monotonicity.lean`, `FateA`) are the ground truth
+mirrored here; `GradeBoundary.lean` describes the pre-ratification carrier
+under a provenance note.
+
+Consequences for this report:
+
+* *F2 is retired.* The grade product is *COMMUTATIVE* on the ratified carrier
+  (`TB.Grade.grade-comm`, mirroring `FateA.comp_comm`). `grade-not-comm`,
+  `cut-orientation-matters` and `cut-symmetric-fails` were theorems of the
+  pre-ratification carrier only and are REPLACED (by `grade-comm` and
+  `TB.Substitution.cut-grade-comm`). Non-commutativity turned out to be an
+  artifact of the unamended `Dropped ▷ Falsified` clause, not intrinsic to
+  loss-shape grading. Prose below that presents F2 as current fact is
+  HISTORICAL (kept for the record of what was established on the old carrier).
+* *L4 is restored.* The guard `TB.Tier.fate-L4-fails` is retired (false on the
+  ratified carrier); ▷ is now ⊑-monotone in BOTH arguments on fate —
+  `TB.Order.fateL4MonoR` / `fateL4MonoL` (with `dplusMonoR/L`,
+  `dplusRetLteR/L`, mirroring `Trope.Soundness.fateL4Mono{R,L}` and
+  `Fidelity.idr`). New chain pins: `fateDroppedLtePredicated`,
+  `fatePredicatedNotLteDropped` (the surviving half of the duck check).
+* *F4 survives.* All closure/strictness theorems still hold. The FINDING
+  `fate-tier-meet-hom-fails` (tier-preservation is closure, not homomorphism)
+  survives with a NEW witness — `dropped ▷f atten unknown = dropped` — the old
+  dropped/falsified witness having been amended away by (A1).
+* *Targets 2–4 survive* with clause repairs only (`fate-honest` splits its
+  dropped head; `subst` and the reduction relation are untouched).
+* Build, flags and the zero-postulate ledger are unchanged: `agda All.agda`
+  and `agda Smoke.agda` exit 0 under `--safe --without-K`, zero postulates.
+====
 
 == What this is
 
@@ -40,9 +79,10 @@ here as the foundation (`TB.Grade`), then the calculus metatheory is built over 
 | Fact | Statement (as frozen)
 
 | *F1* | `Grade` is a product `Monoid` (componentwise) — DEGENERATE-TO-PRODUCT.
-| *F2* | the product is *NON-COMMUTATIVE* (`grade_mul_not_comm`): `Fate` has two
-disagreeing left-absorbing heads `dropped`/`falsified`. `CommMonoid`/Special-Frobenius
-ruled out. ▷ is order-sensitive.
+| *F2* | [HISTORICAL — retired by R-2026-07-07 (A1), see the amendment section]
+the product was *NON-COMMUTATIVE* (`grade_mul_not_comm`): `Fate` had two
+disagreeing left-absorbing heads `dropped`/`falsified`. On the ratified carrier
+the product is COMMUTATIVE (`grade-comm`).
 | *F3* | conicality on the FULL carrier: `a * b = 1 → a = 1 ∧ b = 1`.
 | *F4* | the strict THREE-TIER boundary cancellative-core ⊊ honest ⊊ full:
 deceptive (`falsified`/`misbound`/`conflated`/`unknown`, left zeros ⇒ L5 irreversible)
@@ -61,21 +101,22 @@ refuted-as-universal by both F2 and L5.
 | Agda module / theorem | Depends on | Target | Status
 
 | `TB.Grade` `gmonoid-assoc/unitL/unitR` | F1 | 1 | PROVED
-| `TB.Grade` `grade-not-comm` | *F2* | 1 | PROVED
+| `TB.Grade` `grade-comm` (R-2026-07-07; REPLACES `grade-not-comm`, a pre-ratification theorem) | F2′ (A1) | 1 | PROVED
 | `TB.Grade` `grade-conical` | F3 | 1 | PROVED
-| `TB.Grade` `falsified/dropped/misbound/conflated/unknown-absorbL` | F4 (L5) | 1 | PROVED
-| `TB.Order` `_⊑_`, `⊑-refl` | F4 (retention order; T-Sub) | 1 | PROVED
+| `TB.Grade` `falsified-absorbL/R`, `dropped▷falsified`, `dropped-absorbs-honest`, `misbound/conflated/unknown-absorbL` | F4 (L5, two-sided since A1) | 1 | PROVED
+| `TB.Order` `_⊑_`, `⊑-refl` | F4 (retention order — a CHAIN since A2; T-Sub) | 1 | PROVED
+| `TB.Order` `fateL4MonoR/L`, `dplusMonoR/L`, `fateDroppedLtePredicated` | L4 restored (A1+A2) | 1 | PROVED
 | `TB.Tier` `tierOf`, `_⊓ᵗ_` | F4 | 3 | PROVED
 | `TB.Tier` `deceptive-absorbs-▷` | F4 (L5), F2 | 3 | PROVED
 | `TB.Tier` `dTier-meet-hom` | F4 (fidelity tier) | 3 | PROVED
 | `TB.Tier` `core-closed-▷`, `Q-cancelʳ` | F4 (tier 1) | 3 | PROVED
 | `TB.Tier` `*-not-cancel` (six witnesses) | F4 (strictness, L5) | 3 | PROVED
-| `TB.Tier` `fate-tier-meet-hom-fails` | *F2*×F4 | 3 | PROVED (a FINDING)
-| `TB.Tier` `fate-L4-fails` | F4 (L4 fails on fate) | 3 | PROVED (guard)
+| `TB.Tier` `fate-tier-meet-hom-fails` | F4 (new witness post-A1: collapse discards fidelity tier) | 3 | PROVED (a FINDING)
+| `TB.Tier` `fate-L4-fails` | — | 3 | RETIRED by R-2026-07-07 (L4 holds; see `TB.Order.fateL4MonoR/L`)
 | `TB.Syntax` `_⊢_!_` (intrinsic, graded) | F1, F2, F4 | 1 | PROVED
 | `TB.Substitution` `subst`, `_[_]`, `cut-preserves-grade` | F1 (ε unit) | 2 | PROVED
 | `TB.Substitution` `cut-left-grade` | F1 | 2 | PROVED
-| `TB.Substitution` `cut-orientation-matters`, `cut-symmetric-fails` | *F2* | 2 | PROVED (refutation)
+| `TB.Substitution` `cut-grade-comm` (REPLACES `cut-orientation-matters`/`cut-symmetric-fails`, pre-ratification theorems) | F2′ (A1) | 2 | PROVED
 | `TB.Reduction` `_↝_`, `β-redex-grade`, `let-redex-grade`, `β/let-tier-preserved` | F1, F4 | 3 | PROVED (β/let core)
 | `TB.Reduction` `attenuate/project-stays-deceptive`, `seq-stays-core` | F4 | 3 | PROVED
 | `TB.Reduction` `fix`/lfp subject reduction | F4, O4 | 3 | *NOT-REACHED* (no postulate)
@@ -188,7 +229,7 @@ realised dynamically: the deceptive states are unreachable by construction.
 `TB/*.agda`, `All.agda`, `Smoke.agda` and by `--safe`. The single open obligation
 (Target 3, `fix`) is NOT-REACHED and explicitly NOT modelled by any assumption.
 
-== F2 and F4 respected, not weakened — checklist
+== F2 and F4 respected, not weakened — checklist [F2 items HISTORICAL as of R-2026-07-07]
 
 * F2 (non-commutativity) is *mandatory* and live: `grade-not-comm` is a pinned
   theorem; ▷ is a bare non-commutative function; no commutative bundle is
