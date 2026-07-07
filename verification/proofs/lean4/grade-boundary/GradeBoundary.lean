@@ -8,6 +8,16 @@ import Mathlib
 Calculus spec `spec/calculus.adoc`, `:revnumber: 0.1`. Ground-truth carrier:
 `verification/proofs/idris2/Trope/{Fidelity,Coords,Grade}.idr`.
 
+> **Provenance note (R-2026-07-07, ADR 0004).** This file mirrors the
+> *pre-ratification* carrier. The ratified carrier adopts (A1)
+> `Dropped ▷ Falsified = Falsified` and (A2) `Dropped ⊑ Predicated`
+> (see `L4Monotonicity.lean`, whose `FateA` namespace *is* the ratified fate
+> coordinate). In particular `grade_mul_not_comm` below is a theorem about the
+> pre-ratification carrier only — non-commutativity was an artifact of the
+> unamended clause, and the ratified algebra is commutative. The cancellation
+> boundary results carry over in kind (see `FateA.dropped_still_not_cancel`).
+> A full re-mirror of the ratified carrier is tracked as a follow-up.
+
 ## Provenance and scope (read first)
 
 * There is **no v0.2** of the spec. In v0.1, "O1" = "completeness of the seven

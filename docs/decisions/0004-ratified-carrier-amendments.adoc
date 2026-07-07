@@ -1,0 +1,88 @@
+// SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= ADR 0004 — Ratified carrier amendments R-2026-07-07: (A1) two-sided deceptive zeros, (A2) chain fate order, (A3) Attenuated(0) normalization
+:revdate: 2026-07-07
+
+== Status
+
+Accepted — ratified by the owner 2026-07-07 (blanket ratification of the PR #26
+decision checklist). Carrier migration in the same PR as this ADR.
+
+== Context
+
+The L4 monotonicity analysis (`spec/notes/2026-07-07-l4-boundary-and-atoms.adoc`,
+machine-verified in `verification/proofs/lean4/grade-boundary/L4Monotonicity.lean`,
+landed via PR #25) localised every failure of spec v0.1's L4 to two design
+points in the fate coordinate: the `{Predicated, Dropped}` antichain, and the
+clause `Dropped ▷ Falsified = Dropped`. That clause was simultaneously the sole
+source of the grade algebra's non-commutativity and an L5 laundering hole (an
+upstream honest drop erased a downstream lie). With L4 broken, §7's
+Knaster–Tarski justification for `fix`'s least-fixed-point grade was unsound as
+written, and conservative grade-soundness reasoning was unprovable at the
+antichain — the central blocker behind issues #10 (CO-1) and #12 (O4).
+Separately, the #14 work discovered that §3.1's `Attenuated(0) = Present`
+identification is declared by the spec but imposed nowhere in the carrier.
+
+== Decisions
+
+[cols="1,3",options="header"]
+|===
+| ID | Decision
+
+| *R-2026-07-07-01 (A1)* | `Dropped ▷ Falsified = Falsified`. Each deceptive
+bottom (`Falsified`, `Misbound`, `Conflated`, fidelity's `Unknown`) is a
+*two-sided* zero of its coordinate's composition. L5 strengthens: no honest
+absorber launders deception, in either composition order.
+
+| *R-2026-07-07-02 (A2)* | `Dropped ⊑ Predicated` in the fate retention order.
+The fate order becomes the chain `Falsified ⊏ Dropped ⊏ Predicated ⊏
+Attenuated(⊤) ⊏ Attenuated(∞) ⊏ … ⊏ Attenuated(0) ⊏ Present`. The §3.1
+"duck check" behaviour that mattered is preserved: a floor of `Predicated(P)`
+still rejects `Dropped` (the converse direction was added, not that one), and
+`Predicated` remains strictly below every attenuation.
+
+| *R-2026-07-07-03 (A3)* | The `Attenuated(0) = Present` identification of
+§3.1 is *imposed by normalization at IR ingest*: validators rewrite
+`Attenuated(Q 0)` to `Present` before grading. Composition preserves normal
+forms (finite tropical addition reaches 0 only from 0+0), so the algebra's
+carrier datatypes stay as-is and stored/composed grades are normal forms.
+Checker-side implementation tracked in a follow-up issue.
+|===
+
+== Consequences
+
+* **L4 holds in full** (both arguments) on the amended carrier; fate
+  composition is **commutative**; every coordinate is a **complete chain**.
+  §7's Knaster–Tarski argument is restored, unblocking the CO-1 operational
+  model (#10) and settling O4 (#12: the `ℕ ∪ {∞,⊤}` carrier suffices —
+  transfinite carriers would require transfinitely deep `fix` nesting, which
+  finitary syntax cannot express).
+* **The Idris2 verified core and Rust fast-core are migrated** in this PR;
+  `Trope.Soundness.fateL4MonotonicityFails` (a theorem only of the
+  pre-ratification carrier) is replaced by total monotonicity proofs in both
+  arguments.
+* **Historical proofs retain their meaning under a provenance note.**
+  `GradeBoundary.lean`'s `grade_mul_not_comm` and the `grade-factorisation`
+  probe's "veridicality-blind" verdict are theorems about the
+  *pre-ratification* carrier (non-commutativity turned out to be an artifact
+  of the unamended clause, not intrinsic to loss-shape grading). Their files
+  carry header notes; a full Lean re-mirror of the ratified carrier and a
+  re-run of the factorisation question are follow-ups.
+* **Conformance expectations may legitimately change** only where a verdict
+  compares `Dropped` against `Predicated` across a floor (A2) — any such case
+  is updated with an inline justification in the same PR.
+* The Agda Theorem B development embeds its own carrier mirror and needs the
+  same migration before its results are cited against the ratified carrier —
+  follow-up issue.
+
+== Rejected alternatives
+
+* *Keep the antichain, restrict `fix` to a monotone fragment* — rejected:
+  leaves conservative soundness unprovable exactly where collapse meets
+  possible-drop, which real pipelines hit constantly.
+* *Repair by order surgery alone (A2 without A1)* — rejected: the laundering
+  clause still breaks left-argument monotonicity toward `Falsified` and keeps
+  the algebra non-commutative for no semantic gain.
+* *Strike `Attenuated(0) = Present` instead of imposing it* — rejected: two
+  representations of "no loss" complicate cancellation structure and floor
+  semantics for no benefit; normalization at ingest is one line per validator.

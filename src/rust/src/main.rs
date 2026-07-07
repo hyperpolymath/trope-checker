@@ -135,7 +135,9 @@ fn dadd(a: &Delta, b: &Delta) -> Delta {
     match (a, b) { (Delta::Top, _) | (_, Delta::Top) => Delta::Top,
         (Delta::Inf, _) | (_, Delta::Inf) => Delta::Inf, (Delta::Q(x), Delta::Q(y)) => Delta::Q(x + y) }
 }
-// fate retention order: x ⊑ y (y retains at least as much as x)
+// fate retention order: x ⊑ y (y retains at least as much as x).
+// R-2026-07-07 (A2): a CHAIN — Falsified ⊏ Dropped ⊏ Predicated ⊏ Atten δ ⊏ Present
+// (Dropped ⊑ Predicated now true; the converse stays false).
 fn fate_le(lo: &Fate, hi: &Fate) -> bool {
     use Fate::*;
     if lo == hi { return true; }
@@ -146,7 +148,8 @@ fn fate_le(lo: &Fate, hi: &Fate) -> bool {
         (Atten(a), Atten(b)) => dkey(a) >= dkey(b),
         (Predicated, Atten(_)) => true,
         (Predicated, _) => false,
-        (_, Predicated) => false, // lo is Atten/Dropped here
+        (Dropped, Predicated) => true, // R-2026-07-07 (A2): a checkbox ⊒ nothing
+        (_, Predicated) => false, // lo is Atten here
         (Dropped, Atten(_)) => true,
         (Dropped, _) => false,
         _ => false,
@@ -156,6 +159,7 @@ fn fate_compose(a: &Fate, b: &Fate) -> Fate {
     use Fate::*;
     match (a, b) {
         (Falsified, _) => Falsified,
+        (Dropped, Falsified) => Falsified, // R-2026-07-07 (A1): the lie survives the drop
         (Dropped, _) => Dropped,
         (Present, f) => f.clone(),
         (Atten(_), Falsified) => Falsified,

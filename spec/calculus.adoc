@@ -115,26 +115,32 @@ stem:[\top] is loss of *unknown amount*.
 | `Falsified`          | *Deceptive dual:* a value asserted faithful that is in fact false. (Lattice bottom; fails every honest floor. Not writable in source — a lowering fault, §6.)
 |===
 
-The fate order is a *lattice, not a chain*. `Present` is top; `Falsified` is
-the bottom, with `Dropped` the *honest* bottom strictly above it;
-`Attenuated(δ)` decreases as stem:[\delta] increases, with
-`Attenuated(⊤)` below every finite attenuation. `Predicated(P)` is *incomparable*
-to `Dropped`: a dropped quality is absent but cleanly so; a predicated quality is
-present-as-a-bit. A use-model needing the full quality rejects both; a use-model
-needing only the predicate accepts `Predicated(P)` but rejects `Dropped`. The
-incomparability is intentional and load-bearing.
+The fate order is a *chain* (R-2026-07-07 (A2); originally a lattice with a
+`Predicated ∥ Dropped` antichain):
+
+[stem]
+++++
+\mathsf{Falsified} \sqsubset \mathsf{Dropped} \sqsubset \mathsf{Predicated}(P)
+\sqsubset \mathsf{Attenuated}(\top) \sqsubset \mathsf{Attenuated}(\infty)
+\sqsubset \cdots \sqsubset \mathsf{Attenuated}(1) \sqsubset \mathsf{Present}.
+++++
+
+`Present` is top; `Attenuated(δ)` decreases as stem:[\delta] increases;
+`Predicated(P)` sits below every attenuation and above `Dropped` — a checkbox
+retains at least as much of the quality as nothing at all. What the original
+incomparability protected is preserved: a use-model needing the full quality
+rejects both `Predicated(P)` and `Dropped`; a use-model needing only the
+predicate accepts `Predicated(P)` but rejects `Dropped`.
 
 [NOTE]
 ====
-*Two reconciliation flags (2026-07-07, see `spec/notes/2026-07-07-l4-boundary-and-atoms.adoc`).*
-(i) The verified carrier (`Trope/Coords.idr`) does *not* impose the
-`Attenuated(0) = Present` identification above — they are distinct carrier
-values, and the cancellation classification is sensitive to the difference;
-either impose the quotient in the carrier and validator, or strike the
-identification. (ii) The `Predicated ∥ Dropped` antichain is one of the two
-proved sources of L4 failure; amendment (A2) (`Dropped ⊑ Predicated`) is
-proposed there, and preserves the load-bearing behaviour in this section
-(a floor of `Predicated(P)` still rejects `Dropped`).
+*Ratification record (R-2026-07-07, ADR 0004; analysis in
+`spec/notes/2026-07-07-l4-boundary-and-atoms.adoc`).* (A2) `Dropped ⊑
+Predicated` dissolves the antichain — one of the two machine-proved sources of
+L4 failure — and makes the fate order a complete chain. (A3) the
+`Attenuated(0) = Present` identification is *imposed by normalization at IR
+ingest* (validators rewrite `Attenuated(Q 0)` to `Present`; composition
+preserves normal forms), so carrier datatypes stay as-is.
 ====
 
 `Predicated` is well-formed *only* on the `quality` field. A grade asserting
@@ -236,8 +242,8 @@ The laws stem:[g] must satisfy, to be enforced by the verified core (§8):
 
 | *L1 (associativity)* | stem:[(g_1 \triangleright g_2)\triangleright g_3 = g_1 \triangleright (g_2 \triangleright g_3)].
 | *L2 (unit)*          | stem:[\varepsilon \triangleright g = g = g \triangleright \varepsilon].
-| *L3 (bottom-absorption)* | In each coordinate, the *deceptive* lattice bottom is absorbing under that coordinate's composition: `Falsified`, `Misbound`, and `Conflated` are each fixed under stem:[\triangleright] from the left. The *honest* bottoms (`Dropped`, `Severed`) also absorb from the left within the honest fragment, and `Attenuated(⊤)` is absorbing within the fidelity dimension. (Whether `Dropped` may absorb a downstream `Falsified` — as the current carrier has it — or the deceptive bottoms must be two-sided zeros is amendment (A1), under review: see `spec/notes/2026-07-07-l4-boundary-and-atoms.adoc`.)
-| *L4 (monotonicity)*  | stem:[\triangleright] is monotone in each argument w.r.t. the retention order stem:[\sqsubseteq] (§5). Composing after more loss never yields more retention. (*Machine-refuted as stated* on the fate coordinate — every counterexample passes through the `Predicated ∥ Dropped` antichain or the `Dropped ▷ Falsified` clause; amendments (A1)+(A2) restore it in full. Until ratified, L4 holds on bond, merge, fidelity, and the antichain-free fate fragment. See `spec/notes/2026-07-07-l4-boundary-and-atoms.adoc`.)
+| *L3 (bottom-absorption)* | In each coordinate, the *deceptive* lattice bottom is a *two-sided zero* of that coordinate's composition (R-2026-07-07 (A1)): `Falsified`, `Misbound`, and `Conflated` absorb from both sides — no honest absorber launders deception. The *honest* bottoms (`Dropped`, `Severed`) absorb from the left *within the honest fragment*, and `Attenuated(⊤)` is absorbing within the fidelity dimension.
+| *L4 (monotonicity)*  | stem:[\triangleright] is monotone in each argument w.r.t. the retention order stem:[\sqsubseteq] (§5). Composing after more loss never yields more retention. (*Holds in full on the ratified carrier* — R-2026-07-07 (A1)+(A2) removed the two machine-proved failure points of the original v0.1 carrier, the `Predicated ∥ Dropped` antichain and the `Dropped ▷ Falsified` clause; the §7 least-fixed-point argument is thereby restored. History and proofs: `spec/notes/2026-07-07-l4-boundary-and-atoms.adoc`, `verification/proofs/lean4/grade-boundary/L4Monotonicity.lean`.)
 | *L5 (conflation infectiousness)* | Once the merge coordinate is `Conflated`, no composition restores `Fused` or `Single`. (A corollary of L3, stated separately because it is the non-compositionality-of-deceptive-channels result and the moral core.)
 |===
 

@@ -11,7 +11,7 @@
       "expect": "p-insufficient",
       "witness": "e_collapse",
       "witness_coordinate": "fate.quality",
-      "note": "Predicated is below/incomparable to any Attenuated(δ) (calculus §Worked check)"
+      "note": "Predicated is strictly below any Attenuated(δ) (chain order per R-2026-07-07 (A2), ADR 0004)"
     },
     {
       "ir": "badge-project.ir.json",
