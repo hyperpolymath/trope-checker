@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: CC-BY-SA-4.0
 // SPDX-License-Identifier: CC-BY-SA-4.0
 = The Trope IR — normative interchange spec
-:revnumber: 0.1
-:revdate: 2026-06-22
+:revnumber: 0.2
+:revdate: 2026-07-07
 :toc: macro
 :sectnums:
 
@@ -19,9 +19,34 @@ toc::[]
 
 == The document
 
-A Trope IR document is a JSON object with `version` (`"0.1"`), `profile`
-(`"prevent"`), `nodes`, `edges`, and a `use_model`. An optional `$comment` carries
-the SPDX header. The schema is authoritative; this prose explains intent.
+A Trope IR document is a JSON object with `version` (`"0.2"`; `"0.1"` remains
+accepted — see <<changes-from-0-1>>), `profile` (`"prevent"`), `nodes`, `edges`,
+and a `use_model`. An optional `$comment` carries the SPDX header. The schema is
+authoritative; this prose explains intent.
+
+[#changes-from-0-1]
+== Changes from 0.1
+
+Version 0.2 (R-2026-07-07, ADR 0004) changes *verdict semantics only*; the wire
+format is unchanged, byte-for-byte, from 0.1:
+
+* *A1 — two-sided deceptive zeros.* `Dropped ▷ Falsified = Falsified` (the lie
+  survives the drop); the deceptive duals are two-sided absorbing zeros of `▷`.
+* *A2 — chain retention order.* The fate order is a CHAIN:
+  `Falsified ⊏ Dropped ⊏ Predicated ⊏ Attenuated(δ) ⊏ Present` (the former
+  `Predicated ∥ Dropped` antichain is resolved; `Dropped ⊑ Predicated` now holds).
+* *A3 — `Attenuated(0)` ingest normalization.* The identification
+  `Attenuated(0) = Present` is imposed by normalization at IR ingest: validators
+  MUST rewrite `Attenuated(0)` to `Present` before grading, in edge grades and
+  floors alike. `Attenuated(0)` stays wire-legal. Composition preserves normal
+  forms (finite tropical addition reaches 0 only from 0 + 0), so no algebra
+  change is entailed.
+
+Because A1/A2 changed which documents pass a given floor with no wire-format
+change, consumers see ONE semantic version bump covering all of R-2026-07-07.
+Implementations MUST accept both `"0.1"` and `"0.2"` documents and MUST
+normalize and grade them identically (under 0.2 semantics); any other `version`
+MUST be rejected at validation with the coordinate named.
 
 == Nodes — property-instances
 

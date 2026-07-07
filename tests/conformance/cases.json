@@ -62,6 +62,27 @@
       "witness": "e_collapse",
       "witness_coordinate": "fate.quality",
       "note": "Attenuated(2) still meets floor A(10); the collapse edge drops below it"
+    },
+    {
+      "ir": "atten-zero-normalizes.ir.json",
+      "expect": "p-insufficient",
+      "witness": "e_attenuate",
+      "witness_coordinate": "fate.record",
+      "note": "A3 (R-2026-07-07-03): Attenuated(0) on quality normalizes to Present at ingest, so the Present floor is met there and only fate.record fails — without normalization the witness coordinate would be fate.quality"
+    },
+    {
+      "ir": "atten-zero-present-twin.ir.json",
+      "expect": "p-insufficient",
+      "witness": "e_attenuate",
+      "witness_coordinate": "fate.record",
+      "note": "A3 twin: identical to atten-zero-normalizes but quality is written Present — same verdict, witness and coordinate prove Atten(0) ≡ Present"
+    },
+    {
+      "ir": "atten-zero-normalizes-v0.1.ir.json",
+      "expect": "p-insufficient",
+      "witness": "e_attenuate",
+      "witness_coordinate": "fate.record",
+      "note": "back-compat: the same document under version 0.1 is accepted, normalized and graded identically (IR 0.2 accepts both versions; wire format unchanged)"
     }
   ]
 }
