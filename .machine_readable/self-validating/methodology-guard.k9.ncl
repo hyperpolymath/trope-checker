@@ -59,7 +59,7 @@ let methodology_guard = {
       # Nickel still evaluates the element back to the full token. Do not
       # "simplify" it to a plain string. (The PLACEHOLDER token and
       # "rsr-template-repo" are not init tokens, so they survive as-is.)
-      reject_patterns = ["{{PLACEHOLDER}}", "{{" ++ "PROJECT}}", "rsr-template-repo"],
+      reject_patterns = ["REMOVED", "{{" ++ "PROJECT}}", "rsr-template-repo"],
     },
 
     coverage_updated = {

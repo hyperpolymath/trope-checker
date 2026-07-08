@@ -7,7 +7,7 @@
 # Variables (project, OWNER, REPO, version, tier) and the `set shell` directive
 # are inherited from the root Justfile.
 
-# Interactive project bootstrap — replaces all {{PLACEHOLDER}} tokens
+# Interactive project bootstrap — replaces all REMOVED tokens
 init:
     #!/usr/bin/env bash
     set -euo pipefail

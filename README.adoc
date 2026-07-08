@@ -31,7 +31,7 @@ IR schema, the verified core, and the conformance suite.
 The checker MUST NOT parse, import, execute, or depend on any source language.
 It is a pure function _of the IR_, and the IR (its JSON schema) is the trust
 boundary. A front-end's grade annotations are *claims*; the checker validates
-their *composition*, not their origin. `{{LANG}}` (Haec) is the first front-end
+their *composition*, not their origin. `Rust` (Haec) is the first front-end
 that lowers to the IR — dogfooding without coupling — but a static analyser for
 an existing language could emit the same IR and be checked by the same checker.
 ====

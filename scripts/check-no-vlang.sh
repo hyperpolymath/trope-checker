@@ -33,8 +33,6 @@ PATTERNS=(
     'gen-v-connector'
     'V-TRIPLE'
     'v-triple'
-    'zig'
-    'zig'
     'vlang'
     'connectors/v-'
 )

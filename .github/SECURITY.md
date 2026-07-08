@@ -8,13 +8,13 @@ Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 ============================================================================
 TEMPLATE INSTRUCTIONS (delete this block before publishing)
 ============================================================================
-Replace all {{PLACEHOLDER}} values with your information:
+Replace all REMOVED values with your information:
   Trope Checker     - Your project name
   hyperpolymath            - GitHub username or org (e.g., hyperpolymath)
   trope-checker             - Repository name
   j.d.a.jewell@open.ac.uk   - Security contact email
-  {{PGP_FINGERPRINT}}  - Your PGP key fingerprint (40 chars, no spaces)
-  {{PGP_KEY_URL}}      - URL to your public PGP key
+  0000000000000000000000000000000000000000  - Your PGP key fingerprint (40 chars, no spaces)
+  https://keys.openpgp.org/vks/v1/by-fingerprint/0000000000000000000000000000000000000000      - URL to your public PGP key
   https://github.com/hyperpolymath/trope-checker          - Your website/domain
   2026     - Current year for copyright
 
@@ -63,12 +63,12 @@ If you cannot use GitHub Security Advisories, you may email us directly:
 | | |
 |---|---|
 | **Email** | j.d.a.jewell@open.ac.uk |
-| **PGP Key** | [Download Public Key]({{PGP_KEY_URL}}) |
-| **Fingerprint** | `{{PGP_FINGERPRINT}}` |
+| **PGP Key** | [Download Public Key](https://keys.openpgp.org/vks/v1/by-fingerprint/0000000000000000000000000000000000000000) |
+| **Fingerprint** | `0000000000000000000000000000000000000000` |
 
 ```bash
 # Import our PGP key
-curl -sSL {{PGP_KEY_URL}} | gpg --import
+curl -sSL https://keys.openpgp.org/vks/v1/by-fingerprint/0000000000000000000000000000000000000000 | gpg --import
 
 # Verify fingerprint
 gpg --fingerprint j.d.a.jewell@open.ac.uk
@@ -374,7 +374,7 @@ When using Trope Checker, we recommend:
 
 ## Additional Resources
 
-- [Our PGP Public Key]({{PGP_KEY_URL}})
+- [Our PGP Public Key](https://keys.openpgp.org/vks/v1/by-fingerprint/0000000000000000000000000000000000000000)
 - [Security Advisories](https://github.com/hyperpolymath/trope-checker/security/advisories)
 - [Changelog](CHANGELOG.md)
 - [Contributing Guidelines](CONTRIBUTING.md)
