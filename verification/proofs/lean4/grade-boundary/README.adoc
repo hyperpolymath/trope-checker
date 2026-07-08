@@ -10,6 +10,16 @@ algebra (`Grade.idr`, calculus `spec/calculus.adoc` `:revnumber: 0.1`), targetin
 the *honest/deceptive cancellation boundary*. The single source of truth is
 `GradeBoundary.lean`; this file is the prose companion.
 
+IMPORTANT: *R-2026-07-07 (ADR 0004, issue #29).* `GradeBoundary.lean` mirrors the
+*pre-ratification* carrier (kept under a provenance note). The **ratified**
+carrier's mirror is `GradeRatified.lean`: the grade record `GradeR` over the
+ratified fate coordinate (`L4Monotonicity.lean`'s `FateA`), proved a
+`CommMonoid` (so `grade_mul_not_comm` is retired for the ratified algebra),
+with conicality, the two-sided deceptive zeros, `Dropped`'s non-cancellativity,
+the carrier-level cancellation classification (`gradeR_leftCancel_iff`), and
+the A3 normal-form refinement (`FateA.atten_cancel_on_normalForms`: finite
+attenuation rejoins tier 1 among A3 normal forms).
+
 toc::[]
 
 == Toolchain (pinned, recorded)
