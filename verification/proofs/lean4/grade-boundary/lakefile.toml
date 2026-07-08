@@ -1,5 +1,5 @@
 name = "gradeBoundary"
-defaultTargets = ["GradeBoundary", "TierTwoComplete", "L4Monotonicity", "EffectAtoms"]
+defaultTargets = ["GradeBoundary", "TierTwoComplete", "L4Monotonicity", "EffectAtoms", "GradeRatified"]
 
 # Pinned recent-stable Mathlib. v4.16.0 carries the refactored canonically-ordered
 # hierarchy: `CanonicallyOrderedAddCommMonoid` is DEPRECATED in favour of the mixin
@@ -27,3 +27,9 @@ name = "L4Monotonicity"
 # O1 (relative to the carrier): atom factorization and the nine effect families.
 [[lean_lib]]
 name = "EffectAtoms"
+
+# Issue #29: the RATIFIED carrier mirror (ADR 0004, R-2026-07-07) — the grade
+# record over the ratified fate coordinate (L4Monotonicity's FateA), with the
+# ported boundary results and the A3 normal-form cancellation refinement.
+[[lean_lib]]
+name = "GradeRatified"
