@@ -39,6 +39,11 @@ abi.ipkg                   # Idris2 package for the ABI seam; sourcedir=src/inte
 # ─── Directories ─────────────────────────────────────────────────────────────
 .devcontainer/             # VS Code dev container spec; tool-required at root
 .git/
+.githooks/                 # validate-a2ml.sh, validate-k9.sh — LOAD-BEARING: run
+                           # directly by .github/workflows/dogfood-gate.yml (the
+                           # "Validate A2ML manifests" and "Validate K9 contracts"
+                           # checks). Conventional root location for a
+                           # core.hooksPath directory; moving it breaks those gates.
 .github/                   # CONTRIBUTING.md, CODE_OF_CONDUCT.md, SECURITY.md, workflows/
 .machine_readable/         # AI manifests, contractiles, custom-format configs
 .well-known/
