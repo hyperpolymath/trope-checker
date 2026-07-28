@@ -1,0 +1,101 @@
+# SPDX-License-Identifier: MPL-2.0
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+#
+# The formal developments, enforced.
+#
+# ~4.1k lines of Lean 4 and Agda underwrite this repository's strongest claims —
+# the grade-algebra cancellation boundary (Lean, ADR 0003 "ground truth") and
+# Theorem B, the calculus metatheory (Agda, --safe --without-K). Until now none
+# of it ran in CI: `just verify-all`, `just build-lean` and `just build-agda`
+# were local recipes only, so the claims were asserted rather than measured.
+# By this estate's own doctrine an unenforced proof claim is a fake gate.
+#
+# NAMED AND OPEN (HC-5, stub-and-name — do not silently round this up):
+# `lake build` of the two Lean developments is NOT gated here. Lean v4.16.0 plus
+# Mathlib needs the binary cache (`lake exe cache get`) to finish in tolerable
+# CI time, and that was not verified when this workflow landed — a toolchain
+# download alone exceeded the local trial. So what IS gated is the Lean *source*
+# honesty property (below), which is checkable without any toolchain, plus the
+# full Agda development. The Lean build itself remains a local `just build-lean`
+# claim, and remains unenforced until the cache step is proved out.
+name: "🔴 Gate: Formal proofs"
+
+on:
+  push:
+    paths:
+      - 'verification/proofs/lean4/**'
+      - 'verification/proofs/agda/**'
+      - '.github/workflows/proofs.yml'
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Pure grep over the Lean sources: no toolchain, seconds to run, and it is the
+  # gate that makes "sorry-free" checkable rather than merely stated. Mirrors the
+  # `verify-all` recipe in build/just/proofs.just — keep the two in step.
+  lean-source-honesty:
+    name: "Lean sources: no sorry / admit / native_decide / user axiom"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Gate the Lean sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          fail=0
+          for f in verification/proofs/lean4/grade-boundary/GradeBoundary.lean \
+                   verification/proofs/lean4/grade-factorisation/GradeFactorisation.lean; do
+            if [ ! -f "$f" ]; then
+              echo "::error::gated file is missing: $f"; fail=1; continue
+            fi
+            echo "--- gating $f ---"
+            if grep -nE '(:=|by|;|<;>|=>|\|)[[:space:]]*(sorry|admit)\b|\bnative_decide\b' "$f"; then
+              echo "::error file=$f::forbidden Lean tactic (sorry/admit/native_decide)"; fail=1
+            fi
+            if grep -nE '^[[:space:]]*axiom\b' "$f"; then
+              echo "::error file=$f::user axiom declared"; fail=1
+            fi
+          done
+          [ "$fail" -eq 0 ] || exit 1
+          echo "PASS: Lean sources are sorry/admit/native_decide-free and declare no user axioms"
+
+  # Theorem B, the calculus metatheory. --safe rejects postulates by construction,
+  # so this is a real check of postulate-freedom and not a word-grep (a grep would
+  # false-positive on the honest "postulate-free" prose in the comments).
+  #
+  # NOTE ON THE VERSION PIN: theorem-b.agda-lib is developed against Agda 2.8.0
+  # (ADR 0003). The runner's packaged Agda is older. The version is printed, not
+  # asserted, because asserting a version the runner cannot supply produces a
+  # permanently-red gate rather than a signal — and the substantive guarantee here
+  # comes from --safe --without-K, which holds across versions. Verified locally
+  # under 2.6.4.3: All.agda and Smoke.agda both typecheck, exit 0.
+  agda-theorem-b:
+    name: "Agda Theorem B (--safe --without-K)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install Agda and the standard library
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends agda agda-stdlib
+          echo "agda --version -> $(agda --version | head -1)"
+          echo "ratified pin (ADR 0003) is Agda 2.8.0; --safe --without-K is the substantive check"
+      - name: Typecheck Theorem B
+        shell: bash
+        working-directory: verification/proofs/agda/theorem-b
+        run: |
+          set -euo pipefail
+          agda --safe --without-K All.agda
+          agda --safe --without-K Smoke.agda
+          echo "PASS: All.agda + Smoke.agda typecheck (--safe => postulate-free by construction)"
