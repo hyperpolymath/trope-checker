@@ -115,8 +115,16 @@ impl<'a> P<'a> {
         while self.i < self.s.len() && self.s[self.i].is_ascii_digit() {
             self.i += 1;
         }
+        // The slice can only contain b'-' and ASCII digits (that is the loop
+        // invariant above), so it is always valid UTF-8 and this decode cannot
+        // actually fail. It is written as a recoverable error rather than
+        // `.unwrap()` anyway: the safety argument lives in a loop three lines
+        // up, a later edit to the scanning conditions could invalidate it
+        // silently, and a validation fault (exit 2) is the documented contract
+        // for malformed input — a panic is not. Behaviour on every reachable
+        // input is unchanged.
         std::str::from_utf8(&self.s[start..self.i])
-            .unwrap()
+            .map_err(|_| "bad number: not valid UTF-8".to_string())?
             .parse::<i64>()
             .map(Json::Num)
             .map_err(|_| "bad number".into())
