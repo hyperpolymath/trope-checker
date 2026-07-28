@@ -14,10 +14,10 @@
 ;;   guix shell -D -f build/guix.scm    # development shell
 ;;   guix build -f build/guix.scm       # build the package
 ;;
-;; NOTE: the reference checker needs Idris 2 0.8.0 (see .tool-versions); Idris2
-;; is not currently packaged for Guix here, so `build` covers the Rust fast core
-;; and the conformance corpus. The Idris2 route is the digest-pinned container
-;; used by .github/workflows/trope-check.yml.
+;; Guix is the estate PRIMARY and only packager (ruled 2026-05-18; the Nix
+;; mirror was removed from this repo). The inputs below still need filling
+;; in against the real toolchain — see the TODOs.
+;; See: https://guix.gnu.org/manual/en/html_node/Defining-Packages.html
 
 (use-modules (guix packages)
              (guix gexp)
@@ -32,13 +32,47 @@
                       #:select? (lambda (file stat)
                                   (not (string-contains file ".git")))))
   (build-system gnu-build-system)
-  (synopsis "Trope IR conformance checker (IR -> graded verdict)")
-  (description
-   "trope-checker consumes a Trope IR document — a labelled DAG of
-property-instance nodes joined by graded effect edges — and returns a verdict
-of p-sufficient or p-insufficient against each consumer's declared use-model,
-naming the offending edge and coordinate when it fails.  It never executes a
-Haec program: the guarantee is about the IR, not about any one producer of it.")
+  (arguments
+   '(#:phases
+     (modify-phases %standard-phases
+       ;; TODO: Customize build phases for your project
+       ;; Examples for common stacks:
+       ;;
+       ;; Rust:
+       ;;   (replace 'build (lambda _ (invoke "cargo" "build" "--release")))
+       ;;   (replace 'check (lambda _ (invoke "cargo" "test")))
+       ;;
+       ;; Elixir:
+       ;;   (replace 'build (lambda _ (invoke "mix" "compile")))
+       ;;   (replace 'check (lambda _ (invoke "mix" "test")))
+       ;;
+       ;; Zig:
+       ;;   (replace 'build (lambda _ (invoke "zig" "build")))
+       ;;   (replace 'check (lambda _ (invoke "zig" "build" "test")))
+       (delete 'configure)
+       (delete 'build)
+       (delete 'check)
+       (replace 'install
+         (lambda* (#:key outputs #:allow-other-keys)
+           (let ((out (assoc-ref outputs "out")))
+             (mkdir-p (string-append out "/share/doc"))
+             (copy-file "README.adoc"
+                        (string-append out "/share/doc/README.adoc"))))))))
+  (native-inputs
+   (list
+    ;; TODO: Add build-time dependencies
+    ;; Examples:
+    ;;   rust (gnu packages rust)
+    ;;   elixir (gnu packages elixir)
+    ;;   zig (gnu packages zig)
+    ))
+  (inputs
+   (list
+    ;; TODO: Add runtime dependencies
+    ))
   (home-page "https://github.com/hyperpolymath/trope-checker")
-  ;; Code is MPL-2.0; the prose specification and docs are CC-BY-SA-4.0.
-  (license (list license:mpl2.0 license:cc-by-sa4.0)))
+  (synopsis "The portable trust boundary of the trope-particularity calculus: a pure function from a language-neutral Trope IR to a sufficiency verdict.")
+  (description "RSR-compliant project. See README.adoc for details.")
+  (license (list
+            ;; MPL-2.0 extends MPL-2.0
+            mpl2.0)))
