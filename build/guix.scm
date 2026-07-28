@@ -1,11 +1,18 @@
 ;; SPDX-License-Identifier: MPL-2.0
-;; Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+;; SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 ;;
-;; Guix package definition for Trope Checker
+;; guix.scm — GNU Guix package definition for trope-checker.
+;;
+;; The language-independent consumer of Trope IR: it reads a JSON Trope IR
+;; document and returns a verdict against each consumer's declared use-model.
+;; Two implementations ship here — the Idris2 reference checker (built from the
+;; verified core in verification/proofs/idris2, so the thing that runs is the
+;; thing that is proved) and a dependency-free Rust fast core used to
+;; cross-validate the same conformance corpus.
 ;;
 ;; Usage:
-;;   guix shell -D -f guix.scm    # Enter development shell
-;;   guix build -f guix.scm       # Build package
+;;   guix shell -D -f build/guix.scm    # development shell
+;;   guix build -f build/guix.scm       # build the package
 ;;
 ;; Guix is the estate PRIMARY and only packager (ruled 2026-05-18; the Nix
 ;; mirror was removed from this repo). The inputs below still need filling
@@ -14,18 +21,16 @@
 
 (use-modules (guix packages)
              (guix gexp)
-             (guix git-download)
              (guix build-system gnu)
-             (guix licenses)
-             (gnu packages base))
+             ((guix licenses) #:prefix license:))
 
 (package
   (name "trope-checker")
   (version "0.1.0")
-  (source (local-file "." "source"
-                       #:recursive? #t
-                       #:select? (lambda (file stat)
-                                   (not (string-contains file ".git")))))
+  (source (local-file "." "trope-checker-checkout"
+                      #:recursive? #t
+                      #:select? (lambda (file stat)
+                                  (not (string-contains file ".git")))))
   (build-system gnu-build-system)
   (arguments
    '(#:phases
