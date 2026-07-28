@@ -1,71 +1,44 @@
 ;; SPDX-License-Identifier: MPL-2.0
-;; Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+;; SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 ;;
-;; Guix package definition for Trope Checker
+;; guix.scm — GNU Guix package definition for trope-checker.
+;;
+;; The language-independent consumer of Trope IR: it reads a JSON Trope IR
+;; document and returns a verdict against each consumer's declared use-model.
+;; Two implementations ship here — the Idris2 reference checker (built from the
+;; verified core in verification/proofs/idris2, so the thing that runs is the
+;; thing that is proved) and a dependency-free Rust fast core used to
+;; cross-validate the same conformance corpus.
 ;;
 ;; Usage:
-;;   guix shell -D -f guix.scm    # Enter development shell
-;;   guix build -f guix.scm       # Build package
+;;   guix shell -D -f build/guix.scm    # development shell
+;;   guix build -f build/guix.scm       # build the package
 ;;
-;; TODO: Replace Trope Checker and customize inputs for your language/stack.
-;; See: https://guix.gnu.org/manual/en/html_node/Defining-Packages.html
+;; NOTE: the reference checker needs Idris 2 0.8.0 (see .tool-versions); Idris2
+;; is not currently packaged for Guix here, so `build` covers the Rust fast core
+;; and the conformance corpus. The Idris2 route is the digest-pinned container
+;; used by .github/workflows/trope-check.yml.
 
 (use-modules (guix packages)
              (guix gexp)
-             (guix git-download)
              (guix build-system gnu)
-             (guix licenses)
-             (gnu packages base))
+             ((guix licenses) #:prefix license:))
 
 (package
-  (name "Trope Checker")
+  (name "trope-checker")
   (version "0.1.0")
-  (source (local-file "." "source"
-                       #:recursive? #t
-                       #:select? (lambda (file stat)
-                                   (not (string-contains file ".git")))))
+  (source (local-file "." "trope-checker-checkout"
+                      #:recursive? #t
+                      #:select? (lambda (file stat)
+                                  (not (string-contains file ".git")))))
   (build-system gnu-build-system)
-  (arguments
-   '(#:phases
-     (modify-phases %standard-phases
-       ;; TODO: Customize build phases for your project
-       ;; Examples for common stacks:
-       ;;
-       ;; Rust:
-       ;;   (replace 'build (lambda _ (invoke "cargo" "build" "--release")))
-       ;;   (replace 'check (lambda _ (invoke "cargo" "test")))
-       ;;
-       ;; Elixir:
-       ;;   (replace 'build (lambda _ (invoke "mix" "compile")))
-       ;;   (replace 'check (lambda _ (invoke "mix" "test")))
-       ;;
-       ;; Zig:
-       ;;   (replace 'build (lambda _ (invoke "zig" "build")))
-       ;;   (replace 'check (lambda _ (invoke "zig" "build" "test")))
-       (delete 'configure)
-       (delete 'build)
-       (delete 'check)
-       (replace 'install
-         (lambda* (#:key outputs #:allow-other-keys)
-           (let ((out (assoc-ref outputs "out")))
-             (mkdir-p (string-append out "/share/doc"))
-             (copy-file "README.adoc"
-                        (string-append out "/share/doc/README.adoc"))))))))
-  (native-inputs
-   (list
-    ;; TODO: Add build-time dependencies
-    ;; Examples:
-    ;;   rust (gnu packages rust)
-    ;;   elixir (gnu packages elixir)
-    ;;   zig (gnu packages zig)
-    ))
-  (inputs
-   (list
-    ;; TODO: Add runtime dependencies
-    ))
-  (home-page "https://github.com/hyperpolymath/Trope Checker")
-  (synopsis "The portable trust boundary of the trope-particularity calculus: a pure function from a language-neutral Trope IR to a sufficiency verdict.")
-  (description "RSR-compliant project. See README.adoc for details.")
-  (license (list
-            ;; MPL-2.0 extends MPL-2.0
-            mpl2.0)))
+  (synopsis "Trope IR conformance checker (IR -> graded verdict)")
+  (description
+   "trope-checker consumes a Trope IR document — a labelled DAG of
+property-instance nodes joined by graded effect edges — and returns a verdict
+of p-sufficient or p-insufficient against each consumer's declared use-model,
+naming the offending edge and coordinate when it fails.  It never executes a
+Haec program: the guarantee is about the IR, not about any one producer of it.")
+  (home-page "https://github.com/hyperpolymath/trope-checker")
+  ;; Code is MPL-2.0; the prose specification and docs are CC-BY-SA-4.0.
+  (license (list license:mpl2.0 license:cc-by-sa4.0)))
