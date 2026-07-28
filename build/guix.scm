@@ -7,7 +7,9 @@
 ;;   guix shell -D -f guix.scm    # Enter development shell
 ;;   guix build -f guix.scm       # Build package
 ;;
-;; TODO: Replace Trope Checker and customize inputs for your language/stack.
+;; Guix is the estate PRIMARY and only packager (ruled 2026-05-18; the Nix
+;; mirror was removed from this repo). The inputs below still need filling
+;; in against the real toolchain — see the TODOs.
 ;; See: https://guix.gnu.org/manual/en/html_node/Defining-Packages.html
 
 (use-modules (guix packages)
@@ -18,7 +20,7 @@
              (gnu packages base))
 
 (package
-  (name "Trope Checker")
+  (name "trope-checker")
   (version "0.1.0")
   (source (local-file "." "source"
                        #:recursive? #t
@@ -63,7 +65,7 @@
    (list
     ;; TODO: Add runtime dependencies
     ))
-  (home-page "https://github.com/hyperpolymath/Trope Checker")
+  (home-page "https://github.com/hyperpolymath/trope-checker")
   (synopsis "The portable trust boundary of the trope-particularity calculus: a pure function from a language-neutral Trope IR to a sufficiency verdict.")
   (description "RSR-compliant project. See README.adoc for details.")
   (license (list
