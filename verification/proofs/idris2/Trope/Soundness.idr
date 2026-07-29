@@ -86,23 +86,166 @@ export
 soundFromExact : (g, rho : Grade) -> g = rho -> gradeLte g rho = True
 soundFromExact g rho prf = rewrite prf in gradeLteRefl rho
 
--- ── FINDING (2026-06-22): strict L4 monotonicity FAILS for the fate coordinate ──
--- Predicated and Dropped are intentionally INCOMPARABLE (calculus §3.1). So:
---   Dropped ⊑ Present                       (premise 1)
---   Predicated ⊑ Predicated                 (premise 2)
--- yet  Dropped ▷ Predicated = Dropped  and  Present ▷ Predicated = Predicated,
--- and  Dropped ⋢ Predicated. The three Refls machine-check that the premises hold
--- and the monotonicity conclusion is False. Consequence: conservative-step grade
--- soundness cannot be composed by naive L4 over fate (bond/merge ARE monotone —
--- Trope.Order.{bond,merge}ComposeMono); the exact route (soundFromExact) avoids it.
-export
-fateL4Premise1 : fateLte Dropped Present = True
-fateL4Premise1 = Refl
+-- ── L4 RESTORED for the fate coordinate (R-2026-07-07 (A1)+(A2)) ────────────
+-- The 2026-06-22 finding `fateL4MonotonicityFails` (strict L4 fails on fate,
+-- witnessed at the {Predicated, Dropped} antichain) is RETIRED: it is FALSE on
+-- the ratified carrier. With (A1) Dropped ▷ Falsified = Falsified and (A2)
+-- Dropped ⊑ Predicated, ▷ is ⊑-monotone in BOTH arguments on fate — total
+-- proofs below, mirroring the Lean FateA.comp_mono_right/left development
+-- (verification/proofs/lean4/grade-boundary/L4Monotonicity.lean). With
+-- bond/merge monotonicity (Trope.Order.{bond,merge}ComposeMono) every
+-- coordinate is now L4-monotone, so conservative-step grade soundness CAN be
+-- composed by L4; the exact route (soundFromExact) remains as the strongest
+-- special case.
 
+||| Chain facts replacing the retired duck-check antichain (R-2026-07-07 (A2)):
+||| Dropped ⊑ Predicated now holds — a checkbox retains at least as much as
+||| nothing at all…
 export
-fateL4Premise2 : fateLte Predicated Predicated = True
-fateL4Premise2 = Refl
+fateDroppedLtePredicated : fateLte Dropped Predicated = True
+fateDroppedLtePredicated = Refl
 
+||| …while the converse stays False: a floor of Predicated still rejects
+||| Dropped (the behavioural half of the duck check that mattered survives).
 export
-fateL4MonotonicityFails : fateLte (fateCompose Dropped Predicated) (fateCompose Present Predicated) = False
-fateL4MonotonicityFails = Refl
+fatePredicatedNotLteDropped : fateLte Predicated Dropped = False
+fatePredicatedNotLteDropped = Refl
+
+||| L4 (right argument) on fate: x ⊑ y → h ▷ x ⊑ h ▷ y. Exhaustive case
+||| analysis; Atten/Atten needs dplus monotonicity and the loss-lowers-retention
+||| lemmas from Trope.Fidelity.
+export
+fateL4MonoR : (h, x, y : Fate) -> fateLte x y = True -> fateLte (fateCompose h x) (fateCompose h y) = True
+fateL4MonoR Falsified x y _ = Refl
+fateL4MonoR Present x y prf = prf
+-- h = Dropped: every honest tail collapses to Dropped; Falsified tails are
+-- either absurd (x deceptive-dominated) or land on Falsified ⊑ _ (A1).
+fateL4MonoR Dropped Falsified y _ = Refl
+fateL4MonoR Dropped Present Present _ = Refl
+fateL4MonoR Dropped Present (Atten b) prf = absurd prf
+fateL4MonoR Dropped Present Predicated prf = absurd prf
+fateL4MonoR Dropped Present Dropped prf = absurd prf
+fateL4MonoR Dropped Present Falsified prf = absurd prf
+fateL4MonoR Dropped (Atten a) Present _ = Refl
+fateL4MonoR Dropped (Atten a) (Atten b) _ = Refl
+fateL4MonoR Dropped (Atten a) Predicated prf = absurd prf
+fateL4MonoR Dropped (Atten a) Dropped prf = absurd prf
+fateL4MonoR Dropped (Atten a) Falsified prf = absurd prf
+fateL4MonoR Dropped Predicated Present _ = Refl
+fateL4MonoR Dropped Predicated (Atten b) _ = Refl
+fateL4MonoR Dropped Predicated Predicated _ = Refl
+fateL4MonoR Dropped Predicated Dropped prf = absurd prf
+fateL4MonoR Dropped Predicated Falsified prf = absurd prf
+fateL4MonoR Dropped Dropped Present _ = Refl
+fateL4MonoR Dropped Dropped (Atten b) _ = Refl
+fateL4MonoR Dropped Dropped Predicated _ = Refl
+fateL4MonoR Dropped Dropped Dropped _ = Refl
+fateL4MonoR Dropped Dropped Falsified prf = absurd prf
+-- h = Atten d: the fidelity-chain segment; Atten/Atten is dplus monotonicity.
+fateL4MonoR (Atten d) Falsified y _ = Refl
+fateL4MonoR (Atten d) Present Present _ = dLteRefl d
+fateL4MonoR (Atten d) Present (Atten b) prf = absurd prf
+fateL4MonoR (Atten d) Present Predicated prf = absurd prf
+fateL4MonoR (Atten d) Present Dropped prf = absurd prf
+fateL4MonoR (Atten d) Present Falsified prf = absurd prf
+fateL4MonoR (Atten d) (Atten a) Present _ = dplusRetLteR d a
+fateL4MonoR (Atten d) (Atten a) (Atten b) prf = dplusMonoR d a b prf
+fateL4MonoR (Atten d) (Atten a) Predicated prf = absurd prf
+fateL4MonoR (Atten d) (Atten a) Dropped prf = absurd prf
+fateL4MonoR (Atten d) (Atten a) Falsified prf = absurd prf
+fateL4MonoR (Atten d) Predicated Present _ = Refl
+fateL4MonoR (Atten d) Predicated (Atten b) _ = Refl
+fateL4MonoR (Atten d) Predicated Predicated _ = Refl
+fateL4MonoR (Atten d) Predicated Dropped prf = absurd prf
+fateL4MonoR (Atten d) Predicated Falsified prf = absurd prf
+fateL4MonoR (Atten d) Dropped Present _ = Refl
+fateL4MonoR (Atten d) Dropped (Atten b) _ = Refl
+fateL4MonoR (Atten d) Dropped Predicated _ = Refl
+fateL4MonoR (Atten d) Dropped Dropped _ = Refl
+fateL4MonoR (Atten d) Dropped Falsified prf = absurd prf
+-- h = Predicated: the collapse head; the old counterexample slot
+-- (x = Dropped, y ⊒ Predicated) now closes by (A2).
+fateL4MonoR Predicated Falsified y _ = Refl
+fateL4MonoR Predicated Present Present _ = Refl
+fateL4MonoR Predicated Present (Atten b) prf = absurd prf
+fateL4MonoR Predicated Present Predicated prf = absurd prf
+fateL4MonoR Predicated Present Dropped prf = absurd prf
+fateL4MonoR Predicated Present Falsified prf = absurd prf
+fateL4MonoR Predicated (Atten a) Present _ = Refl
+fateL4MonoR Predicated (Atten a) (Atten b) _ = Refl
+fateL4MonoR Predicated (Atten a) Predicated prf = absurd prf
+fateL4MonoR Predicated (Atten a) Dropped prf = absurd prf
+fateL4MonoR Predicated (Atten a) Falsified prf = absurd prf
+fateL4MonoR Predicated Predicated Present _ = Refl
+fateL4MonoR Predicated Predicated (Atten b) _ = Refl
+fateL4MonoR Predicated Predicated Predicated _ = Refl
+fateL4MonoR Predicated Predicated Dropped prf = absurd prf
+fateL4MonoR Predicated Predicated Falsified prf = absurd prf
+fateL4MonoR Predicated Dropped Present _ = Refl
+fateL4MonoR Predicated Dropped (Atten b) _ = Refl
+fateL4MonoR Predicated Dropped Predicated _ = Refl
+fateL4MonoR Predicated Dropped Dropped _ = Refl
+fateL4MonoR Predicated Dropped Falsified prf = absurd prf
+
+||| L4 (left argument) on fate: x ⊑ y → x ▷ h ⊑ y ▷ h. Exhaustive case
+||| analysis; the x = Dropped, h = Falsified slot is exactly where (A1) is
+||| load-bearing (both sides land on Falsified instead of Dropped ⋢ Falsified).
+export
+fateL4MonoL : (x, y, h : Fate) -> fateLte x y = True -> fateLte (fateCompose x h) (fateCompose y h) = True
+fateL4MonoL Falsified y h _ = Refl
+fateL4MonoL Present Present h _ = fateLteRefl h
+fateL4MonoL Present (Atten b) h prf = absurd prf
+fateL4MonoL Present Predicated h prf = absurd prf
+fateL4MonoL Present Dropped h prf = absurd prf
+fateL4MonoL Present Falsified h prf = absurd prf
+-- x = Atten a
+fateL4MonoL (Atten a) Present Present _ = Refl
+fateL4MonoL (Atten a) Present (Atten e) _ = dplusRetLteL a e
+fateL4MonoL (Atten a) Present Predicated _ = Refl
+fateL4MonoL (Atten a) Present Dropped _ = Refl
+fateL4MonoL (Atten a) Present Falsified _ = Refl
+fateL4MonoL (Atten a) (Atten b) Present prf = prf
+fateL4MonoL (Atten a) (Atten b) (Atten e) prf = dplusMonoL a b e prf
+fateL4MonoL (Atten a) (Atten b) Predicated _ = Refl
+fateL4MonoL (Atten a) (Atten b) Dropped _ = Refl
+fateL4MonoL (Atten a) (Atten b) Falsified _ = Refl
+fateL4MonoL (Atten a) Predicated h prf = absurd prf
+fateL4MonoL (Atten a) Dropped h prf = absurd prf
+fateL4MonoL (Atten a) Falsified h prf = absurd prf
+-- x = Predicated
+fateL4MonoL Predicated Present Present _ = Refl
+fateL4MonoL Predicated Present (Atten e) _ = Refl
+fateL4MonoL Predicated Present Predicated _ = Refl
+fateL4MonoL Predicated Present Dropped _ = Refl
+fateL4MonoL Predicated Present Falsified _ = Refl
+fateL4MonoL Predicated (Atten b) Present _ = Refl
+fateL4MonoL Predicated (Atten b) (Atten e) _ = Refl
+fateL4MonoL Predicated (Atten b) Predicated _ = Refl
+fateL4MonoL Predicated (Atten b) Dropped _ = Refl
+fateL4MonoL Predicated (Atten b) Falsified _ = Refl
+fateL4MonoL Predicated Predicated Present _ = Refl
+fateL4MonoL Predicated Predicated (Atten e) _ = Refl
+fateL4MonoL Predicated Predicated Predicated _ = Refl
+fateL4MonoL Predicated Predicated Dropped _ = Refl
+fateL4MonoL Predicated Predicated Falsified _ = Refl
+fateL4MonoL Predicated Dropped h prf = absurd prf
+fateL4MonoL Predicated Falsified h prf = absurd prf
+-- x = Dropped: (A1) closes the h = Falsified slots; (A2) closes the
+-- h ∈ {Present, Atten, Predicated} slots against y ⊒ Predicated.
+fateL4MonoL Dropped Present Present _ = Refl
+fateL4MonoL Dropped Present (Atten e) _ = Refl
+fateL4MonoL Dropped Present Predicated _ = Refl
+fateL4MonoL Dropped Present Dropped _ = Refl
+fateL4MonoL Dropped Present Falsified _ = Refl
+fateL4MonoL Dropped (Atten b) Present _ = Refl
+fateL4MonoL Dropped (Atten b) (Atten e) _ = Refl
+fateL4MonoL Dropped (Atten b) Predicated _ = Refl
+fateL4MonoL Dropped (Atten b) Dropped _ = Refl
+fateL4MonoL Dropped (Atten b) Falsified _ = Refl
+fateL4MonoL Dropped Predicated Present _ = Refl
+fateL4MonoL Dropped Predicated (Atten e) _ = Refl
+fateL4MonoL Dropped Predicated Predicated _ = Refl
+fateL4MonoL Dropped Predicated Dropped _ = Refl
+fateL4MonoL Dropped Predicated Falsified _ = Refl
+fateL4MonoL Dropped Dropped h _ = fateLteRefl (fateCompose Dropped h)
+fateL4MonoL Dropped Falsified h prf = absurd prf

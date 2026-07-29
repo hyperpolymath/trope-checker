@@ -3,17 +3,19 @@
 -- SPDX-License-Identifier: MPL-2.0
 --
 -- Theorem B, Target 3 substrate — the F4 three-tier boundary, dynamically.
+-- MIGRATED to the ratified carrier (R-2026-07-07 (A1)/(A2), ADR 0004).
 --
--- The frozen F4 fact is a STATIC strict boundary cancellative-core ⊊ honest ⊊
--- full. Subject reduction must preserve it. The design-panel finding (and
--- Soundness.idr fateL4MonotonicityFails) forces the preservation to be a
--- SET-MEMBERSHIP CLOSURE property of ▷, NOT a ⊑-monotonicity, and NOT a clean
--- tier meet-homomorphism. This module establishes, in Agda, exactly which
+-- The F4 fact is a STATIC strict boundary cancellative-core ⊊ honest ⊊ full,
+-- and it SURVIVES the amendments. Subject reduction must preserve it. Tier
+-- preservation remains a SET-MEMBERSHIP CLOSURE property of ▷, NOT a clean
+-- tier meet-homomorphism — even on the ratified carrier (see the FINDING
+-- below, whose witness changed). This module establishes exactly which
 -- closures hold and exhibits the one that FAILS:
 --
 --   PROVED  deceptive-absorbs-▷   : the grade-level deceptive predicate
---           (falsified/misbound/conflated — the genuine left-zeros, per
---           Veridicality.idr) is closed under ▷.  ← L5 irreversibility, dynamic.
+--           (falsified/misbound/conflated — the genuine zeros, two-sided
+--           since (A1), per Veridicality.idr) is closed under ▷.
+--           ← L5 irreversibility, dynamic.
 --   PROVED  dTier-meet-hom        : the FIDELITY tier (Q/total/unknown) is a
 --           meet-homomorphism for ⊕d (the clean cancellation-dimension closure).
 --   PROVED  core-closed-▷         : the finite-fidelity CANCELLATIVE CORE is
@@ -21,16 +23,20 @@
 --   PROVED  *-not-cancel          : the L5 / honest-but-lossy non-cancellation
 --           witnesses (the three-tier strictness), ported from the Lean.
 --   FINDING fate-tier-meet-hom-fails : the SINGLE-TIER meet-homomorphism
---           tierOf(g▷h) ≡ tierOf g ⊓ tierOf h is FALSE on fate, witnessed by
---           `dropped ▷f falsified = dropped` (honest), an F2×F4 interaction —
---           the honest left-absorbing head `dropped` shields a later deceptive
---           operand. This is WHY tier-preservation is closure, not homomorphism.
---   GUARD   fate-L4-fails         : the L4-monotonicity tripwire (do not route
---           tier-preservation through ⊑).
+--           tierOf(g▷h) ≡ tierOf g ⊓ tierOf h is STILL FALSE on fate. The old
+--           witness (dropped ▷f falsified, an F2×F4 interaction) is RETIRED by
+--           (A1); the new witness is `dropped ▷f atten unknown = dropped`
+--           (honest) — collapse discards the fidelity coordinate, and the
+--           deceptive fidelity-unknown lives INSIDE atten. This is WHY
+--           tier-preservation is closure, not homomorphism.
+--
+-- RETIRED by R-2026-07-07: the GUARD `fate-L4-fails` (the L4-monotonicity
+-- tripwire, Soundness.idr fateL4MonotonicityFails). It is FALSE on the
+-- ratified carrier — L4 now HOLDS in both arguments, proved positively in
+-- TB.Order.fateL4Mono{R,L}.
 
 module TB.Tier where
 
-open import Data.Bool.Base using (false)
 open import Data.Sum.Base using (_⊎_; inj₁; inj₂)
 open import Data.Product.Base using (_×_; _,_; Σ; ∃)
 open import Data.Nat.Base using (ℕ; _+_)
@@ -39,7 +45,6 @@ open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; refl; con
 open import Relation.Nullary using (¬_)
 
 open import TB.Grade
-open import TB.Order using (fateLte)
 
 --------------------------------------------------------------------------------
 -- The tier lattice (deceptive ⊏ honestLossy ⊏ core) and its meet (worst-wins).
@@ -91,8 +96,8 @@ tierOf (mkGrade q b c r bo m) =
 --------------------------------------------------------------------------------
 -- L5 irreversibility, DYNAMIC: the grade-level deceptive predicate is closed
 -- under ▷. (Per Veridicality.idr, grade-deceptive = falsified/misbound/conflated,
--- which are the genuine left-zeros; the fidelity-unknown lives inside `atten`
--- and is handled by dTier-meet-hom, not here.)
+-- the genuine zeros — TWO-SIDED since R-2026-07-07 (A1); the fidelity-unknown
+-- lives inside `atten` and is handled by dTier-meet-hom, not here.)
 --------------------------------------------------------------------------------
 
 Deceptive : Grade → Set
@@ -189,20 +194,26 @@ severed-honest-not-cancel : (severed ▷b intact ≡ severed ▷b withheld) × (
 severed-honest-not-cancel = refl , λ ()
 
 --------------------------------------------------------------------------------
--- THE FINDING — why tier-preservation is CLOSURE, not a homomorphism.
--- On fate, tierOf(g ▷ h) = tierOf g ⊓ tierOf h is FALSE: the honest left-
--- absorbing head `dropped` shields a later deceptive `falsified`. This is the
--- F2×F4 interaction (and the same phenomenon as fate-L4-fails below).
+-- THE FINDING — why tier-preservation is CLOSURE, not a homomorphism, EVEN on
+-- the ratified carrier. On fate, tierOf(g ▷ h) = tierOf g ⊓ tierOf h is FALSE:
+-- the collapsing head `dropped` (likewise `predicated`) DISCARDS the fidelity
+-- coordinate of an atten operand, and the deceptive fidelity-unknown lives
+-- inside atten.
+--
+-- R-2026-07-07 (ADR 0004): the OLD witness `dropped ▷f falsified = dropped`
+-- (the F2×F4 interaction) is RETIRED — (A1) makes falsified a two-sided zero,
+-- so that pair now agrees with the meet. The failure below is the residual,
+-- fate-internal one; it is consistent with the ratified Idris2 ground truth
+-- (Coords.idr: fateCompose Dropped (Atten _) = Dropped) and does not launder
+-- the GRADE-level deceptive predicate (deceptive-absorbs-▷ above is total).
 --------------------------------------------------------------------------------
 
--- dropped ▷f falsified = dropped (honestLossy), but
--- fateTier dropped ⊓ fateTier falsified = honestLossy ⊓ deceptive = deceptive.
+-- dropped ▷f atten unknown = dropped (honestLossy), but
+-- fateTier dropped ⊓ fateTier (atten unknown) = honestLossy ⊓ deceptive = deceptive.
 fate-tier-meet-hom-fails :
-    fateTier (dropped ▷f falsified) ≢ (fateTier dropped ⊓ᵗ fateTier falsified)
+    fateTier (dropped ▷f atten unknown) ≢ (fateTier dropped ⊓ᵗ fateTier (atten unknown))
 fate-tier-meet-hom-fails ()
 
--- The L4-monotonicity tripwire (Soundness.idr fateL4MonotonicityFails): a guard
--- so no one routes tier-preservation through ⊑. Dropped ⊑ Present and
--- Predicated ⊑ Predicated, yet Dropped▷Predicated = Dropped ⋢ Predicated.
-fate-L4-fails : fateLte (dropped ▷f predicated) (present ▷f predicated) ≡ false
-fate-L4-fails = refl
+-- (RETIRED here by R-2026-07-07: the `fate-L4-fails` guard theorem. L4 is
+-- RESTORED on the ratified carrier — see TB.Order.fateL4MonoR / fateL4MonoL
+-- for the positive proofs in both arguments.)

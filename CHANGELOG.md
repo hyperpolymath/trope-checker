@@ -14,6 +14,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **IR 0.2 — A3 `Attenuated(0)` ingest normalization (R-2026-07-07-03, ADR 0004, #28).**
+  Both checkers (Idris2 reference, Rust fast-core) rewrite `Attenuated(0)` to `Present` at
+  the IR ingest boundary, before grading (edge grades and floors alike); the verified core's
+  algebra is untouched. The bundled semantic version bump `0.1` → `0.2` covers all of
+  R-2026-07-07 (A1 two-sided deceptive zeros, A2 chain retention order, A3): wire format
+  unchanged, verdict semantics changed. Both `"0.1"` and `"0.2"` documents are accepted and
+  graded identically under 0.2 semantics; any other `version` is a validation fault.
+  New conformance fixtures prove `Atten(0)` ≡ `Present` (identical verdict + witness) and
+  0.1 back-compat; `spec/trope-ir.adoc` gains a "Changes from 0.1" section.
+
 ### Added
 
 - **Grade-algebra ground truth (Lean 4 + Mathlib).** `verification/proofs/lean4/grade-boundary/`:

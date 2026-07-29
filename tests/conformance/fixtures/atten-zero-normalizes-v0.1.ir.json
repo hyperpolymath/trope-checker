@@ -1,0 +1,77 @@
+{
+  "$schema": "https://github.com/hyperpolymath/trope-checker/schemas/trope-ir.schema.json",
+  "$comment": "SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>. SPDX-License-Identifier: MPL-2.0. Back-compat: byte-identical to atten-zero-normalizes.ir.json but for version 0.1 — 0.1 documents stay accepted, are normalized (A3) and graded under 0.2 semantics, identically.",
+  "version": "0.1",
+  "profile": "prevent",
+  "nodes": [
+    {
+      "id": "letter",
+      "type": "Trope",
+      "present": [
+        "quality",
+        "bearer",
+        "context",
+        "record"
+      ]
+    },
+    {
+      "id": "scan",
+      "type": "Trope",
+      "present": [
+        "quality",
+        "bearer",
+        "context",
+        "record"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_attenuate",
+      "effect": "attenuate",
+      "inputs": [
+        "letter"
+      ],
+      "output": "scan",
+      "grade": {
+        "fate": {
+          "quality": {
+            "k": "Attenuated",
+            "delta": 0
+          },
+          "bearer": {
+            "k": "Present"
+          },
+          "context": {
+            "k": "Present"
+          },
+          "record": {
+            "k": "Attenuated",
+            "delta": "top"
+          }
+        },
+        "bond": {
+          "k": "Intact"
+        },
+        "merge": {
+          "k": "Single"
+        }
+      },
+      "note": "a no-op recompression: zero quality loss (Attenuated(0) ≡ Present), record loss unquantified"
+    }
+  ],
+  "use_model": {
+    "output": "scan",
+    "floor": {
+      "fate": {
+        "quality": {
+          "k": "Present"
+        },
+        "record": {
+          "k": "Attenuated",
+          "delta": 5
+        }
+      }
+    }
+  }
+}

@@ -3,7 +3,7 @@
 = Template Placeholders
 # Template Placeholders
 
-All placeholders in this template follow the `{{PLACEHOLDER}}` pattern.
+All placeholders in this template follow the `REMOVED` pattern.
 After cloning, replace them with your project-specific values.
 
 ## Recommended: Interactive Bootstrap
@@ -71,8 +71,8 @@ sed -i "s/2026-06-22/$(date +%Y-%m-%d)/g" $(grep -rl '2026-06-22' .)
 | Placeholder | Description | Example | Files |
 |---|---|---|---|
 | `j.d.a.jewell@open.ac.uk` | Security contact email | `security@example.org` | SECURITY.md |
-| `{{PGP_FINGERPRINT}}` | 40-char PGP fingerprint | `ABCD 1234 ...` | SECURITY.md |
-| `{{PGP_KEY_URL}}` | URL to public PGP key | `https://keys.openpgp.org/...` | SECURITY.md |
+| `0000000000000000000000000000000000000000` | 40-char PGP fingerprint | `ABCD 1234 ...` | SECURITY.md |
+| `https://keys.openpgp.org/vks/v1/by-fingerprint/0000000000000000000000000000000000000000` | URL to public PGP key | `https://keys.openpgp.org/...` | SECURITY.md |
 | `https://github.com/hyperpolymath/trope-checker` | Project website | `https://example.org` | SECURITY.md |
 | `j.d.a.jewell@open.ac.uk` | Conduct reports email | `conduct@example.org` | CODE_OF_CONDUCT.md |
 | `Code of Conduct Committee` | Conduct committee name | `Code of Conduct Committee` | CODE_OF_CONDUCT.md |
@@ -105,7 +105,7 @@ sed -i "s/2026-06-22/$(date +%Y-%m-%d)/g" $(grep -rl '2026-06-22' .)
 |---|---|---|
 | `[TODO-AI-INSTALL]` | Unfilled section in AI installation guide | `docs/AI_INSTALLATION_GUIDE.adoc`, `docs/AI-INSTALL-README-SECTION.adoc`, `README.adoc` |
 
-These are **not** standard `{{PLACEHOLDER}}` markers -- they are TODO markers
+These are **not** standard `REMOVED` markers -- they are TODO markers
 that must be replaced with project-specific content before release. They mark
 sections where the developer (or AI) must fill in:
 

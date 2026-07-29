@@ -31,7 +31,7 @@ IR schema, the verified core, and the conformance suite.
 The checker MUST NOT parse, import, execute, or depend on any source language.
 It is a pure function _of the IR_, and the IR (its JSON schema) is the trust
 boundary. A front-end's grade annotations are *claims*; the checker validates
-their *composition*, not their origin. `{{LANG}}` (Haec) is the first front-end
+their *composition*, not their origin. `Rust` (Haec) is the first front-end
 that lowers to the IR — dogfooding without coupling — but a static analyser for
 an existing language could emit the same IR and be checked by the same checker.
 ====
@@ -82,6 +82,23 @@ rejects them at validation, naming the offending coordinate. The alternative
 |===
 
 == Run the checks
+
+[IMPORTANT]
+====
+The verified core requires *Idris 2 0.8.0* (see `.tool-versions`). Under 0.7.0,
+`verification/proofs/idris2/Trope/Fidelity.idr:72` fails to parse at the
+lambda-impossible clause `No (\Refl impossible)`, which makes the reference
+checker look unbuildable when it is merely mis-toolchained.
+
+The reproducible route is the same digest-pinned image CI uses:
+
+[source,sh]
+----
+IMG=ghcr.io/stefan-hoeck/idris2-pack@sha256:de9781906050dc44704ec6de0108c86f899ef17b2642932b79e00245d613b8ad
+podman run --rm -v "$PWD":/w:Z -w /w "$IMG" bash -c \
+  'idris2 --typecheck verification/proofs/idris2/trope.ipkg'
+----
+====
 
 [source,sh]
 ----

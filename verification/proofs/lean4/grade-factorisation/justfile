@@ -15,8 +15,8 @@ build *args:
 # loses either falsifier witness (D6a the candidate breaker, D6b the trivial-map foil).
 falsify:
     @echo "[falsify] no forbidden tactics/axioms in source…"
-    @! grep -nE '(:=|by|;|<;>|=>|\|)[[:space:]]*(sorry|admit)\b|\bnative_decide\b' GradeFactorisation.lean || (echo "FAIL: forbidden tactic" && exit 1)
-    @! grep -nE '^[[:space:]]*axiom\b' GradeFactorisation.lean || (echo "FAIL: user axiom declared" && exit 1)
+    @! grep -nE '(:=|by|;|<;>|=>|\|)[[:space:]]*(sorry|admit)\b|\bnative_decide\b' *.lean || (echo "FAIL: forbidden tactic" && exit 1)
+    @! grep -nE '^[[:space:]]*axiom\b' *.lean || (echo "FAIL: user axiom declared" && exit 1)
     @echo "[falsify] build is green…"
     lake build
     @echo "[falsify] axiom audit contains no sorryAx…"
@@ -28,6 +28,9 @@ falsify:
     @lake build 2>&1 | grep -q "'Trope.Factorisation.phi0_hom' depends on axioms" || (echo "FAIL: D6b trivial-hom missing" && exit 1)
     @lake build 2>&1 | grep -q "'Trope.Factorisation.phi0_not_nontrivial' depends on axioms" || (echo "FAIL: D6b nontriviality-foil missing" && exit 1)
     @echo "[falsify] D6c — homomorphism is exhaustive over every fate pairing (phi_hom by cases × cases)…"
+    @echo "[falsify] R-2026-07-07 re-run — sighted hom + naive-candidate breaker are verified theorems…"
+    @lake build 2>&1 | grep -q "'Trope.FactorisationR.piR_sighted' depends on axioms" || (echo "FAIL: re-run sightedness witness missing" && exit 1)
+    @lake build 2>&1 | grep -q "'Trope.FactorisationR.phiId_not_hom' depends on axioms" || (echo "FAIL: re-run naive-candidate breaker missing" && exit 1)
     @echo "[falsify] PASS — sorry-free, axiom-clean, green; both falsifier witnesses live."
 
 # Print the axiom dependencies of every deliverable theorem (expect propext/Quot.sound
@@ -37,12 +40,19 @@ axioms:
 
 # Surface the three-way verdict's load-bearing theorems by name.
 verdict:
-    @echo "Verdict (B) FACTORS but VERIDICALITY-BLIND — evidence:"
+    @echo "PRE-RATIFICATION verdict (B) FACTORS but VERIDICALITY-BLIND — evidence:"
     @echo "  exists (factors)      : pi_hom, pi_one, piHom, pi_nontrivial"
     @echo "  not (A) (forced blind): forced_collapse, no_veridicality_faithful_hom"
     @echo "  not (C) (hom exists)  : pi_hom + pi_nontrivial"
     @echo "  D2 breaker (candidate): phiV_not_hom, piV_not_hom"
     @echo "  D5 complement (F2)    : pi_blind_to_noncomm, grade_F2_noncomm, pi_collapses_F2"
+    @echo ""
+    @echo "RATIFIED re-run (R-2026-07-07, issue #29) verdict (B') FACTORS AND VERIDICALITY-SIGHTED:"
+    @echo "  exists (factors)      : piR_hom, piR_one, piRHom, piR_nontrivial, piR_surjective"
+    @echo "  sighted (verdict flip): phiR_sighted, piR_sighted  (Dropped ↦ ∞ vs Falsified ↦ ⊤)"
+    @echo "  collapse that remains : phiR_collapses_predicated_dropped (Predicated/Dropped ↦ ∞)"
+    @echo "  naive-candidate break : phiId_not_hom (atten ⊤ ▷ dropped)"
+    @echo "  forced trade-off      : sighted_forces_squash (sightedness ⇒ payload-top squash)"
 
 clean:
     lake clean

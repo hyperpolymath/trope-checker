@@ -6,8 +6,9 @@
 |||
 ||| Each coordinate has exactly one DECEPTIVE inhabitant (Falsified for fate,
 ||| Misbound for bond, Conflated for merge): the BOTTOM of its order (worst
-||| retention) and absorbing under ▷, so a deceptive grade fails every honest
-||| floor and never composes away (calculus §3.3, HC-2). Provenance tags on Fused are erased here
+||| retention) and absorbing under ▷ — TWO-SIDEDLY on fate since R-2026-07-07 (A1)
+||| — so a deceptive grade fails every honest floor and never composes away
+||| (calculus §3.3, HC-2). Provenance tags on Fused are erased here
 ||| (they are metadata; they do not affect the lattice laws) — the executable
 ||| checker (src/checker) carries them.
 module Trope.Coords
@@ -20,8 +21,12 @@ import Trope.Fidelity
 
 
 --------------------------------------------------------------------------------
--- Coordinate 1: field fate (calculus §3.1). NOT a chain: Predicated is below
--- every Atten and INCOMPARABLE to Dropped (the duck check). Atten carries the
+-- Coordinate 1: field fate (calculus §3.1, as amended by R-2026-07-07 (A2)).
+-- A CHAIN: Falsified ⊏ Dropped ⊏ Predicated ⊏ Atten(Unknown) ⊏ … ⊏ Atten(Q 0)
+-- ⊏ Present. The duck check survives in the form that matters: Predicated stays
+-- strictly below every Atten, so a floor of Atten δ still rejects the checkbox
+-- AND the dropped field; what R-2026-07-07 (A2) adds is only Dropped ⊑ Predicated
+-- (a checkbox retains at least as much as nothing at all). Atten carries the
 -- fidelity δ; Falsified is the deceptive dual (false value).
 --------------------------------------------------------------------------------
 public export
@@ -37,14 +42,24 @@ data Fate : Type where
   ||| deceptive dual: a value asserted faithful that is in fact false
   Falsified : Fate
 
-||| Fate composition ▷ (calculus §4.1). Matches the FIRST argument fully (no
-||| second-argument wildcards) so the laws below reduce by computation. Falsified
-||| and Dropped are left-absorbing; Present is the unit; Atten ▷ Atten adds loss
-||| tropically; collapse (Predicated) subsumes prior fidelity loss.
+||| Fate composition ▷ (calculus §4.1, as amended by R-2026-07-07 (A1)).
+||| Falsified is a TWO-SIDED zero: it absorbs from the left, and — per
+||| R-2026-07-07 (A1) — an upstream Dropped no longer erases a downstream lie
+||| (Dropped ▷ Falsified = Falsified), so no composition order launders
+||| deception (L5 strengthened). Dropped absorbs every other right operand;
+||| Present is the unit; Atten ▷ Atten adds loss tropically; collapse
+||| (Predicated) subsumes prior fidelity loss. With (A1) composition is
+||| commutative and ⊑-monotone in both arguments (Trope.Soundness.fateL4Mono*).
+||| Clauses are fully explicit (bar the left-absorbing Falsified head) so the
+||| laws below reduce by computation.
 public export
 fateCompose : Fate -> Fate -> Fate
 fateCompose Falsified  _          = Falsified
-fateCompose Dropped    _          = Dropped
+fateCompose Dropped    Falsified  = Falsified   -- R-2026-07-07 (A1): the lie survives the drop
+fateCompose Dropped    Present    = Dropped
+fateCompose Dropped    (Atten _)  = Dropped
+fateCompose Dropped    Predicated = Dropped
+fateCompose Dropped    Dropped    = Dropped
 fateCompose Present    f          = f
 fateCompose (Atten d1) Falsified  = Falsified
 fateCompose (Atten d1) Dropped    = Dropped
@@ -57,9 +72,12 @@ fateCompose Predicated Present    = Predicated
 fateCompose Predicated (Atten _)  = Predicated
 fateCompose Predicated Predicated = Predicated
 
-||| Fate retention order ⊑ (calculus §3.1): Present top; Atten chain by δ;
-||| Predicated below every Atten and incomparable to Dropped; Falsified the
-||| bottom (worst), so every honest floor fails against it.
+||| Fate retention order ⊑ (calculus §3.1, as amended by R-2026-07-07 (A2)):
+||| a CHAIN — Present top; Atten segment ordered by δ; Predicated below every
+||| Atten; Dropped below Predicated (A2: a checkbox retains at least as much as
+||| nothing at all — the converse stays False, so a floor of Predicated still
+||| rejects Dropped); Falsified the bottom (worst), so every honest floor fails
+||| against it.
 public export
 fateLte : Fate -> Fate -> Bool
 fateLte Falsified _          = True
@@ -73,7 +91,7 @@ fateLte Predicated (Atten _)  = True
 fateLte Predicated Predicated = True
 fateLte Predicated Dropped    = False
 fateLte Dropped    (Atten _)  = True
-fateLte Dropped    Predicated = False
+fateLte Dropped    Predicated = True    -- R-2026-07-07 (A2): a checkbox ⊒ nothing
 fateLte Dropped    Dropped    = True
 
 public export
@@ -127,16 +145,38 @@ fateLteRefl Predicated = Refl
 fateLteRefl Dropped    = Refl
 fateLteRefl Falsified  = Refl
 
-||| L1: fate composition is associative. Left-absorbing heads (Falsified,
-||| Dropped, Present) close in one clause each; the all-Atten case needs
-||| dplusAssoc; the rest reduce by computation.
+||| L1: fate composition is associative — including through the R-2026-07-07 (A1)
+||| clause (Dropped ▷ Falsified = Falsified). Left-absorbing heads (Falsified,
+||| Present) close in one clause each; Dropped heads split on the tail since
+||| Dropped ▷ Falsified now differs from Dropped ▷ (honest); the all-Atten case
+||| needs dplusAssoc; the rest reduce by computation.
 export
 fateAssoc : (a, b, c : Fate) -> fateCompose a (fateCompose b c) = fateCompose (fateCompose a b) c
 fateAssoc Falsified b c = Refl
-fateAssoc Dropped b c = Refl
+fateAssoc Dropped Falsified c = Refl
+fateAssoc Dropped Present c = Refl
+fateAssoc Dropped (Atten d2) Falsified = Refl
+fateAssoc Dropped (Atten d2) Present = Refl
+fateAssoc Dropped (Atten d2) (Atten d3) = Refl
+fateAssoc Dropped (Atten d2) Predicated = Refl
+fateAssoc Dropped (Atten d2) Dropped = Refl
+fateAssoc Dropped Predicated Falsified = Refl
+fateAssoc Dropped Predicated Present = Refl
+fateAssoc Dropped Predicated (Atten d3) = Refl
+fateAssoc Dropped Predicated Predicated = Refl
+fateAssoc Dropped Predicated Dropped = Refl
+fateAssoc Dropped Dropped Falsified = Refl
+fateAssoc Dropped Dropped Present = Refl
+fateAssoc Dropped Dropped (Atten d3) = Refl
+fateAssoc Dropped Dropped Predicated = Refl
+fateAssoc Dropped Dropped Dropped = Refl
 fateAssoc Present b c = Refl
 fateAssoc (Atten d1) Falsified c = Refl
-fateAssoc (Atten d1) Dropped c = Refl
+fateAssoc (Atten d1) Dropped Falsified = Refl
+fateAssoc (Atten d1) Dropped Present = Refl
+fateAssoc (Atten d1) Dropped (Atten d3) = Refl
+fateAssoc (Atten d1) Dropped Predicated = Refl
+fateAssoc (Atten d1) Dropped Dropped = Refl
 fateAssoc (Atten d1) Present c = Refl
 fateAssoc (Atten d1) (Atten d2) Present = Refl
 fateAssoc (Atten d1) (Atten d2) Falsified = Refl
@@ -149,7 +189,11 @@ fateAssoc (Atten d1) Predicated Dropped = Refl
 fateAssoc (Atten d1) Predicated (Atten d3) = Refl
 fateAssoc (Atten d1) Predicated Predicated = Refl
 fateAssoc Predicated Falsified c = Refl
-fateAssoc Predicated Dropped c = Refl
+fateAssoc Predicated Dropped Falsified = Refl
+fateAssoc Predicated Dropped Present = Refl
+fateAssoc Predicated Dropped (Atten d3) = Refl
+fateAssoc Predicated Dropped Predicated = Refl
+fateAssoc Predicated Dropped Dropped = Refl
 fateAssoc Predicated Present c = Refl
 fateAssoc Predicated (Atten d2) Present = Refl
 fateAssoc Predicated (Atten d2) Falsified = Refl

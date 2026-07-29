@@ -18,11 +18,14 @@
 --  * For the grade-COMPOSING operations (the effect formers g ▷ atom, and any
 --    effect-sequencing a richer operational semantics would add) the boundary is
 --    respected in the CLOSURE sense established in TB.Tier: deceptive stays
---    deceptive (L5 irreversibility, dynamic), the cancellative core stays in the
---    core. The naive single-tier meet-homomorphism FAILS (TB.Tier.fate-tier-
---    meet-hom-fails) — an F2×F4 finding — which is exactly why preservation is
---    closure, not homomorphism, and why the ⊑/L4 route is forbidden
---    (TB.Tier.fate-L4-fails).
+--    deceptive (L5 irreversibility, dynamic — two-sided since R-2026-07-07 (A1)),
+--    the cancellative core stays in the core. The naive single-tier
+--    meet-homomorphism STILL FAILS on the ratified carrier
+--    (TB.Tier.fate-tier-meet-hom-fails, new witness: collapse discards the
+--    deceptive fidelity-unknown inside atten) — which is why preservation is
+--    closure, not homomorphism. (The historical L4 tripwire fate-L4-fails is
+--    RETIRED: L4 holds on the ratified carrier, TB.Order.fateL4Mono{R,L};
+--    exact grade preservation remains the stronger property used here.)
 --
 --  * fix / lfp (calculus §7) is NOT-REACHED. See the precise statement at the
 --    foot of this module. No postulate is introduced for it.

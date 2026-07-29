@@ -14,6 +14,8 @@
 #   passive — normal-mode reporting only: summarise repo state; no pretend-run forensics.
 #   ignore  — skip this repo entirely; do not even scan.
 
+name = "rhodibot"  # identity (a2ml validate: required)
+
 schema_version = "1.0"
 directive_type = "bot-directive"
 bot = "rhodibot"

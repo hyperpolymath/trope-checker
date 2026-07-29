@@ -77,7 +77,28 @@ else
 fi
 
 # Coq/Lean dangerous patterns
-DANGEROUS_PROOF=$(grep -rn '\bAdmitted\b\|\bsorry\b\|\bunsafeCoerce\b\|\bObj\.magic\b' src/ verification/ 2>/dev/null | grep -v "test" | grep -v "comment" || true)
+# Scan PROOF SOURCE ONLY, and ignore comment lines.
+#
+# The previous form grepped all of src/ and verification/ and excluded only
+# paths containing "test" or "comment". That flagged (measured 2026-07-29):
+#   * verification/proofs/INTEGRATION-REPORT.adoc -- PROSE describing the
+#     convention: 'no `believe_me`', 'NO `Admitted`', 'keeps catching genuine
+#     postulate/sorry/Admitted constructs'
+#   * .lean and .agda files whose only match is the phrase "sorry-free", in a
+#     comment, ASSERTING THE OPPOSITE of what this check looks for.
+#
+# So it failed the repo for documenting that it is clean. Now: proof source
+# extensions only, comment lines stripped, and `sorry` must not be part of
+# `sorry-free`.
+DANGEROUS_PROOF=$(
+  for f in $(find src verification -type f \
+               \( -name '*.v' -o -name '*.lean' -o -name '*.agda' \
+                  -o -name '*.idr' -o -name '*.thy' -o -name '*.rs' -o -name '*.zig' \) 2>/dev/null); do
+    awk -f tests/lib/strip-proof-comments.awk "$f" 2>/dev/null \
+      | grep -nE '\bAdmitted\b|\bsorry\b|\bunsafeCoerce\b|\bObj\.magic\b' \
+      | sed "s|^|$f:|"
+  done || true
+)
 if [ -n "$DANGEROUS_PROOF" ]; then
     fail "Dangerous proof patterns found:"
     echo "$DANGEROUS_PROOF" | head -5

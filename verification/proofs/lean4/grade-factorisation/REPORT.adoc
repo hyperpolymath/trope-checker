@@ -15,6 +15,14 @@ toc::[]
 
 *(B) FACTORS but VERIDICALITY-BLIND.*
 
+IMPORTANT: *Provenance (R-2026-07-07, ADR 0004).* The verdict above, and
+everything down to the re-run section at the foot of this report, was proved
+against the *pre-ratification* carrier (non-commutative fate coordinate, with
+`Dropped ▷ Falsified = Dropped`). It remains a correct theorem about that
+carrier. Under the *ratified* carrier the answer changes: see
+<<rerun-ratified,Re-run under the ratified carrier (R-2026-07-07)>> — verdict
+*(B′) FACTORS AND VERIDICALITY-SIGHTED*.
+
 A nontrivial monoid homomorphism `π : (Grade, ▷, ε) → (Δ, +, Q 0)` onto the
 commutative tropical fidelity carrier `Δ = WithTop (WithTop ℕ)` *exists* and is *proved
 green* (`pi_hom`, `pi_one`, the bundled `piHom : Grade →* Multiplicative Δ`,
@@ -255,3 +263,81 @@ remains parked behind *CO-1 (an operational model)*, together with O4 (the limit
 carrier), admissibility, Scott-continuity, and `fix`/`lfp`. None of those is touched,
 addressed, or implied here. The fixpoint is *not* solved, handled, or addressed by this
 work.
+
+[#rerun-ratified]
+== Re-run under the ratified carrier (R-2026-07-07)
+
+_Appended 2026-07-07 (issue #29). The historical verdict above is untouched and
+remains correct — about the pre-ratification carrier. This section re-runs the
+same question against the *ratified* carrier of ADR 0004 (amendments A1/A2;
+fate coordinate = `Trope.FateA` of `grade-boundary/L4Monotonicity.lean`, grade
+monoid = `Trope.GradeR` of `grade-boundary/GradeRatified.lean`)._
+
+Lean development: `GradeFactorisationR.lean` (this subproject; sorry-free,
+axiom-clean, wired into `just falsify`).
+
+=== Verdict
+
+*(B′) FACTORS AND VERIDICALITY-SIGHTED.*
+
+A nontrivial monoid homomorphism
+`πR : (GradeR, ▷, ε) → (Δ, +, Q 0)` exists (`piR_hom`, `piR_one`, bundled
+`piRHom : GradeR →* Multiplicative Δ`, `piR_nontrivial`, `piR_surjective`) *and
+it distinguishes the honest `Dropped` from the deceptive `Falsified`*
+(`phiR_sighted`, `piR_sighted`):
+
+[cols="1,1,2",options="header"]
+|===
+| Constructor | Cost | Note
+| `Present`    | `Q 0` (= 0)  | forced by the unit law
+| `Atten d`    | `squash d`   | payload read-off with the deceptive top squashed: `⊤ ↦ ∞`, identity elsewhere (see the forced trade-off below)
+| `Predicated` | `∞` (`total`) | honest collapse
+| `Dropped`    | `∞` (`total`) | honest withholding — *kept apart from deception*
+| `Falsified`  | `⊤` (`unknown`) | the deceptive top
+|===
+
+`Dropped ↦ ∞` vs `Falsified ↦ ⊤`, and `∞ ≠ ⊤` (`total_ne_unknown`). What still
+collapses: `Predicated`/`Dropped`/honest-total-loss all land on `∞`
+(`phiR_collapses_predicated_dropped`) — the hom is blind to *which honest*
+absorber acted, no longer to *whether* the absorber was honest.
+
+*Conclusion: the veridicality-blindness of the historical verdict (B) was an
+artifact of the pre-ratification carrier.* The forcing argument
+(`forced_collapse_general`) ran through the non-commuting pair
+`dropped ▷ falsified = dropped` / `falsified ▷ dropped = falsified`; (A1)
+replaced the first clause with `dropped ▷ falsified = falsified`, the pair now
+commutes (the whole ratified algebra does — `GradeR` is a `CommMonoid`), and
+the separation `π(D) + π(F) = π(F)` is satisfiable with `∞ + ⊤ = ⊤`.
+
+=== Honest reporting: where the brief's naive candidate breaks, and the forced repair
+
+The issue-#29 candidate reads the attenuation payload verbatim
+(`atten d ↦ d`). That map is *not* a homomorphism on the ratified carrier:
+`phiId_not_hom` is a verified breaker at `atten ⊤ ▷ dropped = dropped`, where
+the law would need `∞ = ⊤ + ∞ = ⊤`. The repair — squash the deceptive payload
+top inside attenuation (`squash : ⊤ ↦ ∞`, identity elsewhere; an additive
+monoid endomorphism of `Δ`, `squash_add`/`squash_zero`) — is not ad hoc:
+`sighted_forces_squash` proves *every* multiplicative `f : Fate → Δ` on the
+ratified composition with `f dropped ≠ f falsified` must have
+`f (atten ⊤) ≠ ⊤`. So fate-axis sightedness necessarily costs payload-top
+sightedness (`atten ∞` and `atten ⊤` become indistinguishable to the cost).
+The two veridicality axes — fate-level and payload-level — cannot both ride in
+one commutative coordinate; post-ratification, either one *can*, which is
+exactly what was impossible for the fate axis before.
+
+=== Axiom audit
+
+All re-run theorems depend on at most `propext`, `Classical.choice`,
+`Quot.sound` — no `sorryAx`, no user axiom, no `native`-evaluator `decide`
+bypass. `just falsify` additionally asserts `piR_sighted` and `phiId_not_hom`
+are live verified theorems.
+
+=== Reproduction
+
+[source,sh]
+----
+cd verification/proofs/lean4/grade-factorisation
+just build      # builds both the historical probe and the R-2026-07-07 re-run
+just falsify    # sorry-free, axiom-clean; historical + re-run witnesses live
+just verdict    # names the load-bearing theorems for (B) and (B′)
+----

@@ -18,6 +18,9 @@
 #            Non-gating — this is a report, not a gate. See the `must`
 #            contractile for hard gates.
 
+name = "intentfile"  # identity (a2ml validate: required)
+version = "0.1.0"  # a2ml validate
+
 @abstract:
 GENERIC TEMPLATE: North-star contractile. Replace all content below
 with project-specific intents and wishes. This file declares what

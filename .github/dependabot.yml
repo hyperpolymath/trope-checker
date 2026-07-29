@@ -50,8 +50,3 @@ updates:
     schedule:
       interval: "weekly"
 
-  # Nix flakes
-  - package-ecosystem: "nix"
-    directory: "/"
-    schedule:
-      interval: "weekly"

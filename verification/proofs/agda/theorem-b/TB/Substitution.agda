@@ -3,34 +3,33 @@
 -- SPDX-License-Identifier: MPL-2.0
 --
 -- Theorem B, Target 2 — substitution-admissibility / reindexing: "tropes follow
--- values through cut". The CORE lemma.
+-- values through cut". The CORE lemma. MIGRATED to the ratified carrier
+-- (R-2026-07-07 (A1), ADR 0004).
 --
--- RESULT (honest, two halves divided exactly by F2):
+-- RESULT:
 --
 --  PROVED  (value substitution, grade-EXACT). Substitution by ε-graded terms
 --          (values) preserves the host grade g EXACTLY. The substitution lemma
 --          `subst : Subst Γ Δ → Γ ⊢ A ! g → Δ ⊢ A ! g` IS this statement: the
---          output grade is the SAME g, with no ▷-reorder anywhere. It is
---          insensitive to F2 precisely because a value carries ε, and ε is a
---          two-sided unit of ▷ (gmonoid-unitL/R), so non-commutativity is inert.
---          This is the machine-checked form of "tropes follow values through cut".
+--          output grade is the SAME g, with no ▷-reorder anywhere — a value
+--          carries ε, and ε is a two-sided unit of ▷ (gmonoid-unitL/R).
+--          This is the machine-checked form of "tropes follow values through
+--          cut". It is UNTOUCHED by the amendments.
 --
---  REFUTED (symmetric computational cut). The `let`/bind seam composes grades in
---          ONE fixed orientation g₁ ▷ g₂ (bound-effect first). The mirror
---          orientation g₂ ▷ g₁ is FALSE on the nose; the disproof is the F2
---          witness (dropped/falsified) transported to the cut. So the value
---          lemma is SHARP: it cannot be generalised to an orientation-free
---          computational substitution. This is the precise F2 boundary — not a
---          gap in the proof, but a theorem about what the structure forbids.
+--  HISTORICAL (retired by R-2026-07-07 (A1)): on the PRE-ratification carrier
+--          the mirror orientation of the cut seam was REFUTED on the nose
+--          (`cut-orientation-matters` / `cut-symmetric-fails`, witnessed at
+--          the F2 pair dropped/falsified). (A1) removed the sole
+--          non-commuting clause, so those were theorems of the OLD carrier
+--          only; they are REPLACED by `cut-grade-comm` below. The seam still
+--          composes in ONE fixed orientation g₁ ▷ g₂ (CBV, bound-effect
+--          first) — now a convention, no longer a semantic necessity.
 
 module TB.Substitution where
 
-open import Data.Product.Base using (Σ; ∃; _×_) renaming (_,_ to _,,_)
-open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; refl; cong)
-open import Relation.Nullary using (¬_)
+open import Relation.Binary.PropositionalEquality using (_≡_)
 
 open import TB.Grade
-open import TB.Order using (_⊑_)
 open import TB.Syntax
 
 --------------------------------------------------------------------------------
@@ -98,22 +97,20 @@ cut-preserves-grade : ∀ {Γ B A g} → (Γ , B) ⊢ A ! g → Γ ⊢ B ! ε �
 cut-preserves-grade d v = d [ v ]
 
 --------------------------------------------------------------------------------
--- The cut's ORIENTATION (the F2 boundary). The `let` seam composes g₁ ▷ g₂
--- (bound-effect first). The symmetric orientation is refuted.
+-- The cut's ORIENTATION. The `let` seam composes g₁ ▷ g₂ (bound-effect first).
+-- R-2026-07-07 (A1): the grade monoid is now COMMUTATIVE, so the orientation
+-- is a CONVENTION (CBV), not a semantic necessity. HISTORICAL: on the
+-- pre-ratification carrier the swapped orientation was refuted
+-- (`cut-orientation-matters` / `cut-symmetric-fails`, the F2 witness
+-- dropped/falsified transported to the cut) — retired with F2 by ADR 0004.
 --------------------------------------------------------------------------------
 
 -- The left-oriented cut grade is definitional: `letc` at g₁ ▷ g₂.
 cut-left-grade : ∀ {Γ A B g₁ g₂} → Γ ⊢ A ! g₁ → (Γ , A) ⊢ B ! g₂ → Γ ⊢ B ! (g₁ ▷ g₂)
 cut-left-grade d e = `letc d e
 
--- REFUTATION: the cut grade is NOT reorderable — there are computations whose
--- forward composition g₁ ▷ g₂ differs from the swapped g₂ ▷ g₁ (F2). Witnessed
--- at the two disagreeing absorbing fate heads (dropped / falsified).
-cut-orientation-matters : Σ Grade (λ g₁ → Σ Grade (λ g₂ → (g₁ ▷ g₂) ≢ (g₂ ▷ g₁)))
-cut-orientation-matters = gA ,, gB ,, λ eq → dropped≢falsified (cong fQuality eq)
-
--- The general "symmetric computational cut" law is uninhabited: one cannot have
--- a substitution principle that composes grades in EITHER order. (= grade-not-comm,
--- restated as the Target-2 sharpness theorem.)
-cut-symmetric-fails : ¬ (∀ (g₁ g₂ : Grade) → g₁ ▷ g₂ ≡ g₂ ▷ g₁)
-cut-symmetric-fails = grade-not-comm
+-- On the ratified carrier the cut grade IS reorderable: the two orientations
+-- of the seam agree (TB.Grade.grade-comm, mirroring Lean FateA.comp_comm
+-- lifted to grades). Replaces the retired refutations.
+cut-grade-comm : ∀ (g₁ g₂ : Grade) → g₁ ▷ g₂ ≡ g₂ ▷ g₁
+cut-grade-comm = grade-comm
