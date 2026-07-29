@@ -1,5 +1,5 @@
 <!--
-SPDX-License-Identifier: MPL-2.0
+SPDX-License-Identifier: CC-BY-SA-4.0
 Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 -->
 # Changelog
@@ -13,3 +13,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- Run: just changelog -->
 
 ## [Unreleased]
+
+### Changed
+
+- **IR 0.2 — A3 `Attenuated(0)` ingest normalization (R-2026-07-07-03, ADR 0004, #28).**
+  Both checkers (Idris2 reference, Rust fast-core) rewrite `Attenuated(0)` to `Present` at
+  the IR ingest boundary, before grading (edge grades and floors alike); the verified core's
+  algebra is untouched. The bundled semantic version bump `0.1` → `0.2` covers all of
+  R-2026-07-07 (A1 two-sided deceptive zeros, A2 chain retention order, A3): wire format
+  unchanged, verdict semantics changed. Both `"0.1"` and `"0.2"` documents are accepted and
+  graded identically under 0.2 semantics; any other `version` is a validation fault.
+  New conformance fixtures prove `Atten(0)` ≡ `Present` (identical verdict + witness) and
+  0.1 back-compat; `spec/trope-ir.adoc` gains a "Changes from 0.1" section.
+
+### Added
+
+- **Grade-algebra ground truth (Lean 4 + Mathlib).** `verification/proofs/lean4/grade-boundary/`:
+  a sorry-free, axiom-clean (`propext`/`Quot.sound` only) formalisation of the honest/deceptive
+  cancellation boundary — the non-commutative product monoid, full-carrier conicality, and the
+  three-tier strict cancellation boundary (cancellation only on the finite-fidelity core).
+- **Theorem B — calculus metatheory (Agda, `--safe --without-K`, zero postulates).**
+  `verification/proofs/agda/theorem-b/`: intrinsic graded calculus; grade-exact value substitution;
+  subject reduction for β/let (`fix`/lfp open); Honest Generation (HC-3). Records the F2 result that
+  symmetric cut is impossible and the F2×F4 result that tier-preservation is closure, not a homomorphism.
+- **Spec v0.2 draft addendum.** `spec/calculus-v0.2-draft.adoc`: obligations `R-2026-06-23-01..04`
+  binding each proved fact to its governing Lean theorem; does not edit v0.1.
+- **Integration report.** `verification/proofs/INTEGRATION-REPORT.adoc`: the unified
+  R-id ↔ Lean ↔ Agda ↔ status table, the convergence analysis (central open problem CO-1: no
+  operational model for `fix`/routing, gated by O4), and the divergence adjudication.
+- **Proposal.** `docs/proposals/panic-attack-signed-suppression.adoc`: an unforgeable, auto-stale
+  signed-waiver design to replace forgeable inline suppression markers.
+- **Tropical factorisation probe (Lean 4 + Mathlib).** `verification/proofs/lean4/grade-factorisation/`:
+  imports the grade-boundary carrier (no redefinition) and decides, purely algebraically, whether the
+  grade admits a homomorphic projection onto a commutative tropical cost. Verdict **(B) factors but
+  veridicality-blind** — a nontrivial monoid homomorphism onto commutative `Δ` exists, but every
+  multiplicative map into any commutative monoid is forced to identify honest `dropped` with deceptive
+  `falsified`; the blindness is co-located with the fate-axis non-commutativity (bond/merge deception
+  stays separable). Sorry-free; axiom-clean. A **precondition only** — does not touch CO-1. Tracked
+  next stage: issue #10.
+- **Justfile recipes** `build-lean`, `build-agda`, `verify-all` (`build/just/proofs.just`); `build-lean`
+  and the `verify-all` honesty gate now cover both Lean developments (grade-boundary + grade-factorisation).
+
+### Changed
+
+- `proof-scan-dangerous` is now **comment-aware** (strips comments before matching, excludes vendored
+  `.lake/`/`_build/`) — verified to still catch genuine `postulate`/`sorry`/`Admitted`/`believe_me`
+  constructs. Fixes long-standing false positives on honest convention prose.
+- `docs/status/PROOF-STATUS.adoc`, `AFFIRMATION.adoc`, `AUDIT.adoc`, and the READMEs updated for the
+  new developments and the central open problem.
+- `.gitignore` now excludes `.lake/` (Lean build artifacts + vendored Mathlib clones).

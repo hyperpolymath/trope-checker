@@ -51,11 +51,6 @@ __pycache__/
 /obj/
 /bin/
 
-# Nix
-# flake.lock is ignored in the template repo because each project should
-# generate its own lock file on first use. In derived projects, REMOVE this
-# line and track flake.lock for reproducible builds.
-flake.lock
 
 # Haskell
 /.stack-work/
@@ -123,6 +118,16 @@ dist/
 # ...but never track Idris2 typecheck output. `idris2 --typecheck abi.ipkg`
 # writes compiled .ttc/.ttm under build/ttc/; these are generated artifacts.
 /build/ttc/
+
+# Lean 4 / Lake build artifacts and vendored packages. `.lake/` holds compiled
+# .olean/.ilean/.c/.trace outputs AND embedded clones of Mathlib/aesop/batteries
+# (their own git repos) — never track it; the pin lives in lake-manifest.json +
+# lean-toolchain, which ARE tracked.
+.lake/
+*.olean
+*.ilean
+# Agda typecheck interface files (the _build/ dir is already ignored above).
+*.agdai
 
 # Rust fast-core build output
 src/rust/target/

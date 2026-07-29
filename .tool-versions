@@ -6,5 +6,10 @@
 # elixir 1.18.0
 # erlang 27.2
 # zig 0.14.0
-# idris2 0.7.0
 rust nightly
+
+# The verified core REQUIRES Idris 2 0.8.0: under 0.7.0,
+# verification/proofs/idris2/Trope/Fidelity.idr:72 fails to parse at the
+# lambda-impossible clause `No (\Refl impossible)`. CI pins the same version
+# by image digest in .github/workflows/trope-check.yml.
+idris2 0.8.0

@@ -7,6 +7,8 @@
 #
 # Reference: ADR-002 in standards/agentic-a2ml/docs/
 
+name = "methodology"  # identity (a2ml validate: required)
+
 [metadata]
 version = "1.0.0"
 last-updated = "2026-06-22"
@@ -55,7 +57,7 @@ perfective = 10   # % for SPDX headers, doc updates, formatting, style
 # Customise this per project — the template default is generic.
 
 [methodology.unique-strength]
-description = "{{PROJECT_UNIQUE_STRENGTH}}"
+description = "Robustness"
 deepen-not-broaden = true
 
 # ============================================================================
@@ -101,7 +103,7 @@ constraints = [
 # These rules detect corrupt/template/stale state files.
 
 [methodology.state-validation]
-reject-if-contains = ["{{PLACEHOLDER}}", "TROPE_CHECKER", "rsr-template-repo"]
+reject-if-contains = ["REMOVED", "TROPE_CHECKER", "rsr-template-repo"]
 reject-if-project-name-mismatch = true
 staleness-threshold-days = 90
 fallback-files = ["TODO.md", "TODO.adoc", "ROADMAP.adoc", "README.adoc"]

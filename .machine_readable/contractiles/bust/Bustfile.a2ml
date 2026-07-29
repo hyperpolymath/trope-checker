@@ -16,6 +16,9 @@
 # This repository: rsr-template-repo is the canonical template for RSR compliance.
 # Failure modes here relate to template distribution and substitution.
 
+name = "bustfile"  # identity (a2ml validate: required)
+version = "0.1.0"  # a2ml validate
+
 @abstract:
 Bustfile for rsr-template-repo. Lists failure modes specific to the template
 repository itself, particularly around template distribution, substitution,

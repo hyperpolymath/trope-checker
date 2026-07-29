@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MPL-2.0
+// SPDX-License-Identifier: CC-BY-SA-4.0
 // Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 = Formal Verification Proofs
 
@@ -9,6 +9,8 @@ This directory contains formal proofs organised by proof assistant.
 [source]
 ----
 proofs/
+├── INTEGRATION-REPORT.adoc  # Theorem B reconciliation: unified R-id↔Lean↔Agda↔status
+│                            #   table, the central open problem, divergence adjudication
 ├── idris2/          # Idris2 proofs (ABI, dependent types)
 │   ├── ABI/         # ABI-specific proofs (mandatory)
 │   │   ├── Pointers.idr    # Non-null pointer safety
@@ -18,9 +20,15 @@ proofs/
 │   │   └── Compliance.idr  # C ABI compliance
 │   └── Types.idr    # Core data type well-formedness
 ├── lean4/           # Lean4 proofs (algebra, lattices)
-│   └── ApiTypes.lean
+│   ├── ApiTypes.lean
+│   ├── grade-boundary/      # grade-algebra GROUND TRUTH: the honest/deceptive cancellation
+│   │                        #   boundary (Lean 4 + Mathlib; sorry-free; propext/Quot.sound only)
+│   └── grade-factorisation/ # tropical factorisation probe: imports the carrier; verdict (B)
+│                            #   factors but veridicality-blind (precondition only; not CO-1)
 ├── agda/            # Agda proofs (induction, metatheory)
-│   └── Properties.agda
+│   ├── Properties.agda
+│   └── theorem-b/           # Theorem B: calculus metatheory over the grade algebra
+│                            #   (Agda --safe --without-K; zero postulates)
 ├── coq/             # Coq proofs (type systems, compilation)
 │   └── TypeSafety.v
 └── tlaplus/         # TLA+ specs (distributed protocols)
@@ -31,11 +39,19 @@ proofs/
 
 [source,bash]
 ----
-just proof-check-all       # Run all proof checkers
+just proof-check-all       # Run all proof checkers (per-file scan + dangerous-pattern scan)
 just proof-check-idris2    # Idris2 only
 just proof-check-lean4     # Lean4 only
 just proof-check-agda      # Agda only
 just proof-check-coq       # Coq only
+
+# The two pinned developments need a real build (lake+Mathlib / an All.agda entry),
+# not a bare per-file check — use these:
+just verify-all            # grade-boundary + grade-factorisation (Lean) + Theorem B (Agda): build + honesty gate
+just build-lean            # both Lean harnesses (grade-boundary + grade-factorisation) + axiom audits
+just build-agda            # Agda Theorem B (--safe --without-K)
+# the probe also has its own subproject harness:
+( cd lean4/grade-factorisation && just falsify )   # sorry-free, axiom-clean, falsifier witnesses live
 ----
 
 == Banned Patterns
@@ -49,12 +65,17 @@ The following MUST NOT appear in any proof file:
 - `Admitted` (Coq)
 - `unsafeCoerce` (Haskell)
 
-CI enforces this via `panic-attack assail --proofs-only`.
+These are banned as *real constructs*, not as words: the authoritative guarantees are
+the provers themselves (`agda --safe` rejects postulates/`trustMe`/`TERMINATING`; the
+Lean axiom audit rejects `sorryAx`), which cannot be evaded by comment tricks. The
+`just proof-scan-dangerous` lint is a *comment-aware* pre-filter (it strips comments
+before matching, so honest prose like "sorry-free" / "no postulate" is not flagged) and
+is advisory, not a CI gate. CI enforcement is `panic-attack assail`.
 
 == Adding New Proofs
 
-1. Choose the appropriate prover (see PROOF-NEEDS.md)
+1. Choose the appropriate prover (see `../../docs/status/PROOF-NEEDS.adoc`)
 2. Create the `.idr`/`.lean`/`.agda`/`.v`/`.tla` file in the right directory
 3. Ensure `%default total` (Idris2) or equivalent
 4. Run the verification command
-5. Update PROOF-STATUS.md
+5. Update `../../docs/status/PROOF-STATUS.adoc`

@@ -1,0 +1,391 @@
+// SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Theorem-B integration — reconciling the v0.2 spec addendum (A) and the Agda metatheory (B) against the Lean ground truth
+:revnumber: 1.0
+:revdate: 2026-06-23
+:toc: macro
+:sectnums:
+:sectnumlevels: 2
+:stem: latexmath
+
+[abstract]
+This report integrates two independently-produced work-streams into one coherent
+contribution, each measured against the same authoritative algebra:
+
+* *Ground truth* — `verification/proofs/lean4/grade-boundary/GradeBoundary.lean`
+  (Lean 4 v4.16.0 + Mathlib, sorry-free; `#print axioms` = `propext` / `Quot.sound`
+  only). *Authoritative; not modified.*
+* *Stream A* — `spec/calculus-v0.2-draft.adoc`: a v0.2 *spec addendum* lifting the
+  proved algebra into four dated normative obligations `R-2026-06-23-01..04`, with a
+  §7 claims-match-proofs table and three parked gaps OPEN-A/B/C.
+* *Stream B* — `verification/proofs/agda/theorem-b/` (Agda 2.8.0 + stdlib, `--safe
+  --without-K`, *zero postulates*): the deferred *calculus metatheory* (Theorem B),
+  four Targets over the same carrier.
+
+The two streams were *not* handed each other's conclusions; this report records
+where they *agree*, where they *converge on the same gap*, and where they might
+*diverge* — adjudicated against the Lean source, not against either paraphrase.
+
+toc::[]
+
+== Lead — what is proved, and what is still missing
+
+Stated plainly and first, before any finding:
+
+*Proved (machine-checked, both developments green):*
+
+* The grade is a *product monoid* (`Fate⁴ × Bond × Merge`), *degenerate-to-product*,
+  and *non-commutative* — Lean `instMonoid` + `grade_mul_not_comm`; Agda
+  `gmonoid-*` + `grade-not-comm`. (F1+F2 / R-2026-06-23-01.)
+* *Conicality on the full carrier* — Lean `grade_conical`; Agda `grade-conical`.
+  (F3 / R-2026-06-23-02.)
+* The *three-tier strict cancellation boundary*
+  stem:[\mathcal{C} \subsetneq \mathcal{H} \subsetneq \mathcal{G}]: cancellation
+  holds *only* on the finite-fidelity core, and fails on the honest-but-lossy and
+  the deceptive tiers alike — Lean `honest_fidelity_cancel` (core) +
+  `grade_not_leftCancel` (L5) + the absorbing/honest-not-cancel witnesses; Agda
+  `core-closed-▷`/`Q-cancelʳ`, the six `*-not-cancel`, `deceptive-absorbs-▷`.
+  (F4 / R-2026-06-23-03.)
+* The `Dropped`/`Total` *honest-not-deceptive* partition correction — both
+  developments; (R-2026-06-23-04).
+* *Value substitution is grade-exact* ("tropes follow values through cut") — Agda
+  `subst`/`cut-preserves-grade`. (Target 2.)
+* *Honest Generation* (HC-3): honesty is closed under the non-commutative ▷, so a
+  term built from the writable atoms can never produce a deceptive grade — Agda
+  `honest-closed-▷` + atom-honesty. (Target 4.)
+
+*Missing — stated up front, not relegated:*
+
+* *Theorem B Target 3 (subject reduction respecting the boundary) is PARTIAL, and
+  its goal is INCOMPLETE.* The β / let-value steps are PROVED (intrinsic SR at a
+  fixed grade index; the content is the unit-law grade-collapse `(ε ▷ ε) ▷ g ≡ g`
+  and `ε ▷ g ≡ g`, so no tier moves across a step). *`fix` / lfp subject reduction
+  is NOT-REACHED* — and *not postulated*. *We do not yet have full subject
+  reduction, and the calculus has no operational model.* The lfp grade endpoint is
+  already tier-stable; what is absent is the *dynamics* that would carry it.
+
+The two genuinely-interesting B results below — that *symmetric cut is impossible*
+and that *tier-preservation is closure, not a homomorphism* — are recorded as
+results in their own right (§5), at the *same register* as the gap. They do *not*
+compensate for the unreached fixpoint case, and must not be read as softening it.
+
+== The unified interface table — R-id ↔ Lean ↔ Agda ↔ status
+
+The single merge key. Every Lean name was confirmed to *exist* and to *state what A
+claims* by building the harness and auditing its `#print axioms` block (§6); every
+Agda name was confirmed by `agda --safe --without-K All.agda` (exit 0). B's
+*PARTIAL* and *NOT-REACHED* are recorded *truthfully*, not rounded up.
+
+[cols="2,1,3,3,2",options="header"]
+|===
+| Obligation (A) | Fact (B) | Lean theorem(s) — ground truth | Agda module / theorem (B) | Status
+
+| *R-2026-06-23-01*
+  non-commutative product monoid
+| F1+F2
+| `Grade.instMonoid` (degenerate-to-product); `Grade.grade_mul_not_comm`; witness `Fate.not_comm`
+| `TB.Grade.{gmonoid-assoc,gmonoid-unitL,gmonoid-unitR}`; `TB.Grade.grade-not-comm` (witness `gA`/`gB` = `dropped`/`falsified`)
+| *PROVED* (both)
+
+| *R-2026-06-23-02*
+  full-carrier conicality
+| F3
+| `Grade.grade_conical`; fieldwise `Fate.conical`, `Bond.conical`, `Merge.conical`
+| `TB.Grade.grade-conical`; `▷f-conical`, `▷b-conical`, `▷m-conical`
+| *PROVED* (both)
+
+| *R-2026-06-23-03*
+  three-tier strict cancellation boundary
+| F4
+| _core:_ `Grade.honest_fidelity_cancel`; _upper (L5):_ `Grade.grade_not_leftCancel`; _deceptive left-zeros:_ `Fate.falsified_absorbing`, `Bond.misbound_absorbing`, `Merge.conflated_absorbing`, `Delta.unknown_absorbing`; _honest-but-lossy:_ `Fate.predicated_honest_not_cancel`, `Bond.severed_honest_not_cancel`, `Grade.fidelity_total_honest_not_cancel`
+| _static F4:_ `TB.Grade.{falsified,dropped,misbound,conflated,unknown}-absorbL`; _dynamic F4 (`TB.Tier`):_ `deceptive-absorbs-▷`, `core-closed-▷`, `Q-cancelʳ`, `dTier-meet-hom`, six `*-not-cancel` witnesses
+| *Lean algebra PROVED; Agda static + dynamic F4 PROVED.* +
+  *Subject-reduction consequence PARTIAL* (see next two rows)
+
+| ⮡ R-2026-06-23-03 (β/let)
+| Target 3 core
+| (unit laws of `instMonoid`)
+| `TB.Reduction.{β-app,β-let}`, `β-redex-grade`, `let-redex-grade`, `β-tier-preserved`, `let-tier-preserved`
+| *PROVED* (intrinsic SR; tier preserved exactly across β/let)
+
+| ⮡ R-2026-06-23-03 (fix/lfp)
+| Target 3 fixpoint
+| — (the algebra's lfp endpoint `{total, unknown}` is ▷-fixed: `Delta.total_add_Q`, `Delta.unknown_absorbing`)
+| `TB.Reduction` — `fix`/lfp subject reduction, characterised but *not* built
+| *NOT-REACHED* (no postulate) — blocked on the CENTRAL OPEN PROBLEM (§4) + v0.1 O4
+
+| *R-2026-06-23-04*
+  `Dropped`/`Total` honest, not deceptive
+| partition correction
+| `Fate.dropped_absorbing`; `Grade.fidelity_total_honest_not_cancel`; `Delta.total_add_Q`, `Delta.total_add_unknown`; core embedding `Delta.Q_add`, `Delta.Q_injective`, `Delta.Q_zero`
+| `TB.Tier` classifiers (`dropped`/`total` → `honestLossy`, not `deceptive`); `dropped-honest-not-cancel`, `total-honest-not-cancel`; the grade-level `Deceptive` predicate excludes `dropped`/`total`
+| *PROVED* (both)
+|===
+
+*Not bound 1:1 to an A obligation, but part of B's development* (recorded so the
+table is complete, none inflated):
+
+[cols="2,3,2",options="header"]
+|===
+| B item | What it is | Status
+
+| `TB.Substitution.subst`, `cut-preserves-grade` | value substitution preserves the grade *exactly* (Target 2) | *PROVED*
+| `TB.Substitution.cut-symmetric-fails` (= `grade-not-comm`), `cut-orientation-matters` | symmetric computational cut is *impossible* — the F2 sharpness wall (Target 2) | *PROVED (refutation)* — see §5
+| `TB.Tier.fate-tier-meet-hom-fails` | single-tier meet-homomorphism is *false* on fate — an F2×F4 interaction (Target 3 substrate) | *PROVED (a finding)* — see §5
+| `TB.Tier.fate-L4-fails` (≡ Idris `Soundness.fateL4MonotonicityFails`) | strict L4 monotonicity *fails* on fate — a guard against routing tier-preservation through ⊑ | *PROVED (guard)*
+| `TB.Honest.honest-closed-▷` + atom-honesty | honesty closed under ▷ ⇒ deceptive grades unreachable from honest terms (HC-3, Target 4) | *PROVED*
+|===
+
+== Convergence — the central open problem (one hole, two faces)
+
+*Finding: OPEN-A and B's Target-3 NOT-REACHED are THE SAME underspecification,
+seen from the spec-authoring side and the proof side respectively. They are
+recorded here as ONE named central open problem, not two unrelated TODOs.*
+
+[cols="1,3",options="header"]
+|===
+| | Characterisation in its own words
+
+| *OPEN-A (Stream A, spec side)*
+| "The split / rejoin / routing operator is referenced but undefined." R-2026-06-23-03
+  constrains-in-advance the cancellability of a *lossless fractional split / rejoin /
+  routing* operator, "yet no such operator is defined in v0.1 or in the grade-boundary
+  harness. The obligation constrains an operation that does not yet exist."
+
+| *Target 3 NOT-REACHED (Stream B, proof side)*
+| Subject reduction through `fix`/lfp is not reached, and *not postulated*. "Two
+  things are genuinely missing: (1) an *operational model* — there is no ↝ rule for
+  `fix` and no observed-retention ρ; *the spec is a type discipline; reduction beyond
+  β/let is not given*; (2) a *limit carrier* for the lfp grade (the O4 fork). … This
+  obstruction is the missing operational semantics + O4, *NOT a defect of the grade
+  algebra*."
+|===
+
+The common root is a *single* underspecification: *the v0.1 calculus is a pure
+type-and-grade discipline with no operational (reduction) semantics for its
+grade-routing / iterating constructs.* B states this verbatim — "the spec is a type
+discipline; reduction beyond β/let is not given" — having had to supply β/let itself
+and hitting the wall exactly where new dynamics would begin. A states the same
+absence from the other end — the routing operator whose cancellability R-03 governs
+"does not yet exist". The two are not merely similar: *`fix`-unfold is a concrete
+instance of the very routing dynamics A's OPEN-A names in general* — unfolding
+`fix x. e ↝ e[fix x. e / x]` re-applies the body and routes grade across the
+fidelity coordinate toward stem:[\{total, unknown\}] (across tiers), and giving it a
+tier-preserving reduction is exactly the operational behaviour A flags as undefined.
+*One hole.*
+
+[IMPORTANT]
+.CENTRAL OPEN PROBLEM (CO-1) — the calculus has no operational model for grade dynamics
+====
+*The trope-particularity calculus specifies grades statically but defines no
+reduction semantics for its grade-routing / iterating constructs beyond the β/let
+core.* The one hole has two faces and one additional gate:
+
+. *Spec-authoring face (= A's OPEN-A):* the lossless fractional split / rejoin /
+  routing operator whose cancellability R-2026-06-23-03 constrains-in-advance is
+  referenced but *undefined* — no typing rule and, more fundamentally, no dynamics.
+. *Proof face (= B's Target-3 fixpoint case):* subject reduction through `fix`/lfp is
+  *NOT-REACHED* because there is no ↝ rule for `fix` and no observed-retention ρ.
+. *Additionally gated by v0.1 O4* (the limit carrier): ordering iterated unbounded
+  attenuation beyond stem:[\omega] is the standing `Conat`-vs-tag fork. This is
+  *exactly* B's second missing piece, and it is v0.1's pre-existing open obligation —
+  so CO-1 is gated by O4, it does not subsume or close it.
+
+*The grade algebra is not at fault.* The lfp fidelity endpoint stem:[\{total,
+unknown\}] is already ▷-fixed and tier-stable (`Delta.total_add_Q`,
+`Delta.unknown_absorbing`); what is missing is purely the dynamics (1) and the limit
+carrier (3).
+
+*Entanglement worth recording (a non-obvious integration result):* v0.1 §7 justifies
+the *existence* of the `fix` grade — `lfp(λγ. grade-of(e)[γ])` — by appeal to *L4
+monotonicity* of the grade functional. But strict L4 *fails on the fate coordinate*,
+machine-proved as `TB.Tier.fate-L4-fails` (≡ `Soundness.fateL4MonotonicityFails`) —
+the same F2×F4 non-commutativity phenomenon as the §5 finding. So even the
+*grade-side* justification for `fix` rests on a monotonicity now known to be only
+*lax*; the lfp-existence argument needs the lax/closure route, not strict L4. This
+ties the divergence-adjacent F2×F4 finding directly into CO-1. (The *conclusion* may
+yet be salvageable independently of the broken premise — `Bond`/`Merge` remain
+monotone (`Soundness.bondComposeMono`/`mergeComposeMono`) and the fidelity endpoint
+lands in the ▷-fixed, tier-stable tops stem:[\{total, unknown\}] — but that recovery
+is itself unbuilt and is part of CO-1, not a discharge of it.)
+====
+
+== Divergences — adjudicated against the Lean source
+
+=== (2) Core commutativity — *COMPATIBLE, not a real divergence*
+
+*The apparent tension.* Stream A: the cancellative core's composition "reduces to
+fidelity addition (`Delta.Q_add`), which is commutative *and* cancellative", and
+non-commutativity is "a property of the *full* operation, witnessed by elements
+outside the cancellative core (the disagreeing heads `Dropped` and `Falsified`)".
+Stream B: it encodes the grade as a non-commutative graded structure with "*no
+commutative bundle … instantiated for `Grade`/`Fate`*", "no `CommMonoid` /
+Special-Frobenius instance anywhere".
+
+*Verdict: COMPATIBLE.* The two statements live in *different registers* — A speaks of
+a *derived algebraic property of specific elements*; B speaks of its *encoding
+architecture* (which typeclass/record instances it chose to build). They do not
+contradict, and the Lean ground truth settles it decisively. Evidence:
+
+. *The ground truth itself is "a globally non-commutative whole containing
+  commutative sub-bundles".* `GradeBoundary.lean` instantiates `CommMonoid Bond`
+  (line 221) and `CommMonoid Merge` (line 265) *and* proves the full `Grade`
+  non-commutative (`grade_mul_not_comm`, line 340). So "commutative parts inside a
+  non-commutative whole" is not a contradiction — it is literally the algebra both
+  streams were measured against.
+. *A matches the ground truth exactly.* Full operation non-commutative; the core (and,
+  derivably, `Bond`/`Merge`) commute. A even names the mechanism: within
+  stem:[\mathcal{C}], `atten(Q a) ▷ atten(Q b) = atten(Q (a+b))` is stem:[\mathbb{N}]
+  addition — commutative and cancellative.
+. *B faithfully ports the same operations, but as bare functions.* `_▷b_` /
+  `_▷m_` (`TB.Grade.agda` 213, 285) are plain `Set → Set → Set` clauses, *commented
+  "Commutative meet"* (lines 203, 276); the core clause `atten d ▷f atten e =
+  atten (d ⊕d e)` with `Q a ⊕d Q b = Q (a + b)` is stem:[\mathbb{N}] addition —
+  *derivably commutative*. B simply *declines to instantiate* any `CommMonoid` record,
+  precisely so that F2 holds *definitionally* and no proof can lean on commutativity.
+. *B nowhere asserts the core (or `Bond`/`Merge`) is non-commutative.* "No commutative
+  bundle" is a statement about *typeclass instances B did not construct*, not a claim
+  that any sub-operation fails to commute. "X commutes (derivably)" and "I did not
+  bundle X's commutativity as an instance" are mutually consistent.
+. *Both use the identical non-commutativity witness:* `dropped` / `falsified` (Lean
+  `grade_mul_not_comm`; Agda `grade-not-comm` via `gA`/`gB`) — both of which are
+  *outside* the cancellative core (`FinFate = present ⊎ atten(Q n)` excludes them).
+
+This is exactly the "*entirely possible*" case: the core commutes as a *derived
+property* of a globally-non-commutative structure. *No escalation to the human is
+required, and neither artifact was edited.*
+
+[NOTE]
+.Port-fidelity nuance (precise scope of "no commutative bundle")
+====
+B's literal phrasing is narrower than "anywhere": "no commutative bundle is
+*instantiated for `Grade`/`Fate`*" (`INTERFACE-REPORT.adoc` line 196). B's own
+comments *do* call `Bond`/`Merge` "commutative meet" (`TB.Grade.agda` 203, 276) yet
+decline to bundle them — whereas the Lean ground truth *does* construct
+`CommMonoid Bond` / `CommMonoid Merge`. So, strictly, the *Agda port carries fewer
+commutative bundles than the Lean source* — an *under-instantiation* (a fidelity gap
+in the port), not a semantic divergence: every operation that commutes in Lean still
+commutes *definitionally* in Agda; only the record was omitted, deliberately, to keep
+F2 definitional. This is worth recording for the merge author but changes nothing in
+the verdict.
+====
+
+=== (3) Sweep of A's F1–F4 obligations against B's encoding — *no genuine divergence*
+
+Every Lean theorem A's §7 table cites *exists* in `GradeBoundary.lean` and *states
+what A claims* (confirmed by the green build + axiom audit, §6). Every fact B builds
+on *matches* the obligation A authored: same product monoid (F1), same
+non-commutativity witness `dropped`/`falsified` (F2), same conicality (F3), and the
+*same three-tier partition* (F4) —
+
+* core = `{present, atten(Q n), intact, single}` — A tier 1 ≡ B `IsCore` / `tierOf …
+  = core`;
+* honest-but-lossy = `{dropped, predicated, severed, withheld, fused, total}` — A
+  tier 2 ≡ B `…Tier … = honestLossy`;
+* deceptive = `{falsified, misbound, conflated, unknown}` — A tier 3 ≡ B `…Tier … =
+  deceptive`.
+
+*The sweep is empty of genuine divergences.* Three consistency notes (recorded, none
+a contradiction):
+
+. *Shared gap OPEN-C, not a divergence.* A flags `Withheld` and `Fused` as tier-2 by
+  the order structure but without an individual non-cancellation witness. B agrees by
+  construction: its six `*-not-cancel` witnesses cover `unknown`, `total`,
+  `falsified`, `dropped`, `predicated`, `severed` — *and likewise omit* `withheld`
+  and `fused`. Both record the same gap.
+. *B's grade-level `Deceptive` predicate excludes fidelity `unknown` — for a sound
+  reason, consistent with A.* `TB.Tier.Deceptive` (lines 98–101) is the closure
+  predicate for `deceptive-absorbs-▷`; it lists only the *genuine left-zeros*
+  `falsified`/`misbound`/`conflated`, because `atten unknown` is *not* left-absorbing
+  at the `Fate` level (`atten d ▷f falsified = falsified` overrides it). `unknown` is
+  still *tiered* deceptive (`dTier unknown = deceptive`, so `tierOf` agrees with A),
+  and is the fidelity left-zero on stem:[\Delta] exactly as A states
+  (`Delta.unknown_absorbing`). No disagreement — a subtle, faithful encoding nuance.
+. *A documentation gap A's OPEN-B does not mention (surfaced by the sweep).* The
+  proved carrier adds a *deceptive dual per coordinate*: `Falsified` (fate) and
+  `Misbound` (bond) — neither listed in v0.1's coordinate tables (§3.1 lists four
+  fates, no `Falsified`; §3.2 lists three bonds, no `Misbound`). A's OPEN-B records
+  only the `Falsified`/§3.1 gap; the analogous `Misbound`/§3.2 gap is *unflagged*.
+  (Merge's `Conflated` *is* already in v0.1 §3.3.) Recorded as *OPEN-B′*, not filled.
+
+== The two B findings — recorded as results, at equal register
+
+Neither of these is a consolation for the unreached fixpoint case (§1). They are
+independent metatheorems, kept at a flat register with the gap.
+
+*Finding 1 — symmetric cut is impossible (an F2 metatheorem).*
+`TB.Substitution.cut-symmetric-fails` (definitionally `= grade-not-comm`), with
+`cut-orientation-matters` exhibiting `g₁ ▷ g₂ ≢ g₂ ▷ g₁` at the witness
+`dropped`/`falsified`. The grade-exact value-substitution lemma (`subst`) is therefore
+*sharp*: it holds because a value carries ε (a two-sided unit, so non-commutativity is
+inert), and it *cannot* be generalised to an orientation-free computational cut. The
+predicted F2 wall is delivered as a *theorem about what the structure forbids*, not as
+an unproven obligation.
+
+*Finding 2 — tier-preservation is closure, not a homomorphism (an F2×F4 interaction).*
+`TB.Tier.fate-tier-meet-hom-fails`: the naïve `tierOf (g ▷ h) ≡ tierOf g ⊓ tierOf h`
+is *false* on fate, because `dropped ▷f falsified = dropped` (honest) while
+`fateTier dropped ⊓ fateTier falsified = deceptive` — the honest left-absorbing head
+`dropped` *shields* a later deceptive `falsified`. This is *why* tier-preservation had
+to be stated as set-membership *closure* (`deceptive-absorbs-▷`, `core-closed-▷`) and
+why the ⊑/L4 route is unsound (`fate-L4-fails`). It is the same non-commutativity
+phenomenon that undercuts §7's lfp-by-L4 justification (§4).
+
+== Build / verification evidence (this integration was checked, not asserted)
+
+[cols="1,3",options="header"]
+|===
+| Check | Result
+
+| `lake build` (grade-boundary) | *exit 0.* Axiom audit: `instMonoid`→`[propext]`; `grade_mul_not_comm`→none; `grade_conical`→`[propext]`; `grade_not_leftCancel`→none; `honest_fidelity_cancel`, `fidelity_unknown_not_cancel`, `fidelity_total_honest_not_cancel`→`[propext, Quot.sound]`. *No `sorryAx`, no user `axiom`, no `native_decide`.*
+| `agda --safe --without-K All.agda` | *exit 0* (whole development).
+| `agda --safe --without-K Smoke.agda` | *exit 0* (headline pins exist with claimed types).
+| Postulate ledger | *zero* real `postulate` / `sorry` / `{-# TERMINATING #-}` / `trustMe` constructs (the only `postulate`/`sorry` strings are honest comments — "No postulate is introduced", "sorry-free"). `--safe` enforces this by construction.
+| `just verify-all` | *exit 0* — the new merge gate (`build-lean` + `build-agda` + Lean source honesty gate).
+|===
+
+The two adjudications (§4 convergence = one hole; §5.1 divergence = compatible) and
+the sweep (§5.2) were *independently re-derived by adversarial reviewers* tasked with
+*refuting* them from the raw artifacts: the one-hole verdict was confirmed at high
+confidence (and the §7 lfp-by-L4 entanglement independently rediscovered); the
+core-commutativity verdict was confirmed COMPATIBLE with the port-fidelity nuance
+above; and the citation audit confirmed all 22 Lean names A cites exist, are correctly
+namespaced, and state what A claims (empty mismatch set).
+
+[NOTE]
+.Local scanner false-positive — found and FIXED (not a CI gate; CI was never at risk)
+====
+`build/just/proofs.just`'s `proof-scan-dangerous` greps the bare words
+`postulate|sorry|…`, so it false-positived on Theorem B's *honest* comments ("No
+postulate is introduced", "sorry-free") — *and already did so on seven pre-existing
+proof files* carrying the repo's own "no `believe_me`" / "NO `Admitted`" convention
+prose (`idris2/ABI/*`, `Types.idr`, `Properties.agda`, `TypeSafety.v`). Two things
+make this *not* a CI hazard: (1) the recipe is *not referenced by any workflow* — the
+real CI proof gate is `panic-attack assail` (`.github/workflows/static-analysis-gate.yml`),
+which is semantic, binary-gated (skips if unavailable), and blocks merge *only on
+`critical` findings*; (2) the same convention-comment style already passes that gate
+in the pre-existing files. *Fixed here, locally:* `proof-scan-dangerous` is now
+comment-aware (strips line/`{- -}`/`/- -/`/`(* *)` comments before matching, excludes
+vendored `.lake/`/`_build/`), verified to keep catching genuine `postulate`/`sorry`/
+`Admitted`/`believe_me` constructs. The estate-wide `panic-attack` convention is
+*untouched* — but its *inline accept-marker* suppression is a separate, forgeable
+concern; a sign-and-bind replacement is proposed in
+`docs/proposals/panic-attack-signed-suppression.adoc` (for the panic-attack owner, not
+actioned here).
+====
+
+== Placement and recipes
+
+* *Placement is already canonical — nothing moved.* `spec/calculus-v0.2-draft.adoc`
+  (spec home), `verification/proofs/lean4/grade-boundary/` and
+  `verification/proofs/agda/theorem-b/` (per-prover proof homes) are each correctly
+  located; this report and the `docs/status/PROOF-STATUS.adoc` update are the only
+  new prose.
+* *Recipes added* to `build/just/proofs.just` (imported by the root `Justfile`):
+  `just build-lean` (lake build + axiom audit), `just build-agda` (`--safe
+  --without-K` over `All.agda` + `Smoke.agda`), `just verify-all` (both + the Lean
+  source honesty gate). All three run green from the repo root.
+
+'''
+_Per repo convention, nothing is committed; the above is the staged contribution._
