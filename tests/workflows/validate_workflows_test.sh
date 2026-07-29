@@ -95,14 +95,20 @@ REQUIRED_WORKFLOWS=(
     "quality.yml"
     "mirror.yml"
     "instant-sync.yml"
-    "guix-nix-policy.yml"
     "rsr-antipattern.yml"
     "security-policy.yml"
     "wellknown-enforcement.yml"
     "workflow-linter.yml"
-    "npm-bun-blocker.yml"
-    "ts-blocker.yml"
-    "scorecard-enforcer.yml"
+    # Corrected 2026-07-29 against the workflows that actually exist:
+    #   npm-bun-blocker.yml -> runtime-policy.yml  (replaced estate-wide)
+    #   ts-blocker.yml      -> DELETED             (enforced a retired ReScript
+    #                                               rule and could never fail)
+    #   scorecard-enforcer.yml -> scorecard.yml    (never existed under that name)
+    #   guix-nix-policy.yml -> DROPPED             (the name encodes the retired
+    #                                               "Guix primary / Nix fallback"
+    #                                               framing; Nix retired 2026-06-01)
+    "runtime-policy.yml"
+    "scorecard.yml"
     "secret-scanner.yml"
 )
 
