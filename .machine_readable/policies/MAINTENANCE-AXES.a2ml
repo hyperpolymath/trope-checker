@@ -3,6 +3,8 @@
 #
 # Canonical maintenance governance model
 
+name = "maintenance-axes"  # identity (a2ml validate: required)
+
 [metadata]
 version = "1.0.0"
 last-updated = "2026-06-22"

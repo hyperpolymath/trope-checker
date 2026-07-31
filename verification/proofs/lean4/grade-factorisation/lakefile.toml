@@ -1,0 +1,18 @@
+name = "gradeFactorisation"
+defaultTargets = ["GradeFactorisation", "GradeFactorisationR"]
+
+# Reuse grade-boundary's carrier by path-import. Its mathlib (v4.16.0) + transitive
+# deps are shared through .lake/packages (symlinked to ../grade-boundary), so nothing
+# re-clones or re-builds. Same toolchain (see ./lean-toolchain).
+[[require]]
+name = "gradeBoundary"
+path = "../grade-boundary"
+
+[[lean_lib]]
+name = "GradeFactorisation"
+
+# Issue #29: the factorisation question RE-RUN against the ratified carrier
+# (imports GradeRatified from grade-boundary). Verdict flips to
+# (B') FACTORS AND VERIDICALITY-SIGHTED.
+[[lean_lib]]
+name = "GradeFactorisationR"

@@ -111,7 +111,14 @@ replace_placeholder() {
     fi
 }
 
-# Replace in all text files
+# Replace in all text files.
+#
+# FIX 2026-07-29: this -exec passed `"$file"` as the argument to `bash -c`, but
+# `file` is never set in the OUTER scope -- it is only assigned INSIDE the
+# subshell from "$1". Under `set -u` that aborted the whole phase with
+# "file: unbound variable", so no placeholder was ever substituted and the E2E
+# test exited 1 before reaching a single assertion. The argument find must pass
+# is `{}` -- the filename it found.
 find "$TEST_REPO_PATH" -type f \
     \( -name "*.md" -o -name "*.adoc" -o -name "*.a2ml" -o -name "*.zig" -o -name "*.idr" \
        -o -name "Justfile" -o -name "Containerfile" -o -name "*.yml" -o -name "*.yaml" \
@@ -137,7 +144,7 @@ find "$TEST_REPO_PATH" -type f \
                 sed -i "s|$placeholder|$value|g" "$file"
             fi
         done
-    ' _ "$file"
+    ' _ {} \;
 
 log_pass "All placeholder tokens replaced"
 

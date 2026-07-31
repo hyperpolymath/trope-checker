@@ -1,0 +1,214 @@
+// SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Research note: the L4 boundary, a one-clause diagnosis, and O1 as a theorem
+:revdate: 2026-07-07
+:toc: macro
+
+[.lead]
+Machine-checked analysis of the lax-L4 crack (spec v0.1 §4/§7), a proposed
+two-amendment repair, the carrier-relative resolution of O1, and the
+consequences for issues #10, #12, #13, #14. Companion Lean developments:
+`verification/proofs/lean4/grade-boundary/{TierTwoComplete,L4Monotonicity,EffectAtoms}.lean`
+(all sorry-free, axiom-clean). *Nothing in this note changes the shipped
+carrier*; the amendments are proposals for owner ratification.
+
+toc::[]
+
+== 1. Where exactly L4 fails
+
+v0.1 §4 states L4 (▷ monotone in each argument w.r.t. ⊑) and §7 leans on it:
+"the least fixed point exists because each coordinate lattice is complete and,
+by L4, the grade functional is monotone." The Idris2 stream already proved
+strict L4 fails on fate (`fateL4MonotonicityFails`). The new Lean development
+localises the failure completely. Every counterexample passes through one of
+exactly two design points:
+
+1. *The `{Predicated, Dropped}` antichain* (the duck check). Composing a
+   collapse after a value that might have been dropped lands on incomparable
+   results: `Predicated ▷ Dropped = Dropped` vs
+   `Predicated ▷ Atten δ = Predicated`, and `Dropped ∥ Predicated`
+   (`Fate.comp_not_monotone_right`, `comp_not_monotone_left'`).
+2. *The clause `Dropped ▷ Falsified = Dropped`*. With `Dropped ⊑ Atten δ`,
+   composing a downstream falsification gives `Dropped` on one side and
+   `Falsified` on the other, and `Dropped ⋢ Falsified`
+   (`Fate.comp_not_monotone_left`).
+
+Bond, merge, and the fidelity chain are all monotone (each is meet/tropical
+addition on a chain); fate is the only broken coordinate.
+
+== 2. One clause, three pathologies
+
+The clause `Dropped ▷ Falsified = Dropped` is simultaneously:
+
+* *The sole source of non-commutativity.* `GradeBoundary.grade_mul_not_comm`'s
+  witness is exactly the pair `(Dropped, Falsified)`; every other pair of fate
+  values commutes, and bond/merge/fidelity are commutative. The celebrated
+  non-commutativity of the grade monoid is not intrinsic to loss-shape grading
+  — it is this clause.
+* *The falsify-side L4 failure* (§1, point 2).
+* *In tension with L5's moral core.* L5 wants deception infectious and
+  irreversible. Under the current clause, an upstream honest *drop* erases a
+  downstream *lie*: a stage that fabricates a value for a field it never
+  received composes to plain `Dropped`, and the fabrication vanishes from the
+  grade. An honest absorber should not launder deception.
+
+== 3. The proposed repair (owner ratification required)
+
+Two amendments, machine-checked in `L4Monotonicity.lean` (`FateA` namespace):
+
+* *(A1)* `Dropped ▷ Falsified = Falsified` — the deceptive bottom becomes a
+  **two-sided zero** (`FateA.falsified_two_sided_zero`). L5 strengthens: no
+  composition order launders a lie.
+* *(A2)* `Dropped ⊑ Predicated` — a checkbox retains at least as much of the
+  quality as nothing at all. The duck check survives in the form that matters:
+  `Predicated` remains strictly below every `Atten`, so any use that needs the
+  actual quack (floor ≥ `Atten`) still rejects both the checkbox and the
+  dropped field. What changes is only that a floor of `Dropped` ("I tolerate
+  full withholding") now also accepts a checkbox — and in a *retention* order,
+  tolerating less while rejecting more was never expressible anyway.
+
+Consequences, all proved:
+
+|===
+| Property | Shipped carrier | Amended carrier
+
+| L4 monotonicity (both args) | *fails* (§1) | *holds* (`FateA.comp_mono_left/right`)
+| Commutativity | fails (`grade_mul_not_comm`) | *holds* (`FateA.comp_comm`)
+| Order shape | lattice with antichain | *chain* (`FateA.le_total`)
+| §7 Knaster–Tarski for `fix` | justification cracked | *restored* (complete chain + monotone ▷)
+| Deceptive bottoms absorbing (L5) | left only | *two-sided* (strengthened)
+| Conicality | holds | holds (`FateA.conical`)
+| Three-tier cancellation boundary | holds | holds (`FateA.dropped_still_not_cancel`)
+|===
+
+Two knock-ons to be aware of:
+
+* `grade_mul_not_comm` becomes a historical artifact if (A1) is adopted; the
+  boundary results survive unchanged in kind.
+* The `grade-factorisation` probe's verdict ("any hom to the commutative
+  tropical carrier is veridicality-blind") was proved against the shipped
+  carrier; under (A1) the grade monoid is itself commutative and the probe's
+  premises change — it should be re-run before being cited further.
+
+== 4. O4 / issue #12: the carrier suffices
+
+With (A1)+(A2) the fate coordinate is order-isomorphic to the chain
+
+  Falsified ⊏ Dropped ⊏ Predicated ⊏ Atten(⊤) ⊏ Atten(∞) ⊏ … ⊏ Atten(Q 1) ⊏ Atten(Q 0) ⊏ Present
+
+i.e. three points below a copy of the fidelity chain `ℕ ∪ {∞, ⊤}` (reversed)
+below a top. Every coordinate is then a **complete linear order**: arbitrary
+infima and suprema exist (any subset of ℕ has a minimum; unbounded subsets meet
+∞/⊤). Knaster–Tarski needs nothing more. Transfinite/coinductive carriers would
+only be forced by transfinitely deep `fix`-nesting, which finitary syntax
+cannot express: any single program's grade is reached within ω iterations of
+its (finite) grade functional. Recommendation: *close #12 as "current carrier
+suffices, conditional on the §3 repair"* — the gate on #10 lifts.
+
+== 5. The path through CO-1 / issue #10
+
+What #10 still needs is an operational model; the repair removes the blocker
+that made its lfp story unsound. Proposed design (for discussion, not yet
+mechanized):
+
+1. *Instrumented small-step semantics.* Values are provenance-enriched tropes
+   `⟨quality, bearer, context, record⟩`. Each atomic move (`attenuate δ`,
+   `predicate`, `drop`, `sever`, `fuse τ`) reduces and **emits** its atomic
+   grade (the nine families of §6 below). A trace's *observed retention*
+   `ρ(run)` is the ▷-product of its emissions — by construction an element of
+   the grade monoid.
+2. *Grade soundness*, now stateable: if `Γ ⊢ e : A ! g` and `e ⇓ v` with trace
+   `t`, then `g ⊑ ρ(t)`. The straight-line/β/let cases are the Agda Theorem B
+   targets already proved; the subsumption and application cases need exactly
+   L4 — which the amended carrier supplies. This is why the repair is not
+   cosmetic: *without (A1)/(A2), conservative soundness is unprovable at the
+   antichain; with them, the standard graded-monad argument goes through.*
+3. *`fix` without synthesis.* The checker stays bidirectional: the author
+   declares the latent grade γ; the checker verifies the *post-fixed-point
+   condition* `F(γ) ⊒ γ` where `F` is the body's grade functional — decidable,
+   since `F` is computable on grades and ⊑ is decidable (`decGradeLte`). KT
+   (restored) guarantees `lfp F` exists and `γ ⊑ lfp F` for any such γ … the
+   declared signature under-claims the true grade, which is the conservative
+   direction. A terminating run of depth n has `ρ ⊒ Fⁿ(⊤̂)-grade ⊒ γ` by
+   induction using L4. Unbounded lossy recursion still lands on ⊤ honestly.
+
+Suggested split of #10: (a) ratify §3 repair; (b) mechanize the instrumented
+semantics for the five atoms + β/let (extends Theorem B); (c) add `fix` with
+the declared-signature rule and prove the depth-n induction. After (c), grade
+soundness is a theorem, not a target.
+
+== 6. O1 as a theorem (carrier-relative half)
+
+`EffectAtoms.lean` proves, on the shipped carrier:
+
+* An *atom* is a grade differing from ε in exactly one coordinate. Atoms fall
+  into exactly **nine families** (`Fintype.card AtomFamily = 9`):
+  attenuate/collapse/drop/falsify (fate), withhold/sever/misbind (bond),
+  fuse/conflate (merge); the families partition by coordinate (4+3+2,
+  `families_disjoint`), every family is inhabited (`family_realized`).
+* **Atom factorization** (`atom_factorization`): every grade is the ▷-product
+  of its six single-coordinate projections. The atoms generate the entire
+  carrier — there is no move in the grade monoid that is not a composite of
+  the nine families, and ε (`p-preserving`) is the empty product.
+
+So the effect typology is *exhaustive relative to the carrier*. What remains
+of O1 is only the metaphysical adequacy question (do the three coordinates
+capture every way particularity can be lost?) — which is where it should be:
+that is a claim about the world, not the algebra.
+
+*Vocabulary seam made precise:* the nine families and the workbench's nine
+effects do not align one-to-one. `p-preserving` names the empty product;
+`p-projecting` covers two families (`drop` on a fate field, `withhold` on the
+bond); the `withhold` family has no standalone effect name. A naming decision
+for the workbench, not an algebra gap.
+
+== 7. The cancellation classification (issue #14 closed, and sharpened)
+
+`TierTwoComplete.lean` proves the two lemmas OPEN-C asked for
+(`Bond.withheld_honest_not_cancel`, `Merge.fused_honest_not_cancel`) and then
+the full classification:
+
+* every non-unit element of every coordinate fails left-cancellation
+  (`*.leftCancelWitness`) — including honest *finite* attenuation
+  (`Fate.atten_not_cancel`: `atten δ` cannot separate `present` from
+  `atten (Q 0)`);
+* **`grade_leftCancel_iff`**: an element of the grade monoid is
+  left-cancellative *iff it is ε*.
+
+This sharpens Deliverable 3 of `GradeBoundary.lean`: the "tier-1 cancellative
+core" `Q ℕ ≅ (ℕ,+,0)` lives inside the fidelity *dimension* and does not lift
+to any non-unit grade element. At the grade level the tiers read: tier 1 =
+`{ε}`; tier 2 = honest non-units; tier 3 = deceptive absorbers. Tier-2
+membership is now exhaustive, closing OPEN-C.
+
+*A fourth discrepancy, discovered en route (the `Attenuated(0)` quotient).*
+v0.1 §3.1 declares `Attenuated(0) = Present`; the carrier keeps them distinct
+values and imposes no normalization. The classification above is
+carrier-level. Under the §3.1 identification, the collision witness
+(`atten δ ▷ Present = atten δ ▷ Atten(Q 0)`) disappears, finite attenuation
+becomes cancellative, and tier 1 at the grade level is exactly the original
+"finite-fidelity + units" core. Both statements are right — about two
+different carriers. The spec should either impose the quotient (normalize
+`Atten (Q 0) → Present` in the carrier and the IR validator) or strike the
+`Attenuated(0) = Present` line; this belongs with the #13 reconciliation.
+
+== 8. Issue #13 — now four reconciliation items
+
+Independent of the above, the v0.1 §3.1/§3.2 tables omit `Falsified` and
+`Misbound`, and the §4 L3 line names `Dropped`/`Severed` (honest values) as
+the absorbing bottoms where the proved carrier has `Falsified`/`Misbound`.
+This note adds two more items to the same reconciliation: the
+`Attenuated(0) = Present` quotient (§7 above), and — if (A1) is adopted — the
+L3 line should say the deceptive bottoms absorb *two-sidedly*. A draft
+reconciliation is proposed separately (owner call on whether to amend v0.1 in
+place or via the v0.2 addendum).
+
+*Note on (A2) and §3.1's "load-bearing incomparability".* §3.1 motivates
+`Predicated ∥ Dropped` by: "a use-model needing only the predicate accepts
+`Predicated(P)` but rejects `Dropped`." That behaviour is *preserved* by (A2):
+the amendment adds `Dropped ⊑ Predicated`, not the converse, so a floor of
+`Predicated` still rejects `Dropped`. The only behavioural change is that a
+floor of `Dropped` (the weakest honest floor) now also accepts a checkbox —
+and a retention floor that tolerates total withholding while rejecting
+strictly-more-retentive states was never expressible in a monotone floor
+semantics anyway. The documented intent survives; only the antichain goes.

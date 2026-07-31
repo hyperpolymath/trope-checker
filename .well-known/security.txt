@@ -4,7 +4,7 @@
 
 Contact: mailto:j.d.a.jewell@open.ac.uk
 Expires: 2026-12-31T23:59:59.000Z
-Encryption: {{PGP_KEY_URL}}
+Encryption: https://keys.openpgp.org/vks/v1/by-fingerprint/0000000000000000000000000000000000000000
 Preferred-Languages: en
 Canonical: https://github.com/hyperpolymath/trope-checker/.well-known/security.txt
 Policy: https://github.com/hyperpolymath/trope-checker/blob/main/SECURITY.md
