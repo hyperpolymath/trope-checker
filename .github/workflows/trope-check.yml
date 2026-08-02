@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 #
-# Trope-particularity checks (no Python). The jq well-formedness job is the
-# reliable signal; the Idris2 verified-core + conformance job is best-effort
-# (the toolchain is environment-dependent).
+# Trope-particularity checks (no Python). All three jobs are real gates: the
+# verified core is typechecked, the reference checker is built from it, and the
+# conformance corpus is run through BOTH that reference and the Rust fast-core.
 name: "🔴 Gate: Trope conformance"
 
 on:
@@ -25,7 +25,7 @@ jobs:
   ir-wellformed:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Every IR fixture + the schema is well-formed JSON
         run: |
           for f in tests/conformance/fixtures/*.ir.json \
@@ -41,26 +41,57 @@ jobs:
           fi
           echo "verified core: no unsound constructs"
 
+  # Previously this job carried `continue-on-error: true` AND guarded its whole
+  # body with `if command -v idris2` — and ubuntu-latest ships no idris2, so it
+  # always took the skip branch and always reported success. The verified core
+  # had therefore never been typechecked in CI. Both escape hatches are gone;
+  # the toolchain is supplied by a digest-pinned image instead of hoped for.
   verified-core-and-conformance:
     runs-on: ubuntu-latest
-    continue-on-error: true   # idris2 + chez toolchain is environment-dependent
+    timeout-minutes: 25
+    # Idris 2 0.8.0 — see .tool-versions. Under 0.7.0 Trope/Fidelity.idr:72
+    # fails to parse at the lambda-impossible clause `No (\Refl impossible)`.
+    container:
+      image: ghcr.io/stefan-hoeck/idris2-pack@sha256:de9781906050dc44704ec6de0108c86f899ef17b2642932b79e00245d613b8ad
     steps:
-      - uses: actions/checkout@v7
-      - name: Typecheck core, build checker, run conformance (if idris2 present)
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install container prerequisites (jq)
+        shell: bash
         run: |
-          if command -v idris2 >/dev/null 2>&1; then
-            ( cd verification/proofs/idris2 && idris2 --typecheck trope.ipkg )
-            idris2 --install verification/proofs/idris2/trope.ipkg
-            ( cd src/idris2 && idris2 --build tropecheck.ipkg )
-            bash tests/conformance/run.sh
-          else
-            echo "idris2 not available on this runner; skipping (see docs/status/PROOF-STATUS.adoc)."
+          set -euo pipefail
+          if ! command -v jq >/dev/null 2>&1; then
+            apt-get update -qq
+            apt-get install -y -qq --no-install-recommends jq
           fi
+          jq --version
+      - name: Assert the pinned Idris2 version
+        shell: bash
+        run: |
+          set -euo pipefail
+          ver="$(idris2 --version)"
+          echo "idris2 --version -> ${ver}"
+          case "$ver" in
+            *"0.8.0"*) ;;
+            *) echo "::error::expected Idris 2 0.8.0, got: ${ver}"; exit 1 ;;
+          esac
+      - name: Typecheck the verified core
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd verification/proofs/idris2 && idris2 --typecheck trope.ipkg
+      - name: Build the reference checker from that core, and run conformance
+        shell: bash
+        run: |
+          set -euo pipefail
+          idris2 --install verification/proofs/idris2/trope.ipkg
+          ( cd src/idris2 && idris2 --build tropecheck.ipkg )
+          test -x src/idris2/build/exec/tropecheck
+          bash tests/conformance/run.sh
 
   rust-fast-core:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Build the Rust fast-core (dep-free, offline) and run the conformance corpus
         run: |
           ( cd src/rust && cargo build --release )

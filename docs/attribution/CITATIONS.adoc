@@ -7,30 +7,30 @@
 
 [source,bibtex]
 ----
-@software{Trope Checker_2026,
+@software{trope_checker_2026,
   author = {Jewell, Jonathan D.A.},
   title = {Trope Checker},
   year = {2026},
-  url = {https://github.com/hyperpolymath/Trope Checker},
+  url = {https://github.com/hyperpolymath/trope-checker},
   license = {MPL-2.0}
 }
 ----
 
 == Harvard Style
 
-Jewell, J. (2026) _Trope Checker_ [Computer software]. Available at: https://github.com/hyperpolymath/Trope Checker
+Jewell, J. (2026) _Trope Checker_ [Computer software]. Available at: https://github.com/hyperpolymath/trope-checker
 
 == OSCOLA
 
-Jonathan D.A. Jewell, 'Trope Checker' (2026) <https://github.com/hyperpolymath/Trope Checker>
+Jonathan D.A. Jewell, 'Trope Checker' (2026) <https://github.com/hyperpolymath/trope-checker>
 
 == MLA
 
-Jewell, Jonathan D.A. "Trope Checker." 2026, github.com/hyperpolymath/Trope Checker.
+Jewell, Jonathan D.A. "Trope Checker." 2026, github.com/hyperpolymath/trope-checker.
 
 == APA 7
 
-Jewell, J. (2026). _Trope Checker_ [Computer software]. GitHub. https://github.com/hyperpolymath/Trope Checker
+Jewell, J. (2026). _Trope Checker_ [Computer software]. GitHub. https://github.com/hyperpolymath/trope-checker
 
 == See Also
 

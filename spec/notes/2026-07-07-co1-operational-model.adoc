@@ -1,0 +1,153 @@
+// SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Design note: the CO-1 operational model — instrumented semantics, tagged values, and the declared-signature fix rule
+:revdate: 2026-07-07
+:toc: macro
+
+[.lead]
+The design that closes CO-1 (issue #10): a small-step semantics for a core
+trope-particularity term language in which *grade soundness is stateable and
+provable*. Builds on the ratified carrier (ADR 0004 — L4 now holds in full,
+proved in the Idris2 ground truth as `fateL4MonoR`/`fateL4MonoL`). This note
+is the design for review; the mechanization plan (§6) extends the Agda
+Theorem B development once its carrier mirror is migrated (issue #30).
+
+toc::[]
+
+== 1. The core language λ-trope
+
+Values:
+
+* provenance-enriched tropes stem:[t = \langle q, b, c, r\rangle] (quality
+  payload, bearer, context, record);
+* collapse residues (the predicate's codomain, e.g. booleans), floating
+  qualities (post-`sever`), fused tropes (carrying the provenance tag τ);
+* functions.
+
+Terms: variables, λ-abstraction, application, `let`, `fix`, and the five
+atomic moves as primitive operators — `attenuate_δ e`, `predicate_P e`,
+`drop_φ e`, `sever e`, `fuse_τ e₁ e₂` — with `preserve` the identity and the
+surface effects (`project`, `collapse`, `detach`) elaborated to composites, as
+in the calculus. The deceptive moves are not term formers (prevent profile).
+
+== 2. Instrumented semantics: tagged values, not traces
+
+Each trope-carrying value runs *tagged*: stem:[v@h] where stem:[h] is the
+grade of everything that has happened to this particular since it entered the
+frame. Tags are ghost state — they never influence control flow (§6, O-CO1-b).
+
+Small-step rules (β, `let`, congruence) carry tags unchanged and emit ε.
+Each atomic move composes its atomic grade onto the tag of its operand:
+
+  attenuate_δ (t@h)  ↝  t'@(h ▷ a_δ)          -- a_δ = the attenuate atom
+  predicate_P (t@h)  ↝  p@(h ▷ a_P)           -- collapse residue
+  drop_φ (t@h)       ↝  t'@(h ▷ a_{drop φ})
+  sever (t@h)        ↝  fq@(h ▷ a_sever)      -- FloatingQuality
+  fuse_τ (t₁@h₁) (t₂@h₂) ↝ t'@((h₁ ⊓ h₂) ▷ a_{fuse τ})
+
+The *observed retention* of a run is read off the output value's tag — no
+separate trace bookkeeping. For `fuse`, the meet of the constituent tags is
+the worst case across lineages, matching the checker's treatment of a
+multi-parent node (exact IR-DAG correspondence is O-CO1-c, the bridge to O2).
+The atoms are exactly the nine families of `EffectAtoms.lean` (honest fragment:
+the five moves; ε = empty product).
+
+== 3. The soundness theorem, now stateable
+
+[stem]
+++++
+\vdash e : A \,!\, g
+\quad\wedge\quad
+e \Downarrow v@h
+\quad\Longrightarrow\quad
+g \sqsubseteq h .
+++++
+
+The declared/derived grade never over-claims retention against any
+terminating run. This is the theorem the spec calls "grade soundness" and
+could not previously state for lack of a model of stem:[\rho]; here
+stem:[\rho(\text{run}) = h].
+
+Why the ratified carrier is what makes the proof go through: T-Sub and the
+application case compose an *assumed* grade against an *actual* one, and
+concluding stem:[\sqsubseteq]-preservation there is precisely L4 — refuted on
+the pre-ratification carrier, total-proved on the ratified one. Theorem B's
+existing targets (substitution grade-exactness, β/let subject reduction)
+cover the exact fragment; L4 extends them to the conservative fragment.
+
+== 4. `fix` without computing fixed points
+
+Let stem:[F(\gamma)] be the body's derived latent grade under the assumption
+that the recursive binder has latent grade stem:[\gamma] — computable, and
+*monotone in* stem:[\gamma] (O-CO1-a below, by induction on the typing
+derivation using L4 at every composition site).
+
+*The rule (T-Fix-Decl).* The author declares stem:[\gamma]; the checker
+accepts iff
+
+[stem]
+++++
+\gamma \;\sqsubseteq\; F(\gamma)
+++++
+
+— decidable: stem:[F] is computable on grades and stem:[\sqsubseteq] is
+decidable (`decGradeLte`). No fixed point is ever computed.
+
+*Soundness of the rule*, by induction on call depth of a terminating run:
+a depth-stem:[n] call's body makes inner calls of depth stem:[<n], whose
+actual retention is stem:[\sqsupseteq \gamma] by the induction hypothesis; by
+monotonicity of stem:[F] and the main soundness IH for the body, the call's
+actual retention is stem:[\sqsupseteq F(\gamma) \sqsupseteq \gamma]. A
+call that never recurses gives stem:[F(\gamma)] independent of the
+hypothesis, and the same chain closes. Unbounded lossy recursion still lands
+honestly: for a body that attenuates and recurses, no finite-δ signature is a
+post-fixed point, and the strongest accepted signatures sit at
+`Attenuated(∞)`/`Attenuated(⊤)` — the spec's "⊤ is an honest answer,"
+sharpened.
+
+*Fixed-point bookkeeping (a clarification the spec needs).* §7 says the grade
+is the *least fixed point* — that is least in the **loss** order. In the
+retention order stem:[\sqsubseteq] used everywhere else, the semantic optimum
+is the **greatest post-fixed point** (Knaster–Tarski, now valid: complete
+chains + monotone stem:[F]), i.e. stem:[\mathrm{gfp}\,F = \bigsqcup\{\gamma :
+\gamma \sqsubseteq F(\gamma)\}] — the *tightest declaration the rule can
+certify*. Worked check: body = "return preserved or attenuate-by-1 and
+recurse" has stem:[F(\gamma) = \varepsilon \sqcap (a_1 \triangleright
+\gamma)]; the greatest post-fixed point is `Attenuated(∞)`, which is exactly
+the stem:[\sqsubseteq]-infimum of the actual retentions
+stem:[\{A(n) : n\in\mathbb{N}\}] over terminating runs. Recommend §7 be
+restated in these terms (one sentence; no rule change).
+
+Kleene iteration and ω-continuity are *not needed* anywhere — existence via
+Knaster–Tarski, checking via the post-fixed-point test, soundness via depth
+induction.
+
+== 5. What this discharges, and what it leaves
+
+Discharged (once mechanized): the CO-1 hole — an operational model with a
+defined stem:[\rho]; grade soundness as a theorem over it, covering
+subsumption, application, and `fix`. Left where they belong: O2 (each
+front-end's lowering must map its constructs to these atoms faithfully —
+O-CO1-c gives the IR-side target to lower *to*); O5 (veridicality remains
+declared, not checked); O1's metaphysical-adequacy residue.
+
+== 6. Mechanization plan (Agda, extending Theorem B; gated on #30)
+
+1. *O-CO1-b, tag erasure*: erasing tags commutes with reduction — tags are
+   ghost. (Small; do first, it validates the instrumentation.)
+2. Atomic-move steps: emission equals the typing rule's grade exactly —
+   extends Target 2's exactness style.
+3. T-Sub + application via the migrated L4 lemmas (Agda mirrors of
+   `fateL4MonoR/L`, per #30).
+4. *O-CO1-a*: stem:[F] monotone in the assumed latent grade — induction over
+   typing derivations, L4 at each ▷/⊓ site.
+5. T-Fix-Decl soundness by the depth induction of §4 — this is the step
+   Theorem B's Target 3 marked NOT-REACHED; the rule shape (side condition on
+   a declared γ, no lfp computation) is what makes it reachable.
+6. Executable side: `tropecheck` already checks declared signatures against
+   composed path grades; the new obligation is only the T-Fix-Decl side
+   condition γ ⊑ F(γ) at recursive boundaries of the *front-end* (Haec), not
+   the IR checker — record in Haec's elaboration obligations (O2 table).
+
+With 1–5 landed, `docs/status/PROOF-STATUS` can finally list *grade
+soundness: PROVED (core fragment)* — the headline the PL paper needs.
