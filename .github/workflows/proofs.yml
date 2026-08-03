@@ -83,7 +83,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Install Agda and the standard library
+      - name: Install Agda and register the standard library
         shell: bash
         run: |
           set -euo pipefail
@@ -91,6 +91,21 @@ jobs:
           sudo apt-get install -y -qq --no-install-recommends agda agda-stdlib
           echo "agda --version -> $(agda --version | head -1)"
           echo "ratified pin (ADR 0003) is Agda 2.8.0; --safe --without-K is the substantive check"
+
+          # Installing the package is not enough: Agda only sees a library that is
+          # listed in its `libraries` file, and a fresh runner has none. WHICH path
+          # that file lives at is VERSION-DEPENDENT (~/.agda vs ~/.config/agda), so
+          # point AGDA_DIR at a directory we control rather than guessing, and
+          # resolve the .agda-lib from the package rather than hardcoding it.
+          lib="$(dpkg -L agda-stdlib | grep -m1 'standard-library\.agda-lib$' || true)"
+          if [ -z "$lib" ]; then
+            echo "::error::agda-stdlib is installed but standard-library.agda-lib was not found"
+            exit 1
+          fi
+          mkdir -p "${RUNNER_TEMP}/agda"
+          echo "$lib" > "${RUNNER_TEMP}/agda/libraries"
+          echo "AGDA_DIR=${RUNNER_TEMP}/agda" >> "$GITHUB_ENV"
+          echo "registered standard-library at: $lib"
       - name: Typecheck Theorem B
         shell: bash
         working-directory: verification/proofs/agda/theorem-b
