@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: MPL-2.0
+# TEMPORARY DIAGNOSTIC — delete after use.
+# Uses NO actions at all: if this also startup_failures, the fault is
+# repo/org-level, not the action allowlist or SHA-pinning policy.
+name: "probe: no actions at all"
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Say hello without any action
+        run: echo "probe ran"
