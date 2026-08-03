@@ -10,14 +10,13 @@
 # were local recipes only, so the claims were asserted rather than measured.
 # By this estate's own doctrine an unenforced proof claim is a fake gate.
 #
-# NAMED AND OPEN (HC-5, stub-and-name — do not silently round this up):
-# `lake build` of the two Lean developments is NOT gated here. Lean v4.16.0 plus
-# Mathlib needs the binary cache (`lake exe cache get`) to finish in tolerable
-# CI time, and that was not verified when this workflow landed — a toolchain
-# download alone exceeded the local trial. So what IS gated is the Lean *source*
-# honesty property (below), which is checkable without any toolchain, plus the
-# full Agda development. The Lean build itself remains a local `just build-lean`
-# claim, and remains unenforced until the cache step is proved out.
+# The `lake build` hole named when this workflow landed is now CLOSED. The open
+# question was whether Mathlib could be made tractable in CI; it can. Measured
+# locally on the pinned toolchain (Lean v4.16.0):
+#   lake exe cache get   6014 files unpacked, "Completed successfully!", 8m56s
+#   lake build           all 5 libraries, exit 0, "Build completed successfully."
+# and the emitted `#print axioms` lines showed propext / Quot.sound /
+# Classical.choice only — no sorryAx anywhere.
 name: "🔴 Gate: Formal proofs"
 
 on:
@@ -114,3 +113,32 @@ jobs:
           agda --safe --without-K All.agda
           agda --safe --without-K Smoke.agda
           echo "PASS: All.agda + Smoke.agda typecheck (--safe => postulate-free by construction)"
+
+  # The Lean developments actually built. `lean-source-honesty` above is a cheap
+  # syntactic guard that runs in seconds on every push; this is the semantic one,
+  # and it is what makes ADR 0003's "grade-algebra ground truth" a measured claim
+  # rather than an asserted one.
+  #
+  # nanoda-allow-sorry: false makes an EXTERNAL type checker reject sorryAx, so a
+  # proof cannot be admitted by a `sorry` that the grep above happens to miss
+  # (e.g. one introduced through an import rather than written inline).
+  lean-build:
+    name: "Lean ${{ matrix.pkg }}: lake build + sorry-free environment"
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        # grade-factorisation imports grade-boundary; both are built.
+        pkg: [grade-boundary, grade-factorisation]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build ${{ matrix.pkg }} and check the environment
+        uses: leanprover/lean-action@38fbc41a8c28c4cbaec22d7f7de508ec2e7c0dd9 # v1.5.0
+        with:
+          lake-package-directory: verification/proofs/lean4/${{ matrix.pkg }}
+          build: true
+          use-mathlib-cache: true
+          use-github-cache: true
+          nanoda: true
+          nanoda-allow-sorry: false
