@@ -37,7 +37,6 @@ workflows:
         - 'softprops/action-gh-release@v3.0.2'
     '.github/workflows/rhodibot.yml':
         - 'actions/checkout@v7.0.1'
-    '.github/workflows/rsr-antipattern.yml': []
     '.github/workflows/runtime-policy.yml':
         - 'actions/checkout@v7.0.1'
     '.github/workflows/rust-ci.yml': []
