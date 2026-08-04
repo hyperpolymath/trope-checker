@@ -1,4 +1,5 @@
 # SPDX-License-Identifier: MPL-2.0
+# This workflow is managed by gh actions-lock.
 # Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 #
 # Trope-particularity checks (no Python). All three jobs are real gates: the
@@ -25,7 +26,7 @@ jobs:
   ir-wellformed:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
       - name: Every IR fixture + the schema is well-formed JSON
         run: |
           for f in tests/conformance/fixtures/*.ir.json \
@@ -54,7 +55,7 @@ jobs:
     container:
       image: ghcr.io/stefan-hoeck/idris2-pack@sha256:de9781906050dc44704ec6de0108c86f899ef17b2642932b79e00245d613b8ad
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
       - name: Install container prerequisites (jq)
         shell: bash
         run: |
@@ -91,7 +92,7 @@ jobs:
   rust-fast-core:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
       - name: Build the Rust fast-core (dep-free, offline) and run the conformance corpus
         run: |
           ( cd src/rust && cargo build --release )
