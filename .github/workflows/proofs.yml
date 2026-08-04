@@ -1,4 +1,5 @@
 # SPDX-License-Identifier: MPL-2.0
+# This workflow is managed by gh actions-lock.
 # Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 #
 # The formal developments, enforced.
@@ -44,7 +45,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
       - name: Gate the Lean sources
         shell: bash
         run: |
@@ -81,7 +82,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
       - name: Install Agda and register the standard library
         shell: bash
         run: |
@@ -132,9 +133,9 @@ jobs:
         # grade-factorisation imports grade-boundary; both are built.
         pkg: [grade-boundary, grade-factorisation]
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
       - name: Build ${{ matrix.pkg }} and check the environment
-        uses: leanprover/lean-action@38fbc41a8c28c4cbaec22d7f7de508ec2e7c0dd9 # v1.5.0
+        uses: leanprover/lean-action@v1.5.0
         with:
           lake-package-directory: verification/proofs/lean4/${{ matrix.pkg }}
           build: true
