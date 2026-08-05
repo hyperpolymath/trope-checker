@@ -16,7 +16,7 @@ concurrency:
 permissions:
   contents: read
 jobs:
-  lint:
+  code-quality:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -37,7 +37,7 @@ jobs:
         uses: editorconfig-checker/action-editorconfig-checker@v2.2.0
       - name: Gate falsifiability canaries (R10)
         run: bash scripts/test-gate-falsifiability.sh
-  docs:
+  docs-present:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
