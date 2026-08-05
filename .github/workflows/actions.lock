@@ -12,7 +12,6 @@ workflows:
         - 'dependabot/fetch-metadata@v3.1.0'
     '.github/workflows/dogfood-gate.yml':
         - 'actions/checkout@v7.0.1'
-    '.github/workflows/e2e.yml': []
     '.github/workflows/estate-rules.yml':
         - 'actions/checkout@v7.0.1'
     '.github/workflows/governance.yml': []
