@@ -1,8 +1,19 @@
 # SPDX-License-Identifier: MPL-2.0
 # This workflow is managed by gh actions-lock.
-# Static Analysis Gate — Required by branch protection rules.
+# Static analysis — advisory CHECK, deliberately NOT a blocking gate.
+#
+# Tier: 🟡 CHECK. It was labelled 🔴 Gate for 132 runs and never once failed,
+# because it cannot: it skips when its tools are absent, pipes findings through
+# `|| true`, and carries continue-on-error. Two honest resolutions existed —
+# make it able to fail, or stop calling it a gate. The second is correct here:
+# panic-attack has a known false-positive problem (panic-attack#171), much of it
+# firing on tests and benches rather than shipping code, so blocking merges on
+# it would train people to bypass the gate. Advisory is what it actually is.
+#
+# It was also NOT in any ruleset despite the old header claiming otherwise, so
+# renaming it cannot strand a required context.
 # Runs panic-attack and hypatia, deposits findings for gitbot-fleet learning.
-name: "🔴 Gate: Static analysis"
+name: "🟡 CHECK: Static analysis"
 on:
   pull_request:
     branches: ['**']
@@ -33,7 +44,7 @@ jobs:
             chmod +x /usr/local/bin/panic-attack
             echo "installed=true" >> "$GITHUB_OUTPUT"
           else
-            echo "::notice::panic-attack binary not available — skipping assail"
+            echo "::warning::panic-attack binary NOT AVAILABLE — assail DID NOT RUN. Empty findings below mean "not scanned", not "clean"."
             echo "installed=false" >> "$GITHUB_OUTPUT"
           fi
       - name: Run panic-attack assail
@@ -95,7 +106,7 @@ jobs:
           echo "[]" > panic-attack-findings.json
           echo "## panic-attack assail" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "Skipped: panic-attack not available in this environment." >> "$GITHUB_STEP_SUMMARY"
+          echo "**DID NOT RUN** — panic-attack was not available in this environment. The empty result is absence of evidence, not evidence of absence." >> "$GITHUB_STEP_SUMMARY"
       - name: Upload panic-attack findings
         uses: actions/upload-artifact@v7.0.1
         with:
@@ -140,7 +151,7 @@ jobs:
             fi
             echo "ready=true" >> "$GITHUB_OUTPUT"
           else
-            echo "::notice::Hypatia scanner not available — skipping scan"
+            echo "::warning::Hypatia scanner NOT AVAILABLE — scan DID NOT RUN. Empty findings below mean "not scanned", not "clean"."
             echo "ready=false" >> "$GITHUB_OUTPUT"
           fi
       - name: Run Hypatia scan
@@ -199,7 +210,7 @@ jobs:
           echo "[]" > hypatia-findings.json
           echo "## Hypatia Scan" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "Skipped: Hypatia scanner not available in this environment." >> "$GITHUB_STEP_SUMMARY"
+          echo "**DID NOT RUN** — the Hypatia scanner was not available in this environment. The empty result is absence of evidence, not evidence of absence." >> "$GITHUB_STEP_SUMMARY"
       - name: Upload hypatia findings
         uses: actions/upload-artifact@v7.0.1
         with:
@@ -232,7 +243,7 @@ jobs:
             chmod +x /usr/local/bin/panic-attack
             echo "installed=true" >> "$GITHUB_OUTPUT"
           else
-            echo "::notice::panic-attack binary not available — skipping Patch Bridge"
+            echo "::warning::panic-attack binary NOT AVAILABLE — Patch Bridge DID NOT RUN. An empty CVE report below means "not triaged", not "no CVEs"."
             echo "installed=false" >> "$GITHUB_OUTPUT"
           fi
       - name: Run Patch Bridge triage
@@ -280,7 +291,7 @@ jobs:
           echo '{"cves":[],"mitigated":0,"unmitigable":0,"concatenative":0,"informational":0}' > bridge-report.json
           echo "## Patch Bridge CVE Triage" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "Skipped: panic-attack not available in this environment." >> "$GITHUB_STEP_SUMMARY"
+          echo "**DID NOT RUN** — panic-attack was not available in this environment. The empty result is absence of evidence, not evidence of absence." >> "$GITHUB_STEP_SUMMARY"
       - name: Upload bridge report
         uses: actions/upload-artifact@v7.0.1
         with:
