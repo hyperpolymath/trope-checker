@@ -3,8 +3,6 @@
 name: "⚪ Advisory: OpenSSF Scorecard (score)"
 
 on:
-  push:
-    branches: [main, master]
   schedule:
     - cron: '0 4 * * *'
   workflow_dispatch:
