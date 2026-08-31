@@ -119,9 +119,9 @@ self-assess:
         echo "  ○ .machine_readable/ai/PLACEHOLDERS.adoc — Template doc. Remove after init."
     fi
 
-    if { [ -f "build/flake.nix" ] || [ -f "flake.nix" ]; } && ! command -v nix >/dev/null 2>&1; then
-        echo "  ○ flake.nix — Nix flake. Safe to remove if you don't use Nix."
-        echo "    → KEEP if others might build with Nix."
+    if [ -f "build/flake.nix" ] || [ -f "flake.nix" ]; then
+        echo "  ● flake.nix — REMOVE. Nix is retired estate-wide (Guix only,"
+        echo "    ruled 2026-05-18). Make build/guix.scm real before deleting."
     fi
 
     if { [ -f "build/guix.scm" ] || [ -f "guix.scm" ]; } && ! command -v guix >/dev/null 2>&1; then

@@ -12,6 +12,16 @@ edition = "2021"
 license = "MPL-2.0"
 description = "Rust fast-core tropechecker (Trope IR -> verdict), validated by conformance against the Idris2 reference"
 
+# The algebra, decoder, and verdict procedure are exposed as a LIBRARY so that
+# downstream crates can depend on them in-process. Without this, a consumer
+# needing the retention order (e.g. loss-bounded traversal in a query engine)
+# must either spawn this binary per candidate or reimplement the algebra — and
+# reimplementing forks semantics that are proved in Idris2. The binary below is
+# a thin CLI over this library.
+[lib]
+name = "tropecheck_rs"
+path = "src/lib.rs"
+
 [[bin]]
 name = "tropecheck-rs"
 path = "src/main.rs"

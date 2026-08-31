@@ -1,7 +1,20 @@
 # SPDX-License-Identifier: MPL-2.0
-# Static Analysis Gate — Required by branch protection rules.
+# This workflow is managed by gh actions-lock.
+# This workflow is managed by gh actions-lock.
+# Static analysis — advisory CHECK, deliberately NOT a blocking gate.
+#
+# Tier: 🟡 CHECK. It was labelled 🔴 Gate for 132 runs and never once failed,
+# because it cannot: it skips when its tools are absent, pipes findings through
+# `|| true`, and carries continue-on-error. Two honest resolutions existed —
+# make it able to fail, or stop calling it a gate. The second is correct here:
+# panic-attack has a known false-positive problem (panic-attack#171), much of it
+# firing on tests and benches rather than shipping code, so blocking merges on
+# it would train people to bypass the gate. Advisory is what it actually is.
+#
+# It was also NOT in any ruleset despite the old header claiming otherwise, so
+# renaming it cannot strand a required context.
 # Runs panic-attack and hypatia, deposits findings for gitbot-fleet learning.
-name: "🔴 Gate: Static analysis"
+name: "🟡 CHECK: Static analysis"
 on:
   pull_request:
     branches: ['**']
@@ -19,7 +32,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
       - name: Install panic-attack (if available)
@@ -32,7 +45,7 @@ jobs:
             chmod +x /usr/local/bin/panic-attack
             echo "installed=true" >> "$GITHUB_OUTPUT"
           else
-            echo "::notice::panic-attack binary not available — skipping assail"
+            echo "::warning::panic-attack binary NOT AVAILABLE — assail DID NOT RUN. Empty findings below mean "not scanned", not "clean"."
             echo "installed=false" >> "$GITHUB_OUTPUT"
           fi
       - name: Run panic-attack assail
@@ -94,9 +107,9 @@ jobs:
           echo "[]" > panic-attack-findings.json
           echo "## panic-attack assail" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "Skipped: panic-attack not available in this environment." >> "$GITHUB_STEP_SUMMARY"
+          echo "**DID NOT RUN** — panic-attack was not available in this environment. The empty result is absence of evidence, not evidence of absence." >> "$GITHUB_STEP_SUMMARY"
       - name: Upload panic-attack findings
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: panic-attack-findings
           path: panic-attack-findings.json
@@ -115,13 +128,13 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
       - name: Setup Elixir for Hypatia scanner
         id: beam
         continue-on-error: true
-        uses: erlef/setup-beam@54075bcc5e249e4758d363f27d099f55d843f124 # v1.18.2
+        uses: erlef/setup-beam@v1.24.1
         with:
           elixir-version: '1.19.4'
           otp-version: '28.3'
@@ -139,7 +152,7 @@ jobs:
             fi
             echo "ready=true" >> "$GITHUB_OUTPUT"
           else
-            echo "::notice::Hypatia scanner not available — skipping scan"
+            echo "::warning::Hypatia scanner NOT AVAILABLE — scan DID NOT RUN. Empty findings below mean "not scanned", not "clean"."
             echo "ready=false" >> "$GITHUB_OUTPUT"
           fi
       - name: Run Hypatia scan
@@ -198,9 +211,9 @@ jobs:
           echo "[]" > hypatia-findings.json
           echo "## Hypatia Scan" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "Skipped: Hypatia scanner not available in this environment." >> "$GITHUB_STEP_SUMMARY"
+          echo "**DID NOT RUN** — the Hypatia scanner was not available in this environment. The empty result is absence of evidence, not evidence of absence." >> "$GITHUB_STEP_SUMMARY"
       - name: Upload hypatia findings
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: hypatia-findings
           path: hypatia-findings.json
@@ -219,7 +232,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
       - name: Install panic-attack (if available)
@@ -231,7 +244,7 @@ jobs:
             chmod +x /usr/local/bin/panic-attack
             echo "installed=true" >> "$GITHUB_OUTPUT"
           else
-            echo "::notice::panic-attack binary not available — skipping Patch Bridge"
+            echo "::warning::panic-attack binary NOT AVAILABLE — Patch Bridge DID NOT RUN. An empty CVE report below means "not triaged", not "no CVEs"."
             echo "installed=false" >> "$GITHUB_OUTPUT"
           fi
       - name: Run Patch Bridge triage
@@ -279,9 +292,9 @@ jobs:
           echo '{"cves":[],"mitigated":0,"unmitigable":0,"concatenative":0,"informational":0}' > bridge-report.json
           echo "## Patch Bridge CVE Triage" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "Skipped: panic-attack not available in this environment." >> "$GITHUB_STEP_SUMMARY"
+          echo "**DID NOT RUN** — panic-attack was not available in this environment. The empty result is absence of evidence, not evidence of absence." >> "$GITHUB_STEP_SUMMARY"
       - name: Upload bridge report
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: bridge-report
           path: bridge-report.json
@@ -303,17 +316,17 @@ jobs:
     if: always()
     steps:
       - name: Download panic-attack findings
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v4
+        uses: actions/download-artifact@v8.0.1
         with:
           name: panic-attack-findings
           path: findings/
       - name: Download hypatia findings
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v4
+        uses: actions/download-artifact@v8.0.1
         with:
           name: hypatia-findings
           path: findings/
       - name: Download bridge report
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v4
+        uses: actions/download-artifact@v8.0.1
         with:
           name: bridge-report
           path: findings/
@@ -373,7 +386,7 @@ jobs:
           echo "medium=$MEDIUM"     >> "$GITHUB_OUTPUT"
           echo "low=$LOW"           >> "$GITHUB_OUTPUT"
       - name: Upload unified findings (fleet scanner picks these up)
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: unified-findings
           path: findings/unified-findings.json

@@ -1,0 +1,146 @@
+# SPDX-License-Identifier: MPL-2.0
+# This workflow is managed by gh actions-lock.
+# This workflow is managed by gh actions-lock.
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+#
+# The formal developments, enforced.
+#
+# ~4.1k lines of Lean 4 and Agda underwrite this repository's strongest claims —
+# the grade-algebra cancellation boundary (Lean, ADR 0003 "ground truth") and
+# Theorem B, the calculus metatheory (Agda, --safe --without-K). Until now none
+# of it ran in CI: `just verify-all`, `just build-lean` and `just build-agda`
+# were local recipes only, so the claims were asserted rather than measured.
+# By this estate's own doctrine an unenforced proof claim is a fake gate.
+#
+# The `lake build` hole named when this workflow landed is now CLOSED. The open
+# question was whether Mathlib could be made tractable in CI; it can. Measured
+# locally on the pinned toolchain (Lean v4.16.0):
+#   lake exe cache get   6014 files unpacked, "Completed successfully!", 8m56s
+#   lake build           all 5 libraries, exit 0, "Build completed successfully."
+# and the emitted `#print axioms` lines showed propext / Quot.sound /
+# Classical.choice only — no sorryAx anywhere.
+name: "🔴 Gate: Formal proofs"
+
+on:
+  push:
+    paths:
+      - 'verification/proofs/lean4/**'
+      - 'verification/proofs/agda/**'
+      - '.github/workflows/proofs.yml'
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Pure grep over the Lean sources: no toolchain, seconds to run, and it is the
+  # gate that makes "sorry-free" checkable rather than merely stated. Mirrors the
+  # `verify-all` recipe in build/just/proofs.just — keep the two in step.
+  lean-source-honesty:
+    name: "Lean sources: no sorry / admit / native_decide / user axiom"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Gate the Lean sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          fail=0
+          for f in verification/proofs/lean4/grade-boundary/GradeBoundary.lean \
+                   verification/proofs/lean4/grade-factorisation/GradeFactorisation.lean; do
+            if [ ! -f "$f" ]; then
+              echo "::error::gated file is missing: $f"; fail=1; continue
+            fi
+            echo "--- gating $f ---"
+            if grep -nE '(:=|by|;|<;>|=>|\|)[[:space:]]*(sorry|admit)\b|\bnative_decide\b' "$f"; then
+              echo "::error file=$f::forbidden Lean tactic (sorry/admit/native_decide)"; fail=1
+            fi
+            if grep -nE '^[[:space:]]*axiom\b' "$f"; then
+              echo "::error file=$f::user axiom declared"; fail=1
+            fi
+          done
+          [ "$fail" -eq 0 ] || exit 1
+          echo "PASS: Lean sources are sorry/admit/native_decide-free and declare no user axioms"
+
+  # Theorem B, the calculus metatheory. --safe rejects postulates by construction,
+  # so this is a real check of postulate-freedom and not a word-grep (a grep would
+  # false-positive on the honest "postulate-free" prose in the comments).
+  #
+  # NOTE ON THE VERSION PIN: theorem-b.agda-lib is developed against Agda 2.8.0
+  # (ADR 0003). The runner's packaged Agda is older. The version is printed, not
+  # asserted, because asserting a version the runner cannot supply produces a
+  # permanently-red gate rather than a signal — and the substantive guarantee here
+  # comes from --safe --without-K, which holds across versions. Verified locally
+  # under 2.6.4.3: All.agda and Smoke.agda both typecheck, exit 0.
+  agda-theorem-b:
+    name: "Agda Theorem B (--safe --without-K)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Install Agda and register the standard library
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends agda agda-stdlib
+          echo "agda --version -> $(agda --version | head -1)"
+          echo "ratified pin (ADR 0003) is Agda 2.8.0; --safe --without-K is the substantive check"
+
+          # Installing the package is not enough: Agda only sees a library that is
+          # listed in its `libraries` file, and a fresh runner has none. WHICH path
+          # that file lives at is VERSION-DEPENDENT (~/.agda vs ~/.config/agda), so
+          # point AGDA_DIR at a directory we control rather than guessing, and
+          # resolve the .agda-lib from the package rather than hardcoding it.
+          lib="$(dpkg -L agda-stdlib | grep -m1 'standard-library\.agda-lib$' || true)"
+          if [ -z "$lib" ]; then
+            echo "::error::agda-stdlib is installed but standard-library.agda-lib was not found"
+            exit 1
+          fi
+          mkdir -p "${RUNNER_TEMP}/agda"
+          echo "$lib" > "${RUNNER_TEMP}/agda/libraries"
+          echo "AGDA_DIR=${RUNNER_TEMP}/agda" >> "$GITHUB_ENV"
+          echo "registered standard-library at: $lib"
+      - name: Typecheck Theorem B
+        shell: bash
+        working-directory: verification/proofs/agda/theorem-b
+        run: |
+          set -euo pipefail
+          agda --safe --without-K All.agda
+          agda --safe --without-K Smoke.agda
+          echo "PASS: All.agda + Smoke.agda typecheck (--safe => postulate-free by construction)"
+
+  # The Lean developments actually built. `lean-source-honesty` above is a cheap
+  # syntactic guard that runs in seconds on every push; this is the semantic one,
+  # and it is what makes ADR 0003's "grade-algebra ground truth" a measured claim
+  # rather than an asserted one.
+  #
+  # nanoda-allow-sorry: false makes an EXTERNAL type checker reject sorryAx, so a
+  # proof cannot be admitted by a `sorry` that the grep above happens to miss
+  # (e.g. one introduced through an import rather than written inline).
+  lean-build:
+    name: "Lean ${{ matrix.pkg }}: lake build + sorry-free environment"
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        # grade-factorisation imports grade-boundary; both are built.
+        pkg: [grade-boundary, grade-factorisation]
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Build ${{ matrix.pkg }} and check the environment
+        uses: leanprover/lean-action@v1.5.0
+        with:
+          lake-package-directory: verification/proofs/lean4/${{ matrix.pkg }}
+          build: true
+          use-mathlib-cache: true
+          use-github-cache: true
+          nanoda: true
+          nanoda-allow-sorry: false

@@ -39,7 +39,7 @@ Copyright: 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 License: MPL-2.0
 
 # Lockfiles and auto-generated
-Files: *.lock Cargo.lock flake.lock
+Files: *.lock Cargo.lock
 Copyright: 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 License: MPL-2.0
 
