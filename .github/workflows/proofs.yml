@@ -46,7 +46,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@v7
       - name: Gate the Lean sources
         shell: bash
         run: |
@@ -83,7 +83,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@v7
       - name: Install Agda and register the standard library
         shell: bash
         run: |
@@ -134,9 +134,9 @@ jobs:
         # grade-factorisation imports grade-boundary; both are built.
         pkg: [grade-boundary, grade-factorisation]
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@v7
       - name: Build ${{ matrix.pkg }} and check the environment
-        uses: leanprover/lean-action@v1.5.0
+        uses: leanprover/lean-action@v1.6.0
         with:
           lake-package-directory: verification/proofs/lean4/${{ matrix.pkg }}
           build: true
