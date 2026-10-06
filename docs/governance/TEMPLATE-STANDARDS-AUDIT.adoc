@@ -7,6 +7,8 @@ v1.0, 2026-04-07
 :toclevels: 3
 :sectnums:
 
+NOTE: Added 2026-10-06. This audit describes rsr-template-repo as of 2026-04-07 and is kept as written. In this repo the A2ML files it names, such as `0-AI-MANIFEST.a2ml`, are retired. The repo deed `trope-checker_chora.deed` at the root is the single machine-readable record.
+
 == Scope And Inventory
 
 Audit scope:
@@ -40,12 +42,12 @@ Inventory snapshot at audit time:
 | Actual files are `CONTRIBUTING.md`, no root `GOVERNANCE.adoc`, `SECURITY.md`.
 | Fixed README links to existing files.
 
-| ABI path lower-case only
+| ABI path case
 | legacy `README.adoc` + legacy checks
 | `src/interface/abi/*.idr`
 | outdated
-| Tree previously shipped `src/interface/Abi/*.idr` (uppercase A); now renamed.
-| Renamed to canonical lowercase `src/interface/abi/*.idr` (matches `validate-template.sh` + gossamer). Checks remain tolerant of either case.
+| The tree ships `src/interface/Abi/*.idr` (uppercase A, matching `module Abi.*`). An earlier row here recorded a rename to lowercase that never happened (corrected 2026-10-06).
+| The canonical path is `src/interface/Abi/*.idr`. Checks remain tolerant of either case.
 
 | Root manifest structure with non-existent files
 | legacy `0-AI-MANIFEST.a2ml` (pre-migration)

@@ -14,9 +14,6 @@ set shell := ["bash", "-uc"]
 set dotenv-load := true
 set positional-arguments := true
 
-# Import auto-generated contractile recipes (must-check, trust-verify, etc.)
-# Re-generate with: contractile gen-just
-import? "build/contractile.just"
 import? "build/just/trope.just"
 
 # Project metadata — customize these
@@ -53,7 +50,7 @@ info:
     @echo "Version: {{version}}"
     @echo "RSR Tier: {{tier}}"
     @echo "Recipes: $(just --summary | wc -w)"
-    @[ -f ".machine_readable/6a2/STATE.a2ml" ] && grep -oP 'phase\s*=\s*"\K[^"]+' .machine_readable/6a2/STATE.a2ml | head -1 | xargs -I{} echo "Phase: {}" || true
+    @grep -oP '\(status\s+:phase\s+\K\S+' trope-checker_chora.deed 2>/dev/null | head -1 | xargs -I{} echo "Phase: {}" || true
 
 # Run Invariant Path overlay tools for this repository
 invariant-path *ARGS:
@@ -89,7 +86,6 @@ build *args:
     #   cargo build {{args}}                    # Rust
     #   mix compile {{args}}                    # Elixir
     #   zig build {{args}}                      # Zig
-    #   deno task build {{args}}                # Deno/ReScript
     @echo "Build complete"
 
 # Build in release mode with optimizations
@@ -109,7 +105,6 @@ build-watch:
     # Examples:
     #   find src -name '*.rs' | entr -c just build
     #   mix compile --force --warnings-as-errors
-    #   deno task dev
 
 # Clean build artifacts [reversible: rebuild with `just build`]
 clean:
@@ -133,7 +128,6 @@ test *args:
     #   cargo test {{args}}
     #   mix test {{args}}
     #   zig build test {{args}}
-    #   deno test {{args}}
     @echo "Tests passed!"
 
 # Run tests with verbose output
@@ -176,7 +170,6 @@ bench:
     #   cargo bench                           # Rust criterion
     #   zig build bench                       # Zig benchmarks
     #   mix run bench/benchmarks.exs          # Elixir benchee
-    #   deno bench                            # Deno bench
     @echo "Benchmarks complete!"
 
 # Run readiness tests (Component Readiness Grade: D/C/B)
@@ -186,18 +179,18 @@ readiness:
     #   cargo test --test readiness -- --nocapture
     @echo "Readiness tests complete!"
 
-# Print the current CRG grade (reads from READINESS.md '**Current Grade:** X' line)
+# Print the current CRG grade (reads the '*Current Grade:* X' line of docs/status/READINESS.adoc)
 crg-grade:
-    @grade=$$(grep -oP '(?<=\*\*Current Grade:\*\* )[A-FX]' READINESS.md 2>/dev/null | head -1); \
-    [ -z "$$grade" ] && grade="X"; \
-    echo "$$grade"
+    @grade=$(grep -oP '(?<=^\*Current Grade:\* )[A-FX]' docs/status/READINESS.adoc 2>/dev/null | head -1); \
+    [ -z "$grade" ] && grade="X"; \
+    echo "$grade"
 
 # Print a shields.io CRG badge for embedding in README files
-# Looks for '**Current Grade:** X' in READINESS.md; falls back to X
+# Looks for '*Current Grade:* X' in docs/status/READINESS.adoc; falls back to X
 crg-badge:
-    @grade=$$(grep -oP '(?<=\*\*Current Grade:\*\* )[A-FX]' READINESS.md 2>/dev/null | head -1); \
-    [ -z "$$grade" ] && grade="X"; \
-    case "$$grade" in \
+    @grade=$(grep -oP '(?<=^\*Current Grade:\* )[A-FX]' docs/status/READINESS.adoc 2>/dev/null | head -1); \
+    [ -z "$grade" ] && grade="X"; \
+    case "$grade" in \
       A) color="brightgreen" ;; \
       B) color="green" ;; \
       C) color="yellow" ;; \
@@ -206,7 +199,7 @@ crg-badge:
       F) color="critical" ;; \
       *) color="lightgrey" ;; \
     esac; \
-    echo "[![CRG $$grade](https://img.shields.io/badge/CRG-$$grade-$$color?style=flat-square)](https://github.com/hyperpolymath/standards/tree/main/component-readiness-grades)"
+    echo "[![CRG $grade](https://img.shields.io/badge/CRG-$grade-$color?style=flat-square)](https://github.com/hyperpolymath/standards/tree/main/component-readiness-grades)"
 
 # Run the full merge-requirement test suite (ALL categories)
 # Per STANDING rule: P2P + E2E + aspect + execution + lifecycle + bench
@@ -233,7 +226,6 @@ fmt:
     #   cargo fmt
     #   mix format
     #   gleam format
-    #   deno fmt
 
 # Check formatting without changes
 fmt-check:
@@ -545,32 +537,16 @@ sbom:
 import? "build/just/validate.just"
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# STATE MANAGEMENT
-# ═══════════════════════════════════════════════════════════════════════════════
-
-# Update STATE.a2ml timestamp
-state-touch:
-    @if [ -f ".machine_readable/6a2/STATE.a2ml" ]; then \
-        sed -i 's/last-updated = "[^"]*"/last-updated = "'"$(date +%Y-%m-%d)"'"/' .machine_readable/6a2/STATE.a2ml && \
-        echo "STATE.a2ml timestamp updated"; \
-    fi
-
-# Show current phase from STATE.a2ml
-state-phase:
-    @grep -oP 'phase\s*=\s*"\K[^"]+' .machine_readable/6a2/STATE.a2ml 2>/dev/null | head -1 || echo "unknown"
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# GUIX PACKAGING
+# GUIX
 # ═══════════════════════════════════════════════════════════════════════════════
 
 # Enter Guix development shell
 guix-shell:
-    guix shell -D -f guix.scm
+    guix shell -D -f build/guix.scm
 
 # Build with Guix
 guix-build:
-    guix build -f guix.scm
-
+    guix build -f build/guix.scm
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # HYBRID AUTOMATION
@@ -580,7 +556,7 @@ guix-build:
 automate task="all":
     #!/usr/bin/env bash
     case "{{task}}" in
-        all) just fmt && just lint && just test && just docs && just state-touch ;;
+        all) just fmt && just lint && just test && just docs ;;
         cleanup) just clean && find . -name "*.orig" -delete && find . -name "*~" -delete ;;
         update) just deps && just validate ;;
         *) echo "Unknown: {{task}}. Use: all, cleanup, update" && exit 1 ;;

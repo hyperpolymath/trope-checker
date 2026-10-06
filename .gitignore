@@ -37,11 +37,7 @@ erl_crash.dump
 *.jl.mem
 /Manifest.toml
 
-# ReScript
-/lib/bs/
-/.bsb.lock
-
-# Python (SaltStack only)
+# Python is banned; ignore stray caches
 __pycache__/
 *.py[cod]
 .venv/
@@ -50,7 +46,6 @@ __pycache__/
 *.ali
 /obj/
 /bin/
-
 
 # Haskell
 /.stack-work/
@@ -107,8 +102,8 @@ deps/
 build/
 dist/
 
-# /build/ is a tracked config directory (build orchestration: contractile.just,
-# flake.nix, just/*.just, etc.) introduced in chore/root-cleanup. Whitelist
+# /build/ is a tracked config directory (build orchestration: just/*.just, guix.scm,
+# Containerfile, setup.sh) introduced in chore/root-cleanup. Whitelist
 # root-level /build/ so its contents are tracked. The blanket `build/` rule
 # above still ignores any nested `build/` directories (e.g. Rust crate
 # target/build/) — only the root-level path is exempt.

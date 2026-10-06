@@ -48,15 +48,15 @@
                         ┌─────────────────────────────────────────┐
                         │          PLATFORM INTEGRATION           │
                         │  ┌───────────┐  ┌───────────┐  ┌───────┐│
-                        │  │ GitHub    │  │ GitLab    │  │ Nix / ││
-                        │  │ Workflows │  │ CI/CD     │  │ Guix  ││
+                        │  │ GitHub    │  │ GitLab    │  │ Guix  ││
+                        │  │ Workflows │  │ CI/CD     │  │       ││
                         │  └───────────┘  └───────────┘  └───────┘│
                         └─────────────────────────────────────────┘
 
                         ┌─────────────────────────────────────────┐
                         │          REPO INFRASTRUCTURE            │
-                        │  Justfile / Mustfile  .machine_readable/  │
-                        │  Codeowners / Reuse   0-AI-MANIFEST.a2ml  │
+                        │  Justfile             .machine_readable/│
+                        │  Codeowners / Reuse   repo deed (.deed) │
                         └─────────────────────────────────────────┘
 ```
 
@@ -85,12 +85,11 @@ CONTAINER ECOSYSTEM (Phase 2)
   k9-svc deployment (Nickel)        ██████████ 100%    Hunt-level deploy descriptor
   ct-build.sh pipeline              ██████████ 100%    Build/sign/verify script
   Justfile container-* recipes      ██████████ 100%    8 recipes integrated
-  Trustfile CONTAINER_SUPPLY_CHAIN  ██████████ 100%    Supply chain section added
 
 REPO INFRASTRUCTURE
-  .machine_readable/                ██████████ 100%    STATE/META/ECOSYSTEM active
+  .machine_readable/                ██████████ 100%    repo deed active
   Governance & License              ██████████ 100%    PMPL & Ethical use verified
-  Development Shells (Nix/Guix)     ██████████ 100%    Reproducible env stable
+  Development Shells (Guix)         ██████████ 100%    Reproducible env stable
 
 ─────────────────────────────────────────────────────────────────────────────
 OVERALL:                            ██████████ 100%    RSR Template Stable & Certified

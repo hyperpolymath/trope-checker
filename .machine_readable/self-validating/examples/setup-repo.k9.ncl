@@ -49,7 +49,7 @@ K9!
 
     # RSR compliance features to enable
     features = {
-      checkpoint_files | Bool = true,  # STATE.a2ml, ECOSYSTEM.a2ml, META.a2ml
+      repo_deed | Bool = true,  # <repo>_chora.deed at the root, written by hand (standards 1-formats/deed)
       security_workflows | Bool = true,  # CodeQL, Scorecard, etc.
       quality_checks | Bool = true,  # Linting, formatting
       mirroring | Bool = false,  # GitLab/Bitbucket mirrors
@@ -96,7 +96,6 @@ K9!
       commands = [
         "mkdir -p src/ docs/ tests/ scripts/",
         "mkdir -p .github/workflows/",
-        "mkdir -p .machine_readable/contractiles/k9/",
         "echo '✓ Directory structure created'",
       ],
     },
@@ -120,13 +119,11 @@ K9!
       ],
     },
 
-    "create-checkpoint-files" = {
-      description = "Create STATE.a2ml, ECOSYSTEM.a2ml, META.a2ml",
+    "check-repo-deed" = {
+      description = "Check that exactly one repo deed (<repo>_chora.deed) sits at the root",
       commands = [
-        "echo '(state (version \"1.0.0\") (project \"%{config.repo_name}\"))' > STATE.a2ml",
-        "echo '(ecosystem (version \"1.0.0\") (name \"%{config.repo_name}\"))' > ECOSYSTEM.a2ml",
-        "echo '(meta (version \"1.0.0\") (project \"%{config.repo_name}\"))' > META.a2ml",
-        "echo '✓ Checkpoint files created'",
+        "test \"$(ls -1 *_chora.deed 2>/dev/null | wc -l)\" -eq 1",
+        "echo '✓ Repo deed present'",
       ],
     },
 
@@ -154,7 +151,6 @@ K9!
         "echo '⚠️  This will delete all generated files'",
         "echo 'Press Ctrl+C to cancel, or wait 5 seconds...'",
         "sleep 5",
-        "rm -f STATE.a2ml ECOSYSTEM.a2ml META.a2ml",
         "echo '✓ Cleaned'",
       ],
     },

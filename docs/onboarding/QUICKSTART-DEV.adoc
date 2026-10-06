@@ -19,19 +19,12 @@
 guix shell
 ----
 
-=== Option B: Nix (fallback)
+=== Option B: Manual
 
 [source,bash]
 ----
-nix develop
-----
-
-=== Option C: Manual
-
-[source,bash]
-----
-git clone https://github.com/hyperpolymath/rsr-template-repo.git
-cd rsr-template-repo
+git clone https://github.com/hyperpolymath/trope-checker.git
+cd trope-checker
 just setup-dev
 ----
 
@@ -55,15 +48,14 @@ just setup-dev
 ----
 rsr-template-repo/
 ├── src/                  # Source code
-├── src/abi/              # Idris2 ABI definitions (if applicable)
+├── src/interface/Abi/              # Idris2 ABI definitions (if applicable)
 ├── ffi/zig/              # Zig FFI bridge (if applicable)
 ├── tests/                # Test suite
 ├── docs/                 # Documentation
-├── .machine_readable/    # Checkpoint files (STATE, META, ECOSYSTEM)
+├── .machine_readable/    # Machine-readable support files (see its README)
 ├── Justfile              # Task runner recipes
 ├── guix.scm              # Guix environment
-├── flake.nix             # Nix environment (fallback)
-└── 0-AI-MANIFEST.a2ml    # AI agent entry point
+└── trope-checker_chora.deed  # The repo deed: AI agent entry point
 ----
 
 == Key Recipes
@@ -87,13 +79,6 @@ just test           # All tests pass
 just panic-scan     # No new security issues
 ----
 
-== Contractile Invariants
-
-Read `.machine_readable/MUST.contractile` before making changes.
-Key invariants that must never be violated:
-
-{{MUST_INVARIANTS}}
-
 == LLM/AI Agent Development
 
 If using an AI assistant, load the warmup context first:
@@ -103,7 +88,7 @@ If using an AI assistant, load the warmup context first:
 just llm-context    # Outputs role-appropriate context
 ----
 
-Or read `0-AI-MANIFEST.a2ml` and `.claude/CLAUDE.md` directly.
+Or read `trope-checker_chora.deed` (the repo deed) directly.
 
 == Get Help
 

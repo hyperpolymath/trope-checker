@@ -20,7 +20,7 @@ permissions:
 
 jobs:
   # ---------------------------------------------------------------------------
-  # Job 1: A2ML manifest validation
+  # Job 1: repo deed validation (job key kept so the check context is unchanged)
   # ---------------------------------------------------------------------------
   a2ml-validate:
     name: Validate DEED manifests
@@ -31,33 +31,36 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7.0.1
 
-      - name: Check for A2ML files
+      - name: Check for the repo deed
         id: detect
         run: |
-          COUNT=$(find . -type f \( -name '*.a2ml' -o -name '*.deed' \) -not -path './.git/*' | wc -l)
+          COUNT=$(find . -name '*.deed' -not -path './.git/*' | wc -l)
           echo "count=$COUNT" >> "$GITHUB_OUTPUT"
           if [ "$COUNT" -eq 0 ]; then
-            echo "::warning::No .a2ml/.deed manifest files found. Every RSR repo should have a repo deed (<reponame>_chora.deed); legacy 0-AI-MANIFEST.a2ml accepted mid-migration — standards #837"
+            echo "::error::No repo deed found. Every RSR repo carries <reponame>_chora.deed at its root"
+            exit 1
           fi
 
-      - name: Validate A2ML manifests
+      - name: Validate the repo deed (strict)
         if: steps.detect.outputs.count > 0
+        env:
+          INPUT_STRICT: "true"
         run: bash .githooks/validate-a2ml.sh
       - name: Write summary
         run: |
-          A2ML_COUNT="${{ steps.detect.outputs.count }}"
-          if [ "$A2ML_COUNT" -eq 0 ]; then
+          DEED_COUNT="${{ steps.detect.outputs.count }}"
+          if [ "$DEED_COUNT" -eq 0 ]; then
             cat <<'EOF' >> "$GITHUB_STEP_SUMMARY"
-          ## A2ML Validation
+          ## Repo deed validation
 
-          :warning: **No .a2ml/.deed manifest files found.** Every RSR-compliant repo should have a repo deed (`<reponame>_chora.deed`) at its root.
+          :x: **No repo deed found.** Every RSR-compliant repo should have a repo deed (`<reponame>_chora.deed`) at its root.
 
           Copy one from [rsr-template-repo](https://github.com/hyperpolymath/rsr-template-repo).
           EOF
           else
-            echo "## A2ML Validation" >> "$GITHUB_STEP_SUMMARY"
+            echo "## Repo deed validation" >> "$GITHUB_STEP_SUMMARY"
             echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "Scanned **${A2ML_COUNT}** manifest file(s) (.deed, or legacy .a2ml). See step output for details." >> "$GITHUB_STEP_SUMMARY"
+            echo "Scanned **${DEED_COUNT}** deed file(s). See step output for details." >> "$GITHUB_STEP_SUMMARY"
           fi
 
   # ---------------------------------------------------------------------------
@@ -96,7 +99,7 @@ jobs:
             cat <<'EOF' >> "$GITHUB_STEP_SUMMARY"
           ## K9 Contract Validation
 
-          :warning: **No .a2ml/.deed manifest files found.** Every RSR-compliant repo should have a repo deed (`<reponame>_chora.deed`) at its root.
+          :warning: **No K9 contracts found.**
 
           Generate contracts with: `k9iser generate .`
           EOF
@@ -298,12 +301,12 @@ jobs:
           SCORE=0
           MAX=6
 
-          # A2ML manifest present?
-          if find . -type f \( -name '*.a2ml' -o -name '*.deed' \) -not -path './.git/*' | head -1 | grep -q .; then
+          # Repo deed present?
+          if find . -maxdepth 1 -name '*_chora.deed' | head -1 | grep -q .; then
             SCORE=$((SCORE + 1))
-            A2ML_STATUS=":white_check_mark:"
+            DEED_STATUS=":white_check_mark:"
           else
-            A2ML_STATUS=":x:"
+            DEED_STATUS=":x:"
           fi
 
           # K9 contracts present?
@@ -353,7 +356,7 @@ jobs:
 
           | Tool/Format | Status | Notes |
           |-------------|--------|-------|
-          | AI manifest (0-AI-MANIFEST.deed, or legacy .a2ml) | ${A2ML_STATUS} | Required for all RSR repos |
+          | DEED repo deed (`<reponame>_chora.deed`) | ${DEED_STATUS} | Required for all RSR repos |
           | K9 contracts | ${K9_STATUS} | Required for repos with config files |
           | .editorconfig | ${EC_STATUS} | Required for all repos |
           | Groove endpoint | ${GROOVE_STATUS} | Required for service repos |

@@ -14,7 +14,7 @@
 
 set -eu
 
-# ── Colours (safe — uses symbols too per ADJUST contractile) ──
+# ── Colours (safe — uses symbols too) ──
 if [ -t 1 ] && command -v tput >/dev/null 2>&1; then
     RED=$(tput setaf 1 2>/dev/null || true)
     GREEN=$(tput setaf 2 2>/dev/null || true)

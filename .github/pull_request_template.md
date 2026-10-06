@@ -21,7 +21,7 @@ Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 - [ ] Tests pass (`just test` or equivalent)
 - [ ] Code is formatted (`just fmt` or equivalent)
 - [ ] Linter is clean (no new warnings or errors)
-- [ ] No banned language patterns (no TypeScript, no npm/bun, no Go/Python)
+- [ ] No banned language patterns (no TypeScript, ReScript, Deno, Node.js/npm, Go or Python)
 - [ ] No `unsafe` blocks without `// SAFETY:` comments
 - [ ] No banned functions (`believe_me`, `unsafeCoerce`, `Obj.magic`, `Admitted`, `sorry`)
 - [ ] SPDX license headers present on all new/modified source files
@@ -29,14 +29,12 @@ Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 
 ### As Applicable
 
-- [ ] `.machine_readable/6a2/STATE.a2ml` updated (if project state changed)
-- [ ] `.machine_readable/6a2/ECOSYSTEM.a2ml` updated (if integrations changed)
-- [ ] `.machine_readable/6a2/META.a2ml` updated (if architectural decisions changed)
+- [ ] `trope-checker_chora.deed` updated (if project state, integrations or decisions changed)
 - [ ] Documentation updated for user-facing changes
-- [ ] `TOPOLOGY.md` updated (if architecture changed)
+- [ ] `docs/architecture/TOPOLOGY.adoc` updated (if architecture changed)
 - [ ] `CHANGELOG` or release notes updated
 - [ ] New dependencies reviewed for license compatibility (MPL-2.0 / MPL-2.0)
-- [ ] ABI/FFI changes validated (`src/interface/abi/` and `src/interface/ffi/` consistent)
+- [ ] ABI/FFI changes validated (`src/interface/Abi/` and `src/interface/ffi/` consistent)
 
 ## Testing
 

@@ -7,6 +7,14 @@ pedigree = {
   security = { leash = 'Kennel },
 }
 
+# Typed identity: the repo deed (K9 coordination spec, standards
+# 2-protocols/k9-coordination/README.adoc, "deed_ref").
+project:
+  name: "trope-checker"
+  license: MPL-2.0
+  repo: hyperpolymath/trope-checker
+  deed_ref: trope-checker_chora.deed
+
 # Thin coordination bindings for central session-management standards
 
 session_management:

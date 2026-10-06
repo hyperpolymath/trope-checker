@@ -193,14 +193,6 @@ git mv TEMPLATE-STANDARDS-AUDIT.adoc docs/governance/
 # the split (e.g. `scripts/` = repo-local helpers, `tools/` = bundled binaries).
 ----
 
-=== Hygiene: case collisions in `affinescript/stdlib/`
-
-Cloning the template on a case-insensitive filesystem (Windows, default macOS)
-silently drops files because of pairs like `Math.affine` vs `math.affine`.
-
-Pick one canonical case per name and `git mv` the duplicates away. Keeping
-both is not portable.
-
 == Justfile recipe
 
 [source,just]

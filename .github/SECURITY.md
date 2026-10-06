@@ -4,24 +4,6 @@ Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 -->
 # Security Policy
 
-<!-- 
-============================================================================
-TEMPLATE INSTRUCTIONS (delete this block before publishing)
-============================================================================
-Replace all REMOVED values with your information:
-  Trope Checker     - Your project name
-  hyperpolymath            - GitHub username or org (e.g., hyperpolymath)
-  trope-checker             - Repository name
-  j.d.a.jewell@open.ac.uk   - Security contact email
-  0000000000000000000000000000000000000000  - Your PGP key fingerprint (40 chars, no spaces)
-  https://keys.openpgp.org/vks/v1/by-fingerprint/0000000000000000000000000000000000000000      - URL to your public PGP key
-  https://github.com/hyperpolymath/trope-checker          - Your website/domain
-  2026     - Current year for copyright
-
-Optional: Remove sections that don't apply (e.g., PGP if you don't use it)
-============================================================================
--->
-
 We take security seriously. We appreciate your efforts to responsibly disclose vulnerabilities and will make every effort to acknowledge your contributions.
 
 ## Table of Contents
