@@ -4,7 +4,7 @@ K9!
 #
 # K9 Validator: Methodology Guard
 # Checks that agent work respects methodology constraints declared in
-# bot_directives/methodology.a2ml.
+# .machine_readable/bot_directives/ and the repo deed (<repo>_chora.deed).
 #
 # Usage: k9 validate methodology-guard
 
@@ -47,9 +47,9 @@ let methodology_guard = {
     },
 
     state_not_template = {
-      description = "STATE.a2ml must not contain template placeholders",
+      description = "The repo deed must not contain template placeholders",
       severity = "warning",
-      file = ".machine_readable/6a2/STATE.a2ml",
+      file = "trope-checker_chora.deed",
       # NOTE: the PROJECT token below is written as a Nickel concat
       # ("{{" ++ "PROJECT}}") ON PURPOSE. `just init` runs a sed substitution for
       # the brace-PROJECT-brace token over EVERY text file, which would otherwise
@@ -57,17 +57,12 @@ let methodology_guard = {
       # check. Splitting the literal across "++" keeps the contiguous token text
       # out of the file (in this comment too) so init cannot match it, while
       # Nickel still evaluates the element back to the full token. Do not
-      # "simplify" it to a plain string. (The PLACEHOLDER token and
-      # "rsr-template-repo" are not init tokens, so they survive as-is.)
-      reject_patterns = ["REMOVED", "{{" ++ "PROJECT}}", "rsr-template-repo"],
+      # "simplify" it to a plain string. (The PLACEHOLDER token is not an
+      # init token, so it survives as-is. "rsr-template-repo" is not rejected
+      # here: the deed names it legitimately as :instantiated-from.)
+      reject_patterns = ["{{PLACEHOLDER}}", "{{" ++ "PROJECT}}"],
     },
 
-    coverage_updated = {
-      description = "coverage.a2ml should be updated within 30 days",
-      severity = "info",
-      file = ".machine_readable/bot_directives/coverage.a2ml",
-      staleness_days = 30,
-    },
   },
 }
 in methodology_guard

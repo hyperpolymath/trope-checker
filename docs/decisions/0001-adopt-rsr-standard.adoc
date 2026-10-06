@@ -12,6 +12,11 @@ Date: 2026-02-14
 
 Accepted
 
+Amended 2026-10-06: the A2ML state files and the `0-AI-MANIFEST.a2ml` entry point listed below are retired.
+The repo deed `trope-checker_chora.deed` at the root is now the single machine-readable record.
+The retired tree is frozen at https://github.com/hyperpolymath/trope-checker/tree/8f58d2409227b065fed01a898c02aba5fe134494/.machine_readable.
+The rest of this record is kept as written on 2026-02-14.
+
 ## Context
 
 Managing multiple repositories with an ad-hoc approach led to significant

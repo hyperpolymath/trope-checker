@@ -8,7 +8,6 @@ Use this as a repeatable maintenance runbook for any repo.
 Companion policy:
 
 - `docs/practice/SOFTWARE-DEVELOPMENT-APPROACH.adoc` (human-readable)
-- `.machine_readable/policies/SOFTWARE-DEVELOPMENT-APPROACH.a2ml` (machine-readable)
 
 ## Canonical Repo Baseline (Final)
 
@@ -82,7 +81,7 @@ Run this pass at the end of a corrective/adaptive/perfective cycle:
 ### Must
 
 - [ ] Keep required control files at repository root:
-  - `.gitignore`, `.gitattributes`, `.editorconfig`, `.tool-versions`
+  - `.gitignore`, `.gitattributes`, `.editorconfig`, `.mise.toml`
   - `Containerfile`
   - `.containerignore` (or `.dockerignore` only when required for compatibility)
   - `CNAME` and `.nojekyll` when using GitHub Pages/custom domain
@@ -91,14 +90,9 @@ Run this pass at the end of a corrective/adaptive/perfective cycle:
   - `MAINTAINER` in root
   - `.github/CODEOWNERS`
 - [ ] Keep machine-readable canonical structure under `.machine_readable/`:
-  - state/meta/ecosystem files (`*.a2ml` or repo standard)
-  - `anchors/ANCHOR.a2ml`
-  - `contractiles/` (`must`, `trust`, `intend`, and related)
+  - the repo deed `<repo>_chora.deed` at the root (the single machine-readable record; A2ML is retired)
   - `ai/` for AI guidance files
   - `bot_directives/` for bot control files
-- [ ] Keep contractiles/invariants present and wired:
-  - root `Mustfile` (or equivalent) with enforceable checks
-  - `Trustfile` and `Intentfile` present
 - [ ] Keep security metadata present:
   - `.well-known/security.txt` and relevant policy metadata
   - CI security scanning configured and runnable
@@ -106,7 +100,7 @@ Run this pass at the end of a corrective/adaptive/perfective cycle:
   - single navigation entry point in root (`NAVIGATION.adoc` or equivalent)
   - no duplicate conflicting docs for same purpose (for example both `.md` and `.adoc` in root unless intentionally required)
 - [ ] Enforce ABI/FFI purity where the policy applies:
-  - ABI definitions in Idris2 (`src/abi/*.idr`)
+  - ABI definitions in Idris2 (`src/interface/Abi/*.idr`)
   - FFI implementations in Zig (`ffi/**/*.zig`)
 - [ ] Ensure quality gate includes: formatting, lint, unit/integration tests, p2p/e2e checks, benchmark smoke, docs checks, security scan.
 
@@ -132,7 +126,7 @@ Run this pass at the end of a corrective/adaptive/perfective cycle:
 
 Do **not** move the following out of root if you want default tool behavior:
 
-- `.gitignore`, `.gitattributes`, `.editorconfig`, `.tool-versions`
+- `.gitignore`, `.gitattributes`, `.editorconfig`, `.mise.toml`
 - `Containerfile` and ignore file (`.containerignore`/`.dockerignore`)
 - `CNAME` and `.nojekyll` for GitHub Pages
 - `Justfile`
@@ -160,7 +154,7 @@ Useful flags:
 ~/Desktop/run-maintenance.sh --repo /absolute/path/to/repo --skip-panic
 
 # Explicit language selection
-~/Desktop/run-maintenance.sh --repo /absolute/path/to/repo --rust --python
+~/Desktop/run-maintenance.sh --repo /absolute/path/to/repo --rust
 
 # Release hard-pass mode (fails on warnings or failures)
 ~/Desktop/run-maintenance.sh --repo /absolute/path/to/repo --fail-on-warn
@@ -218,13 +212,7 @@ command -v podman podman-compose || true
 
 ## 2) Dependency/Env Prereqs
 
-- [ ] Python deps in active interpreter (for Python paths).
 - [ ] Language-specific tooling installed.
-
-```bash
-python -c "import sys; print(sys.executable)"
-python -c "import pydantic; print(pydantic.__version__)" || echo "pydantic missing"
-```
 
 ## 3) Corrective Maintenance First
 
@@ -290,19 +278,6 @@ cargo test --workspace
 cargo test --workspace --doc
 # Optional targeted benchmarks:
 cargo bench
-```
-
-### Python
-
-- [ ] Format/lint
-- [ ] Type check
-- [ ] Tests
-
-```bash
-ruff check .
-ruff format --check .
-mypy .
-pytest -q
 ```
 
 ### Elixir
@@ -373,7 +348,7 @@ Scope:
 Checks Run:
 - TODO/FIXME scan:
 - Panic-attacker:
-- Rust/Python/Elixir checks:
+- Rust/Elixir checks:
 - Container checks:
 - Benchmark checks:
 
@@ -412,10 +387,9 @@ Add these checks for language/compiler repositories with formal ABI/FFI constrai
 - [x] README structure restored (index/TOC, audience paths, quickstart sanity).
 - [x] Wiki split by audience (laypeople/users/developers) and linked from docs index.
 - [x] Root-level clutter reduced (archive, analysis, reports relegated to `docs/` subtrees).
-- [x] Machine-readable docs synchronized (`STATE.a2ml`, `META.a2ml`, `ECOSYSTEM.a2ml`, contractiles).
+- [x] Machine-readable record synchronized (the repo deed `<repo>_chora.deed`; A2ML is retired).
 - [x] Human-readable docs synchronized (`README`, `QUICK_STATUS`, roadmap, wiki home).
-- [x] `Mustfile` invariants present and enforceable in CI.
-- [x] `Trustfile` and `Intentfile` present and complete.
+- [x] Must/trust/intent invariants carried in the deed's `(agentic …)` and `(playbook …)` clauses and enforced in CI.
 - [x] FFI/ABI purity policy enforced (`*.zig` for FFI, `*.idr`/Idris2 for ABI).
 - [x] `panic-attack` findings triaged with explicit severity budget for release.
 - [x] Point-to-point, end-to-end, and benchmark checks wired in one quality gate.
@@ -497,7 +471,7 @@ Required behavior:
 3. Execute corrective maintenance first (fix regressions, panics, broken tests/commands).
 4. Run TODO/FIXME/stub scan and address relevant items.
 5. Run panic-attacker and fix findings in priority order; rerun to confirm.
-6. Run language-specific checks (Rust/Python/Elixir) relevant to this repo.
+6. Run language-specific checks (Rust/Elixir) relevant to this repo.
 7. Run benchmark/regression checks for touched hot paths.
 8. Enforce permission policy:
    - no group/world writable source files unless justified

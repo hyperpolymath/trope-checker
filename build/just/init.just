@@ -7,7 +7,7 @@
 # Variables (project, OWNER, REPO, version, tier) and the `set shell` directive
 # are inherited from the root Justfile.
 
-# Interactive project bootstrap — replaces all REMOVED tokens
+# Interactive project bootstrap — replaces all {{PLACEHOLDER}} tokens
 init:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -175,16 +175,12 @@ init:
         fi
     done
 
-    # Also replace [YOUR-REPO-NAME] and [YOUR-NAME/ORG] in AI manifest
-    sed -i "s|\[YOUR-REPO-NAME\]|${PROJECT_NAME}|g" 0-AI-MANIFEST.a2ml 2>/dev/null || true
-    sed -i "s|\[YOUR-NAME/ORG\]|${OWNER}|g" 0-AI-MANIFEST.a2ml 2>/dev/null || true
-
     echo ""
     echo "── Validation ───────────────────────────────────"
 
     # Check for remaining placeholders
     PATTERN="${LB}[A-Z_]*${RB}"
-    REMAINING=$(grep -rl "$PATTERN" . --include='*.md' --include='*.adoc' --include='*.yml' --include='*.yaml' --include='*.a2ml' --include='*.toml' --include='*.scm' --include='*.ncl' --include='*.nix' --include='*.json' --include='*.sh' 2>/dev/null | grep -v '.git/' | grep -v '.machine_readable/ai/PLACEHOLDERS.adoc' || true)
+    REMAINING=$(grep -rl "$PATTERN" . --include='*.md' --include='*.adoc' --include='*.yml' --include='*.yaml' --include='*.deed' --include='*.toml' --include='*.scm' --include='*.ncl' --include='*.json' --include='*.sh' 2>/dev/null | grep -v '.git/' | grep -v '.machine_readable/ai/PLACEHOLDERS.adoc' || true)
     if [ -n "$REMAINING" ]; then
         echo "WARNING: Remaining placeholders in:"
         echo "$REMAINING" | sed 's/^/  /'

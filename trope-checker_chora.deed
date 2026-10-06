@@ -1,0 +1,120 @@
+;; SPDX-License-Identifier: MPL-2.0
+;
+; The repo deed of trope-checker: the single machine-readable
+; record of the repo (one-deed-per-repo doctrine, standards#837). It replaces
+; the retired A2ML tree, frozen at
+; https://github.com/hyperpolymath/trope-checker/tree/8f58d2409227b065fed01a898c02aba5fe134494/.machine_readable
+; Grammar: standards 1-formats/deed/spec/abnf/deed.abnf.
+(repo-deed
+  :schema-version  "1.0.0"
+  :canonical-name  "trope-checker"
+  :beholding-chora #u5"estate/chora"
+
+  :repo-uuid       #u5"github.com/hyperpolymath/trope-checker"
+
+  (identity :primary-forge github
+            :owner          "hyperpolymath"
+            :prefixed-name  "fv-trope-checker")
+
+  (clade    :primary       fv
+            :primary-name  "Formal Verification & Proofs"
+            :secondary     ()
+            :assigned      "2026-10-06"
+            :rationale     "Assigned 2026-10-06 by the A2ML retirement PR; the retired CLADE value rm was the template's own and never repo-specific. trope-checker is the verified trust boundary of the trope-particularity calculus (Idris2 core with machine-checked lemmas, Lean and Agda metatheory), so fv with no secondary.")
+
+  (forges   :github    "hyperpolymath/trope-checker"
+            :gitlab    ""
+            :bitbucket "")
+
+  (lineage  :type              standalone
+            :parent            ""
+            :born              "2026-06-22"
+            :previous-names    ()
+            :instantiated-from "rsr-template-repo")
+
+  (status   :phase         active
+            :since         "2026-06-22"
+            :present       #t
+            :aliases       ()
+            :merged-into   ""
+            :superseded-by ""
+            :successors    ()
+            :ended         ""
+            (history
+              (entry :phase active
+                     :since "2026-06-22"
+                     :note  "alpha: schema, executable Idris2 checker and conformance suite green before the account billing block; verified core with no axioms behind its claimed lemmas; CO-1 (operational model for fix/routing) and grade soundness are the named open problems in docs/status/PROOF-STATUS.adoc. The retired STATE.a2ml carried the template's own values (95, maintenance) and is not used here.")))
+
+  (meta
+        :version       "0.1.0"
+        :last-updated  "2026-10-06"
+        :type          library
+        :languages     (idris2 rust)
+        :license       MPL-2.0
+        :author        "Jonathan D.A. Jewell (hyperpolymath)"
+        :build-tool        just
+        :container-runtime podman
+        :ci-platform       github-actions
+        :package-manager   guix
+        :scoping-first   #t
+        :execution-order  "axis-1 > axis-2 > axis-3"
+        :axis-1           "must > intend > like"
+        :axis-2  "corrective > adaptive > perfective"
+        :axis-3  "systems > compliance > effects"
+        (scoping
+          :sources            "README, roadmap, status docs, maintenance checklist, CI/security docs"
+          :marker-scan        "TODO/FIXME/XXX/HACK/STUB/PARTIAL"
+          :idris-unsound-scan "believe_me/assert_total")
+        :corrective-first  #t
+        :adaptive-second   #t
+        :adaptive-focus    "scope-change reconciliation, stale-reference removal, obsolete-work culling"
+        :perfective-third  #t
+        :perfective-source "axis-1 honest state after corrective/adaptive updates"
+        (axis-3
+          :audit-focus        "systems in place, documentation explains actual state, safety/security accounted for, observed effects reviewed"
+          :compliance-focus   "seams/compromises/exception register, bounded exceptions, anti-drift checks"
+          :drift-risk-example "single exception broadening into policy violation (e.g. ->TypeScript spread)"
+          :effects-evidence   "benchmark execution/results and maintainer status dialogue/review"))
+
+  (ecosystem
+             :project           "trope-checker"
+             :ecosystem         "hyperpolymath"
+             :position-type     "verifier"
+             :purpose           "The portable trust boundary of the trope-particularity calculus: a pure function from a language-neutral Trope IR to a sufficiency verdict."
+             :not               ("a language (that is haec)" "the vocabulary (that is trope-particularity-workbench)" "a store (that is vocarium)")
+             :pipeline-position "trust-boundary"
+             :chain             "Vocabulary track: trope-particularity-workbench → haec → trope-checker (verdict). Store/query track: haec → vocarium → hermeneia → trope-checker (verdict). trope-checker depends on nothing (HC-1); the workbench depends on nothing; vocarium and hermeneia meet at the M2 StoreProvider adapter (vocarium ADR-0002: wire, do not link)."
+             :pipeline-notes    "Consumes Trope IR (spec/trope-ir.adoc, schemas/trope-ir.schema.json) and returns p-sufficient or p-insufficient per declared use-model with a witness edge. Depends on nothing (HC-1)."
+             :coordination      standards
+             (related :name "trope-particularity-workbench" :relationship vocabulary-source :notes "normative vocabulary this checker realises (HC-7)")
+             (related :name "haec" :relationship consumer :notes "emits Trope IR checked here; no dependency, HC-1")
+             (related :name "vocarium" :relationship consumer :notes "pins this checker as a gate tool; no dependency, HC-1")
+             (related :name "hermeneia" :relationship consumer :notes "uses tropecheck-rs for verdicts; no dependency, HC-1"))
+  (agentic
+            :version "0.1.0" :last-updated "2026-10-06"
+            (permissions  :source         #t
+                          :tests          #t
+                          :docs           #t
+                          :config         #t
+                          :create-files   #t)
+            (integrity    :fail-closed                     #t
+                          :require-evidence-per-step       #t
+                          :allow-silent-skip               #f
+                          :require-rerun-after-fix         #t
+                          :release-claim-requires-hard-pass #t)
+            (methodology :instructions-dir ".machine_readable/bot_directives/" :default-mode hybrid))
+
+  (neurosym
+             :version "0.1.0" :last-updated "2026-10-06"
+             (hypatia :scan-enabled  #t
+                      :scan-depth    standard
+                      :report-format "logtalk"))
+
+  (playbook
+            :version "0.1.0" :last-updated "2026-10-06"
+            (skeleton :version              "1.0"
+                      :last-updated         "2026-10-06"
+                      :authority-allowlist  ".machine_readable/root-allow.txt"
+                      :enforcement-workflow ".github/workflows/estate-rules.yml")
+            (deployment) (incident-response) (release-process) (docs-format) (maintenance-operations))
+)

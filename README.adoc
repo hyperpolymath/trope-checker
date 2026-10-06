@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 // SPDX-License-Identifier: CC-BY-SA-4.0
-// SPDX-License-Identifier: CC-BY-SA-4.0
 = Trope Checker
 :toc: macro
 :toc-placement: preamble
@@ -85,7 +84,7 @@ rejects them at validation, naming the offending coordinate. The alternative
 
 [IMPORTANT]
 ====
-The verified core requires *Idris 2 0.8.0* (see `.tool-versions`). Under 0.7.0,
+The verified core requires *Idris 2 0.8.0* (see `.mise.toml`). Under 0.7.0,
 `verification/proofs/idris2/Trope/Fidelity.idr:72` fails to parse at the
 lambda-impossible clause `No (\Refl impossible)`, which makes the reference
 checker look unbuildable when it is merely mis-toolchained.
@@ -130,6 +129,16 @@ _means-the-same-everywhere_, enforced by the suite, not merely _runs-everywhere_
 Both the language and the checker *realise* the *Particularity* vocabulary
 (`github.com/hyperpolymath/trope-particularity-workbench`). See
 `docs/trope-estate-architecture.svg`.
+
+=== Where this repo sits
+
+Vocabulary track: trope-particularity-workbench → haec → trope-checker (verdict). Store/query track: haec → vocarium → hermeneia → trope-checker (verdict). trope-checker depends on nothing (HC-1); the workbench depends on nothing; vocarium and hermeneia meet at the M2 StoreProvider adapter (vocarium ADR-0002: wire, do not link).
+
+== Machine-readable record
+
+The repo deed `trope-checker_chora.deed` at the root is the single
+machine-readable record. The retired A2ML tree is frozen, read-only, at
+https://github.com/hyperpolymath/trope-checker/tree/8f58d2409227b065fed01a898c02aba5fe134494/.machine_readable.
 
 == Status
 

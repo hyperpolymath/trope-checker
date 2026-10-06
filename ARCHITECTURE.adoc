@@ -19,7 +19,6 @@ exists, per the estate Required Files gate (substance over presence).
 * `docs-template/` — docs-template — repository component
 * `examples/` — worked examples
 * `features/` — features — repository component
-* `machine-readable-design/` — machine-readable-design — repository component
 * `schemas/` — schemas — repository component
 * `scripts/` — maintenance and automation scripts
 * `session/` — session — repository component

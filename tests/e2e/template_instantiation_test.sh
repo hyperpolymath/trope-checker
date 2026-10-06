@@ -120,9 +120,9 @@ replace_placeholder() {
 # test exited 1 before reaching a single assertion. The argument find must pass
 # is `{}` -- the filename it found.
 find "$TEST_REPO_PATH" -type f \
-    \( -name "*.md" -o -name "*.adoc" -o -name "*.a2ml" -o -name "*.zig" -o -name "*.idr" \
+    \( -name "*.md" -o -name "*.adoc" -o -name "*.deed" -o -name "*.zig" -o -name "*.idr" \
        -o -name "Justfile" -o -name "Containerfile" -o -name "*.yml" -o -name "*.yaml" \
-       -o -name "*.json" -o -name "*.scm" -o -name "contractile" \) \
+       -o -name "*.json" -o -name "*.scm" \) \
     -exec bash -c '
         file="$1"
         placeholder_pairs=(
@@ -193,7 +193,7 @@ log_step "Checking for remaining placeholders"
 
 REMAINING_PLACEHOLDERS=$(
     find "$TEST_REPO_PATH" -type f \
-        \( -name "*.md" -o -name "*.adoc" -o -name "*.a2ml" -o -name "*.zig" -o -name "*.idr" \
+        \( -name "*.md" -o -name "*.adoc" -o -name "*.deed" -o -name "*.zig" -o -name "*.idr" \
            -o -name "Justfile" -o -name "*.yml" \) \
         -exec grep -l "{{[A-Z_]*}}" {} \; 2>/dev/null || true
 )
@@ -238,21 +238,15 @@ done
 # PHASE 8: VERIFY METADATA
 #==============================================================================
 
-log_step "Verifying machine-readable metadata"
+log_step "Verifying the repo deed (machine-readable record)"
 
-METADATA_FILES=(
-    ".machine_readable/6a2/STATE.a2ml"
-    ".machine_readable/6a2/META.a2ml"
-)
-
-for file in "${METADATA_FILES[@]}"; do
-    if [ -f "$TEST_REPO_PATH/$file" ]; then
-        log_pass "Metadata file exists: $file"
-    else
-        log_error "Metadata file missing: $file"
-        exit 1
-    fi
-done
+DEED_COUNT=$(find "$TEST_REPO_PATH" -maxdepth 1 -name "*_chora.deed" -type f | wc -l)
+if [ "$DEED_COUNT" -eq 1 ]; then
+    log_pass "Repo deed present at the root"
+else
+    log_error "Expected exactly one *_chora.deed at the root, found $DEED_COUNT"
+    exit 1
+fi
 
 #==============================================================================
 # SUMMARY

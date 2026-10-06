@@ -25,7 +25,6 @@ self-assess:
     # Detect project characteristics
     HAS_RUST=false; [ -f "Cargo.toml" ] && HAS_RUST=true
     HAS_ELIXIR=false; [ -f "mix.exs" ] && HAS_ELIXIR=true
-    HAS_RESCRIPT=false; [ -f "rescript.json" ] || [ -f "bsconfig.json" ] && HAS_RESCRIPT=true
     HAS_IDRIS=false; ls *.ipkg >/dev/null 2>&1 && HAS_IDRIS=true
     HAS_ZIG=false; [ -f "build.zig" ] || [ -d "ffi/zig" ] && HAS_ZIG=true
     HAS_GLEAM=false; [ -f "gleam.toml" ] && HAS_GLEAM=true
@@ -34,7 +33,7 @@ self-assess:
     HAS_API=false; grep -rq 'port\|listen\|endpoint' --include="*.exs" --include="*.rs" --include="*.toml" . 2>/dev/null && HAS_API=true
     IS_LIBRARY=false; [ -f "Cargo.toml" ] && grep -q '\[lib\]' Cargo.toml 2>/dev/null && IS_LIBRARY=true
 
-    echo "Detected: Rust=$HAS_RUST Elixir=$HAS_ELIXIR ReScript=$HAS_RESCRIPT"
+    echo "Detected: Rust=$HAS_RUST Elixir=$HAS_ELIXIR"
     echo "          Idris=$HAS_IDRIS Zig=$HAS_ZIG Gleam=$HAS_GLEAM"
     echo "          Container=$HAS_CONTAINER Tests=$HAS_TESTS API=$HAS_API"
     echo ""
@@ -51,10 +50,10 @@ self-assess:
         fi
     done
 
-    if [ -d ".machine_readable/6a2" ]; then
-        echo "  ✓ .machine_readable/6a2/ — KEEP (SCM checkpoint files)"
+    if [ "$(ls -1 *_chora.deed 2>/dev/null | wc -l)" -eq 1 ]; then
+        echo "  ✓ <repo>_chora.deed — KEEP (the repo deed: single machine-readable record)"
     else
-        echo "  ✗ .machine_readable/6a2/ — MISSING (RSR violation!)"
+        echo "  ✗ <repo>_chora.deed — MISSING or duplicated (RSR violation!)"
     fi
 
     if [ -d ".github/workflows" ]; then
@@ -68,9 +67,9 @@ self-assess:
     echo ""
 
     if $HAS_IDRIS && { [ -d "src/interface/abi" ] || [ -d "src/interface/Abi" ]; }; then
-        echo "  ✓ src/interface/abi/ — KEEP (Idris2 ABI definitions)"
+        echo "  ✓ src/interface/Abi/ — KEEP (Idris2 ABI definitions)"
     elif ! $HAS_IDRIS && { [ -d "src/interface/abi" ] || [ -d "src/interface/Abi" ]; }; then
-        echo "  ? src/interface/abi/ — No Idris2 detected."
+        echo "  ? src/interface/Abi/ — No Idris2 detected."
         echo "    → KEEP if you plan to add formal verification later."
         echo "    → SAFE TO REMOVE if this project will never use Idris2."
         echo "    ⚠ Consequence: no formally verified interface definitions."
@@ -83,18 +82,6 @@ self-assess:
         echo "    → KEEP if you plan C ABI interop later."
         echo "    → SAFE TO REMOVE if this is a pure web/scripting project."
         echo "    ⚠ Consequence: no C-compatible FFI bridge."
-    fi
-
-    if $HAS_API && [ -f ".machine_readable/integrations/groove.a2ml" ]; then
-        PORT=$(grep '(port ' .machine_readable/integrations/groove.a2ml 2>/dev/null | sed 's/.*(port \([0-9]*\)).*/\1/')
-        if [ "$PORT" = "0" ]; then
-            echo "  ⚠ groove.a2ml — Port not assigned. Run 'just groove-setup'."
-        else
-            echo "  ✓ groove.a2ml — KEEP (Groove discovery on port $PORT)"
-        fi
-    elif $HAS_API; then
-        echo "  ✗ groove.a2ml — MISSING. Your project has an API but no Groove manifest."
-        echo "    → Run 'just groove-setup' to enable snap-on/snap-off discovery."
     fi
 
     if $HAS_CONTAINER && [ -d "container" ]; then
@@ -111,17 +98,8 @@ self-assess:
     echo "── SAFE TO REMOVE (no RSR consequences) ──────────────────"
     echo ""
 
-    if ! $HAS_RESCRIPT && [ -d "examples" ] && ls examples/*.res >/dev/null 2>&1; then
-        echo "  ○ examples/*.res — Template ReScript examples. Not your code."
-    fi
-
     if [ -f ".machine_readable/ai/PLACEHOLDERS.adoc" ]; then
         echo "  ○ .machine_readable/ai/PLACEHOLDERS.adoc — Template doc. Remove after init."
-    fi
-
-    if [ -f "build/flake.nix" ] || [ -f "flake.nix" ]; then
-        echo "  ● flake.nix — REMOVE. Nix is retired estate-wide (Guix only,"
-        echo "    ruled 2026-05-18). Make build/guix.scm real before deleting."
     fi
 
     if { [ -f "build/guix.scm" ] || [ -f "guix.scm" ]; } && ! command -v guix >/dev/null 2>&1; then
@@ -134,12 +112,6 @@ self-assess:
     # ── FUTURE VALUE (not needed now, worth keeping) ──────────────
     echo "── KEEP FOR FUTURE (not active, but valuable later) ──────"
     echo ""
-
-    if [ -d ".machine_readable/contractiles" ]; then
-        echo "  ◆ contractiles/ — Must/Trust/Dust/Lust contracts."
-        echo "    Not enforced until you configure them, but ready when you need"
-        echo "    automated compliance checking. Zero cost to keep."
-    fi
 
     if [ -d ".machine_readable/bot_directives" ]; then
         echo "  ◆ bot_directives/ — Gitbot fleet configuration."
@@ -203,9 +175,7 @@ verify:
     check_file "LICENSE"
     check_either "CONTRIBUTING.md" "CONTRIBUTING.adoc"
     check_either "README.adoc" "README.md"
-    check_file ".machine_readable/6a2/STATE.a2ml"
-    check_file ".machine_readable/6a2/META.a2ml"
-    check_file ".machine_readable/6a2/ECOSYSTEM.a2ml"
+    check_file "trope-checker_chora.deed"
     check_either "CHANGELOG.md" "CHANGELOG.adoc"
 
     # Check at least 1 workflow exists

@@ -1,3 +1,22 @@
 // SPDX-License-Identifier: CC-BY-SA-4.0
 // Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 = .machine_readable Pillar
+
+The repo deed `trope-checker_chora.deed` at the repository root
+is the single machine-readable record of this repository: identity, clade,
+status, ecosystem position, agent permissions and playbook.
+
+The retired A2ML tree (`6a2/`, `contractiles/`, `integrations/` and the
+`*.a2ml` manifests) is frozen, read-only, at
+https://github.com/hyperpolymath/trope-checker/tree/8f58d2409227b065fed01a898c02aba5fe134494/.machine_readable[the last commit that carried it].
+
+What remains here:
+
+* `ai/` -- AI-agent rules files (`.clinerules`, `.cursorrules`, `.windsurfrules`).
+* `bot_directives/` -- the methodology instructions directory named by the deed's `(agentic (methodology …))` clause.
+* `compliance/` -- REUSE metadata.
+* `policies/` -- `.maintenance-perms-ignore` (justified permission-policy exceptions).
+* `configs/` -- tool configuration (git-cliff, stapeln, selur-compose, eclexiaiser).
+* `scripts/` -- maintenance, lifecycle, forge and verification scripts.
+* `self-validating/` -- example K9 components (`*.k9.ncl`).
+* `root-allow.txt` -- the root-shape allowlist.

@@ -9,16 +9,14 @@ Examples:
 * `CLAUDE.md`
 * `COPILOT.md`
 * `GEMINI.md`
-* `AI.a2ml`
 * `AI.djot`
 
 Avoid scattering agent instruction files around the repo root.
 
 Recommended machine read order:
 
-* `.machine_readable/6a2/anchors/ANCHOR.a2ml`
-* `.machine_readable/policies/MAINTENANCE-AXES.a2ml`
-* `.machine_readable/policies/MAINTENANCE-CHECKLIST.a2ml`
-* `.machine_readable/policies/SOFTWARE-DEVELOPMENT-APPROACH.a2ml`
-* `.machine_readable/6a2/STATE.a2ml`
-* `.machine_readable/6a2/META.a2ml`
+* `trope-checker_chora.deed` (the repo deed, at the root)
+* `coordination.k9` (agent coordination; `project.deed_ref` names the deed)
+* `docs/practice/AI-CONVENTIONS.adoc`
+
+The retired A2ML tree is frozen at https://github.com/hyperpolymath/trope-checker/tree/8f58d2409227b065fed01a898c02aba5fe134494/.machine_readable.

@@ -9,7 +9,7 @@
 # file create) and opens NO PR. Permissions are read-only. This neutralises the
 # directive-blind inline auto-fix (including the guardless SPDX sed) pending
 # convergence onto the deterministic gitbot-fleet engine. Tracked HIGH PRIORITY in
-# gitbot-fleet. Per-repo policy: .machine_readable/bot_directives/rhodibot.a2ml.
+# gitbot-fleet. Per-repo policy: .machine_readable/bot_directives/ (see README.adoc).
 
 name: "⚙ Auto: Rhodibot RSR audit (report-only)"
 on:
@@ -43,23 +43,24 @@ jobs:
           for f in *-STATUS-*.md *-COMPLETION-*.md *-COMPLETE.md *-VERIFIED-*.md; do
             if [ -f "$f" ]; then note "delete stale snapshot \`$f\`"; fi
           done
-          # 3. Misnamed
-          if [ -f AI.a2ml ] && [ ! -f 0-AI-MANIFEST.a2ml ]; then note "rename \`AI.a2ml\` -> \`0-AI-MANIFEST.a2ml\`"; fi
+          # 3. Retired format: A2ML is dead (D222); the repo deed is the record
+          for f in $(git ls-files "*.a2ml"); do note "delete retired A2ML file \`$f\` (the repo deed *_chora.deed replaces it)"; done
           # 4. Duplicate format files
           if [ -f CONTRIBUTING.md ] && [ -f CONTRIBUTING.adoc ]; then note "remove duplicate \`CONTRIBUTING.adoc\`"; fi
           if [ -f README.md ] && [ -f README.adoc ] && [ "$(wc -l < README.md)" -lt 5 ]; then note "remove stub \`README.md\`"; fi
           # 5. SPDX drift in dotfiles — DETECT ONLY. Licence normalisation is the
-          #    deterministic engine's job (bot_directives/rhodibot.a2ml); never auto-edit here.
+          #    deterministic engine's job (gitbot-fleet); never auto-edit here.
           for d in .gitignore .gitattributes .editorconfig; do
             if [ -f "$d" ] && grep -q "AGPL-3.0" "$d" 2>/dev/null; then
               note "flag SPDX drift in \`$d\` (AGPL-3.0 present) — DEFER to the deterministic engine; do NOT auto-edit"
             fi
           done
           # 6. Missing required files
-          if [ ! -f SECURITY.md ]; then note "create missing \`SECURITY.md\`"; fi
-          if [ ! -f CONTRIBUTING.md ]; then note "create missing \`CONTRIBUTING.md\`"; fi
+          if [ ! -f SECURITY.md ] && [ ! -f SECURITY.adoc ] && [ ! -f .github/SECURITY.md ]; then note "create missing \`SECURITY.adoc\`"; fi
+          if [ ! -f CONTRIBUTING.md ] && [ ! -f CONTRIBUTING.adoc ] && [ ! -f .github/CONTRIBUTING.md ]; then note "create missing \`CONTRIBUTING.adoc\`"; fi
           # 7. Unfixable / report-only
-          if [ ! -f 0-AI-MANIFEST.a2ml ] && [ ! -f AI.a2ml ]; then issue "missing AI manifest (0-AI-MANIFEST.a2ml)"; fi
+          deeds=$(ls -1 *_chora.deed 2>/dev/null | wc -l)
+          if [ "$deeds" -ne 1 ]; then issue "expected exactly one repo deed (<repo>_chora.deed) at the root, found $deeds"; fi
           if [ ! -f LICENSE ] && [ ! -f LICENSE.md ] && [ ! -f LICENSE.txt ]; then issue "missing LICENSE file"; fi
           if [ ! -f README.adoc ] && [ ! -f README.md ]; then issue "missing README"; fi
           # 8. Dangerous patterns (soundness escape hatches)

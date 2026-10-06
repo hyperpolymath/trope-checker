@@ -51,7 +51,7 @@ Brief description of Trope Checker and its architecture.
 | Build artifacts       | Internal       | CI pipeline  | Binaries, WASM bundles                     |
 | Container images      | Internal       | CI pipeline  | Chainguard-based, signed via image signing tool |
 | SBOM / provenance     | Public         | CI pipeline  | SLSA attestations                          |
-| Dependencies          | Public         | Lockfile     | Cargo.lock, deno.lock, gleam.toml          |
+| Dependencies          | Public         | Lockfile     | Cargo.lock, bun.lock, gleam.toml           |
 | Infrastructure config | Confidential   | Maintainers | Containerfiles, compose files, orchestration config |
 
 ## Trust Boundaries
@@ -101,7 +101,7 @@ Brief description of Trope Checker and its architecture.
 |---------------------------------|-------------------|------------|--------|--------|------------------------------------------------|
 | Unlogged deployment             | Build artifacts    | Medium     | Medium | Medium | SLSA provenance; deployment audit trail        |
 | Denied merge of vulnerable code | Source code        | Low        | Medium | Low    | Git history is immutable; signed commits       |
-| Secret rotation without record  | CI/CD secrets      | Low        | Low    | Low    | Secret rotation logged in STATE.a2ml           |
+| Secret rotation without record  | CI/CD secrets      | Low        | Low    | Low    | Secret rotation logged in the repo deed        |
 
 ### Information Disclosure
 

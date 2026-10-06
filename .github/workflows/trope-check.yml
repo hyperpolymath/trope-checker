@@ -52,7 +52,7 @@ jobs:
   verified-core-and-conformance:
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    # Idris 2 0.8.0 — see .tool-versions. Under 0.7.0 Trope/Fidelity.idr:72
+    # Idris 2 0.8.0 — see .mise.toml. Under 0.7.0 Trope/Fidelity.idr:72
     # fails to parse at the lambda-impossible clause `No (\Refl impossible)`.
     container:
       image: ghcr.io/stefan-hoeck/idris2-pack@sha256:de9781906050dc44704ec6de0108c86f899ef17b2642932b79e00245d613b8ad

@@ -62,18 +62,15 @@ jobs:
             exit 1
           fi
           echo "README: OK"
-      - name: Check .machine_readable directory and STATE.a2ml
+      - name: Check the repo deed
         run: |
-          if [ ! -d ".machine_readable" ]; then
-            echo "::error::.machine_readable/ directory is required"
+          shopt -s nullglob
+          deeds=(*_chora.deed)
+          if [ "${#deeds[@]}" -ne 1 ]; then
+            echo "::error::exactly one repo deed (*_chora.deed) is required at the root; found ${#deeds[@]}"
             exit 1
           fi
-
-          if [ ! -f ".machine_readable/6a2/STATE.a2ml" ]; then
-            echo "::error::.machine_readable/6a2/STATE.a2ml is required"
-            exit 1
-          fi
-          echo ".machine_readable/6a2/STATE.a2ml: OK"
+          echo "${deeds[0]}: OK"
       - name: Check CHANGELOG exists
         run: |
           if [ ! -f "CHANGELOG.md" ] && [ ! -f "CHANGELOG.adoc" ] && [ ! -f "CHANGES.md" ]; then
@@ -89,8 +86,7 @@ jobs:
           # Collect all required files that exist
           for f in SECURITY.md SECURITY.adoc .github/SECURITY.md LICENSE LICENSE.txt \
                    CONTRIBUTING.md CONTRIBUTING.adoc README.md README.adoc \
-                   .machine_readable/6a2/STATE.a2ml .machine_readable/6a2/META.a2ml \
-                   .machine_readable/6a2/ECOSYSTEM.a2ml CHANGELOG.md CHANGELOG.adoc; do
+                   CHANGELOG.md CHANGELOG.adoc; do
             [ -f "$f" ] && REQUIRED_FILES="$REQUIRED_FILES $f"
           done
 
@@ -98,7 +94,7 @@ jobs:
             # Match {{ANYTHING}} placeholder tokens
             PLACEHOLDERS=$(grep -cE '\{\{[A-Z_]+\}\}' "$f" 2>/dev/null || true)
             if [ "$PLACEHOLDERS" -gt 0 ]; then
-              echo "::error::$f contains $PLACEHOLDERS unfilled REMOVED tokens"
+              echo "::error::$f contains $PLACEHOLDERS unfilled {{PLACEHOLDER}} tokens"
               grep -nE '\{\{[A-Z_]+\}\}' "$f" | head -5
               ERRORS=$((ERRORS + 1))
             fi

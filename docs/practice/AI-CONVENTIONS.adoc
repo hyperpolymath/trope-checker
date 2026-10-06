@@ -11,13 +11,9 @@ Per-tool config files (.cursorrules, .clinerules, etc.) reference this document.
 
 ## Session Startup
 
-1. Read `0-AI-MANIFEST.a2ml` FIRST (mandatory gatekeeper).
-2. Read `.machine_readable/6a2/STATE.a2ml` for current status and blockers.
-3. Read `.machine_readable/6a2/anchors/ANCHOR.a2ml` for canonical authority boundaries.
-4. Read `.machine_readable/policies/MAINTENANCE-AXES.a2ml` for maintenance/audit sequencing.
-5. Read `.machine_readable/policies/MAINTENANCE-CHECKLIST.a2ml` for baseline controls.
-6. Read `.machine_readable/policies/SOFTWARE-DEVELOPMENT-APPROACH.a2ml` for execution order.
-7. Read `.machine_readable/6a2/AGENTIC.a2ml` for agent constraints.
+1. Read `trope-checker_chora.deed` (the repo deed, at the root) FIRST: identity, status, ecosystem position, agent permissions and constraints.
+2. Read `coordination.k9` for agent coordination (`project.deed_ref` names the deed).
+3. Read `docs/governance/MAINTENANCE-CHECKLIST.adoc` and `docs/governance/SOFTWARE-DEVELOPMENT-APPROACH.adoc` for maintenance controls and execution order.
 
 ## License
 
@@ -33,12 +29,11 @@ Per-tool config files (.cursorrules, .clinerules, etc.) reference this document.
 - Email: **j.d.a.jewell@open.ac.uk**
 - Copyright: `Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>`
 
-## State Files
+## Machine-Readable Record
 
-State/metadata files, anchors, and policies (.a2ml) belong in `.machine_readable/` ONLY.
-NEVER create STATE.a2ml, META.a2ml, ECOSYSTEM.a2ml, AGENTIC.a2ml,
-NEUROSYM.a2ml, PLAYBOOK.a2ml, ANCHOR.a2ml, MAINTENANCE-AXES.a2ml,
-MAINTENANCE-CHECKLIST.a2ml, or SOFTWARE-DEVELOPMENT-APPROACH.a2ml in the repository root.
+The repo deed `trope-checker_chora.deed` at the root is the single machine-readable record.
+A2ML is retired: NEVER create an `.a2ml` file (STATE, META, ECOSYSTEM, AGENTIC,
+NEUROSYM, PLAYBOOK, ANCHOR or policy files) anywhere in the repository.
 
 ## Banned Patterns
 
@@ -53,12 +48,8 @@ MAINTENANCE-CHECKLIST.a2ml, or SOFTWARE-DEVELOPMENT-APPROACH.a2ml in the reposit
 
 ## Banned Languages
 
-| Banned              | Use Instead        |
-|---------------------|--------------------|
-| TypeScript          | ReScript           |
-| Node.js / npm / bun | Deno               |
-| Go                  | Rust               |
-| Python              | Julia / Rust       |
+No TypeScript, ReScript, Deno, Node.js/npm or Python here; this repo's languages are the `:languages` list in `trope-checker_chora.deed`.
+Go is banned too (use Rust).
 
 ## Container Standard
 
@@ -68,7 +59,7 @@ MAINTENANCE-CHECKLIST.a2ml, or SOFTWARE-DEVELOPMENT-APPROACH.a2ml in the reposit
 
 ## ABI/FFI Standard
 
-- ABI definitions: **Idris2** with dependent types (`src/abi/`).
+- ABI definitions: **Idris2** with dependent types (`src/interface/Abi/`).
 - FFI implementation: **Zig** with C ABI compatibility (`ffi/zig/`).
 - Generated C headers: `generated/abi/`.
 
@@ -78,10 +69,7 @@ Use `just` (Justfile) for all build, test, lint, and format tasks.
 
 ## References
 
-- `0-AI-MANIFEST.a2ml` -- universal AI entry point
-- `.machine_readable/6a2/AGENTIC.a2ml` -- agent permissions and constraints
-- `.machine_readable/6a2/STATE.a2ml` -- current project state
-- `.machine_readable/6a2/anchors/ANCHOR.a2ml` -- canonical authority and policy boundary
-- `.machine_readable/policies/MAINTENANCE-AXES.a2ml` -- canonical axis sequencing and audit requirements
-- `.machine_readable/policies/MAINTENANCE-CHECKLIST.a2ml` -- baseline maintenance checklist policy
-- `.machine_readable/policies/SOFTWARE-DEVELOPMENT-APPROACH.a2ml` -- axis execution approach policy
+- `trope-checker_chora.deed` -- the repo deed: universal AI entry point, agent permissions and constraints, current project state
+- `coordination.k9` -- agent coordination
+- `docs/governance/MAINTENANCE-CHECKLIST.adoc` -- baseline maintenance checklist
+- `docs/governance/SOFTWARE-DEVELOPMENT-APPROACH.adoc` -- axis execution approach

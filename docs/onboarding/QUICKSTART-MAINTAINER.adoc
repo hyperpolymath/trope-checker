@@ -32,14 +32,7 @@ Output: `{{BUILD_OUTPUT_PATH}}`
 
 [source,bash]
 ----
-guix build -f guix.scm
-----
-
-=== Nix
-
-[source,bash]
-----
-nix build
+guix build -f build/guix.scm
 ----
 
 === Container (Stapeln)

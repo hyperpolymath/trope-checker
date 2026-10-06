@@ -116,7 +116,8 @@ log_info "Phase 1: Core repository structure"
 echo ""
 
 # Root files
-check_file_exists "0-AI-MANIFEST.a2ml" "AI manifest (universal entry point)"
+deed_count=$(find "$REPO_ROOT" -maxdepth 1 -name "*_chora.deed" -type f | wc -l)
+if [ "$deed_count" -eq 1 ]; then log_pass "Repo deed (universal entry point)"; else log_error "Expected exactly one *_chora.deed at the root, found $deed_count"; fi
 check_file_exists "README.adoc" "High-level pitch"
 check_file_exists "EXPLAINME.adoc" "Developer deep-dive"
 check_file_exists "LICENSE" "License file"
@@ -139,14 +140,11 @@ echo ""
 log_info "Phase 2: Machine-readable metadata (.machine_readable/)"
 echo ""
 
-check_file_exists ".machine_readable/6a2/STATE.a2ml" "Project state"
-check_file_exists ".machine_readable/6a2/META.a2ml" "Architecture decisions"
-check_file_exists ".machine_readable/6a2/ECOSYSTEM.a2ml" "Ecosystem position"
-check_file_exists ".machine_readable/6a2/anchors/ANCHOR.a2ml" "Semantic boundary anchor"
-check_file_exists ".machine_readable/policies/MAINTENANCE-AXES.a2ml" "Maintenance axes"
+check_dir_exists ".machine_readable/bot_directives" "Bot directives"
+check_file_exists ".machine_readable/root-allow.txt" "Root allowlist"
 
 #==============================================================================
-# VALIDATION PHASE 3: REQUIRED WORKFLOWS (17 minimum)
+# VALIDATION PHASE 3: REQUIRED WORKFLOWS
 #==============================================================================
 
 echo ""
@@ -160,7 +158,6 @@ REQUIRED_WORKFLOWS=(
     "quality.yml"
     "mirror.yml"
     "instant-sync.yml"
-    "rsr-antipattern.yml"
     "security-policy.yml"
     "wellknown-enforcement.yml"
     "workflow-linter.yml"
@@ -243,7 +240,7 @@ if [ "$(basename "$REPO_ROOT")" = "rsr-template-repo" ]; then
     log_pass "Skipping placeholder check for template repo"
 else
     # Check that key files don't have unresolved placeholders
-    for file in "$REPO_ROOT/README.adoc" "$REPO_ROOT/Justfile" "$REPO_ROOT/.machine_readable/6a2/STATE.a2ml"; do
+    for file in "$REPO_ROOT/README.adoc" "$REPO_ROOT/Justfile" "$REPO_ROOT"/*_chora.deed; do
         if [ -f "$file" ]; then
             if has_placeholder "$file"; then
                 log_warning "File contains unresolved placeholders: $(basename "$file")"
