@@ -191,6 +191,8 @@ build-agda:
     #!/usr/bin/env bash
     set -euo pipefail
     echo "=== build-agda: Theorem B metatheory (--safe --without-K) ==="
+    # Needs Agda >= 2.6.4 and agda-stdlib >= 2.0 (Data.Product.Base); the CI job
+    # pins Agda 2.7.0.1 + stdlib 2.0 by checksum — see proofs.yml agda-theorem-b.
     cd verification/proofs/agda/theorem-b
     agda --safe --without-K All.agda
     agda --safe --without-K Smoke.agda
@@ -204,8 +206,8 @@ verify-all: build-lean build-agda
     #!/usr/bin/env bash
     set -euo pipefail
     echo "=== verify-all: Lean source honesty gate ==="
-    for f in verification/proofs/lean4/grade-boundary/GradeBoundary.lean \
-             verification/proofs/lean4/grade-factorisation/GradeFactorisation.lean; do
+    # Every Lean source (mirrors proofs.yml lean-source-honesty; keep the two in step).
+    for f in $(git ls-files 'verification/proofs/lean4/*.lean' 'verification/proofs/lean4/*/*.lean'); do
         echo "--- gating $f ---"
         if grep -nE '(:=|by|;|<;>|=>|\|)[[:space:]]*(sorry|admit)\b|\bnative_decide\b' "$f"; then
             echo "FAIL: forbidden Lean tactic (sorry/admit/native_decide) in $f"; exit 1; fi
