@@ -45,8 +45,10 @@ an existing language could emit the same IR and be checked by the same checker.
   (calculus O2), discharged per front-end, not here.
 . *Veridicality is declared and propagated, not checked.* Detecting that a value
   claimed faithful is in fact false needs a ground-truth oracle the checker does
-  not have (calculus O5). The checker guarantees only that deception does not
-  compose away and that deceptive grades fail every honest floor.
+  not have — and cannot have: veridicality is undecidable relative to the IR
+  (calculus §10-O5, Remark O5-a). The checker guarantees only that deception does
+  not compose away and that deceptive grades fail every honest floor; a deployment
+  MAY bind an external oracle under the O5-1..3 conditions.
 
 == Deploy variant: prevent (R-2026-06-22)
 
@@ -62,8 +64,7 @@ rejects them at validation, naming the offending coordinate. The alternative
 [cols="1,3",options="header"]
 |===
 | Path | What lives there
-| `spec/calculus.adoc`        | The normative calculus (source of truth, `:revnumber: 0.1`).
-| `spec/calculus-v0.2-draft.adoc` | v0.2 *draft addendum*: the proved grade-algebra obligations `R-2026-06-23-01..04` (non-commutative product monoid; conicality; three-tier cancellation boundary; `Dropped`/`Total` honest). Does not edit v0.1.
+| `spec/calculus.adoc`        | The normative calculus (source of truth, `:revnumber: 0.2` — consolidated 2026-10-13: ratified carrier, nine effects, O5 defined, O6 opened).
 | `spec/trope-ir.adoc`        | The normative IR spec: nodes, edges, grade algebra, verdict.
 | `schemas/trope-ir.schema.json` | The Trope IR JSON Schema — the trust boundary (prevent profile).
 | `src/idris2/`               | The executable checker (Idris2): JSON parser + IR decoder + checker, reusing the verified core; plus `Main` → the `tropecheck` binary.
@@ -142,15 +143,22 @@ https://github.com/hyperpolymath/trope-checker/tree/8f58d2409227b065fed01a898c02
 
 == Status
 
-Alpha. The schema, executable checker, and conformance suite are green; the
-verified core typechecks with no axioms behind its claimed lemmas. The grade-algebra
-*honest/deceptive cancellation boundary* is now proved in Lean (sorry-free,
-axiom-clean) and its metatheory developed in Agda (Theorem B). Grade soundness (the
-full `g ⊑ ρ` theorem) and the *operational model for `fix`/routing* (the central open
-problem, CO-1, gated by O4) remain the named open problems in
-`docs/status/PROOF-STATUS.adoc`; see `verification/proofs/INTEGRATION-REPORT.adoc` for
-the full proved-vs-missing picture. A Rust fast-core is drafted in `src/rust/`
-(dep-free, validated against the Idris2 reference via the conformance corpus).
+Alpha. The IR schema, the executable checker and the conformance suite are green,
+and the verified developments carry no axioms behind their claimed lemmas. On the
+ratified carrier (ADR 0004, R-2026-07-07) the grade algebra is a commutative
+monoid with the three deceptive bottoms as two-sided zeros; L1–L6, conicality, the
+cancellation boundary (left-cancellative iff ε), the Honest Generation and
+Veridicality theorems, the atom factorisation (O1's carrier half) and a
+veridicality-sighted tropical factorisation are proved across Agda, Idris2 and
+Lean; Theorem B gives grade-exact substitution and β/let subject reduction. The
+named open problems are *CO-1* — the operational model for `fix` is designed
+(`spec/notes/2026-07-07-co1-operational-model.adoc`) and awaits mechanisation,
+which is what stands between the exact-lowering soundness already proved and
+full grade soundness — plus O2 (per producer), O3, O5's mechanisation, O6 and
+O1-coord, all listed in `spec/calculus.adoc §10` with their status. Ground truth:
+`AFFIRMATION.adoc`; the proved-vs-open table: `docs/status/PROOF-STATUS.adoc`. The
+Rust fast core in `src/rust/` (dependency-free) agrees with the Idris2 reference
+over the conformance corpus.
 
 == Licence
 
