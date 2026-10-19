@@ -137,7 +137,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
       - name: Build ${{ matrix.pkg }} and check the environment
-        uses: leanprover/lean-action@v1.6.1
+        uses: leanprover/lean-action@v1.6.2
         with:
           lake-package-directory: verification/proofs/lean4/${{ matrix.pkg }}
           build: true
