@@ -4,12 +4,11 @@
 
 == Current status
 
-Alpha. The schema, executable checker (Idris2), and conformance suite are green; the
-verified core typechecks with no axioms behind its claimed lemmas. The grade-algebra
-*honest/deceptive cancellation boundary* is proved in Lean (sorry-free, axiom-clean)
-and its metatheory partially developed in Agda (Theorem B). Ground truth and true
-statuses: `docs/status/PROOF-STATUS.adoc`, `AFFIRMATION.adoc`,
-`verification/proofs/INTEGRATION-REPORT.adoc`.
+Alpha. The schema, the Idris2 reference checker, the Rust fast core and the
+conformance suite are green; the verified developments carry no axioms behind
+their claimed lemmas. Spec v0.2 is the normative document; what is proved and
+what is open: `docs/status/PROOF-STATUS.adoc`, `AFFIRMATION.adoc`,
+`spec/calculus.adoc §10`.
 
 == Shipped (v0.1)
 
@@ -19,34 +18,32 @@ statuses: `docs/status/PROOF-STATUS.adoc`, `AFFIRMATION.adoc`,
 * [x] Soundness advance: ⊑-preorder, verdict-soundness corollary, T-Sub soundness, grade
   soundness for *exact* faithful lowering (machine-checked).
 
-== In progress (v0.2 — grade algebra + metatheory)
+== Shipped (v0.2)
 
-* [x] Grade-algebra boundary proved in Lean 4 + Mathlib (`grade-boundary/`): non-commutative
-  product monoid; full-carrier conicality; three-tier strict cancellation boundary.
-* [x] Spec v0.2 addendum: obligations `R-2026-06-23-01..04` bound to the governing Lean theorems.
-* [x] Theorem B (Agda, `--safe --without-K`, zero postulates): Targets 1/2/4 PROVED.
-* [~] Theorem B Target 3 (subject reduction respecting the boundary): *PARTIAL* — β/let proved;
-  `fix`/lfp NOT-REACHED (blocked on CO-1).
-* [x] Tropical factorisation probe (`grade-factorisation/`, Lean 4 + Mathlib): verdict *(B) factors but
-  veridicality-blind* — a nontrivial commutative cost-quotient exists, but every commutative-target hom
-  is forced to collapse honest `dropped` / deceptive `falsified` (blindness co-located with the fate-axis
-  non-commutativity). A *precondition only*; recursion stays parked behind CO-1 (issue #10).
+* [x] Ratified carrier (ADR 0004, R-2026-07-07): two-sided deceptive zeros (A1), the fate
+  chain (A2), `Attenuated(0)` normalisation at ingest (A3); IR 0.2 semantics.
+* [x] Agda Theorem B migrated to the ratified carrier (`--safe --without-K`, zero postulates):
+  Targets 1, 2, 4 proved; Target 3 β/let proved.
+* [x] L4 monotonicity in full, both arguments, every coordinate (Idris2, Lean, Agda); L6
+  commutativity.
+* [x] Atom factorisation — O1-carrier proved (`EffectAtoms.lean`): nine atom families.
+* [x] Tier-2 cancellation membership exhaustive (`TierTwoComplete.lean`).
+* [x] Tropical factorisation re-run on the ratified carrier: (B′) factors and
+  veridicality-sighted (`GradeFactorisationR.lean`).
+* [x] Spec consolidated at v0.2: one normative document on the ratified carrier; O5 defined,
+  O6 opened; prover roles per ADR 0005 (Proposed).
 
-== Open problems (named, not solved)
+== Open problems
 
-* *CO-1 (central):* the calculus has *no operational model* for `fix`/routing dynamics — there is
-  no reduction rule for `fix` and no observed-retention `ρ`. Gated additionally by v0.1's *O4* (the
-  limit carrier for ordering iterated attenuation beyond ω, the `Conat`-vs-tag fork). Resolving CO-1
-  unblocks full subject reduction (Theorem B Target 3).
-* Grade soundness for *conservative* (inexact) lowering over fate — needs the lax-L4 argument
-  (strict L4 is machine-proved to fail on fate).
-* *O1* exhaustiveness of the seven effects; *O2* per-front-end lowering correctness; *O3* the
-  produce/demand adjunction.
-* Documentation reconciliation: *OPEN-B/B′* (`Falsified`/`Misbound` absent from v0.1 §3.1/§3.2);
-  *OPEN-C* (`Withheld`/`Fused` tier-2 membership not individually witnessed).
+The authoritative list is `spec/calculus.adoc §10` — O1-coord, O2, O3, O5 mechanisation,
+O6, CO-1 mechanisation — each with its status word; `docs/status/PROOF-STATUS.adoc` "Open"
+restates it with where each is specified. CO-1 mechanisation (Agda, steps 1–5 of
+`spec/notes/2026-07-07-co1-operational-model.adoc §6`) is the next proof work; it closes
+Theorem B Target 3 and conservative grade soundness.
 
 == Deferred
 
 * Full Haec compiler / codegen / runtime (the `haec` repo).
-* Rust fast-core hardening (drafted in `src/rust/`, dep-free, validated against the Idris2 reference).
+* Rust fast-core hardening (fuzzing, perf); it already agrees with the Idris2 reference over
+  the conformance corpus (`just trope-rust`).
 * Filing the panic-attack signed-suppression proposal (`docs/proposals/`) upstream.
