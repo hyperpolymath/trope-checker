@@ -207,9 +207,11 @@ verify-all: build-lean build-agda
     # Every Lean source (mirrors proofs.yml lean-source-honesty; keep the two in step).
     for f in $(git ls-files 'verification/proofs/lean4/*.lean' 'verification/proofs/lean4/*/*.lean'); do
         echo "--- gating $f ---"
-        if grep -nE '(:=|by|;|<;>|=>|\|)[[:space:]]*(sorry|admit)\b|\bnative_decide\b' "$f"; then
+        # Comment-aware, token-based (mirrors proofs.yml; keep the two in step).
+        stripped=$(awk -f tests/lib/strip-proof-comments.awk "$f")
+        if grep -nE '(^|[^[:alnum:]_.])(sorry|admit)([^[:alnum:]_]|$)|\bnative_decide\b' <<<"$stripped"; then
             echo "FAIL: forbidden Lean tactic (sorry/admit/native_decide) in $f"; exit 1; fi
-        if grep -nE '^[[:space:]]*axiom\b' "$f"; then
+        if grep -nE '^[[:space:]]*axiom\b' <<<"$stripped"; then
             echo "FAIL: user axiom declared in $f"; exit 1; fi
     done
     echo "PASS: verify-all — Lean green & axiom-clean (propext/Quot.sound only); Agda --safe --without-K green."

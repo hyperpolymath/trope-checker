@@ -112,14 +112,14 @@ Idris2 0.8.0 (built from tag `v0.8.0` on Chez Scheme 9.5.8); rustc 1.97.0; just 
 ratified carrier, L4 in full (`fateL4MonoR/L`, `bondComposeMono`, `mergeComposeMono`);
 the decidable retention preorder; the Veridicality Derivation and Honest Generation;
 C1–C3 (`GradeR.conical`, `gradeR_leftCancel_iff`, `TierTwoComplete`,
-`fate-tier-meet-hom-fails`); O1-carrier (`atom_factorization`); the sighted tropical
+`fate-tier-meet-hom-fails`); O1-carrier (`atom_factorization`, stated on the v0.1 `Grade` — finding 4); the sighted tropical
 factorisation (`piR_sighted`); Theorem B Targets 1, 2, 4 and the β/let case of 3
 (`cut-preserves-grade`, `β-app`, `β-let`); grade soundness for exact lowering,
 T-Sub and verdict soundness (`soundFromExact`, `subSound`, `verdictSound`). *Open*
 (`spec/calculus.adoc §10`): CO-1 mechanisation (the `fix` case; designed, not
 mechanised), O1-coord, O2, O3, O5 mechanisation, O6.
 
-*Three findings.* (1) Ubuntu 24.04's apt pair (Agda 2.6.3, agda-stdlib 1.7.3) cannot
+*Four findings.* (1) Ubuntu 24.04's apt pair (Agda 2.6.3, agda-stdlib 1.7.3) cannot
 typecheck Theorem B: `agda --safe --without-K All.agda` exits 42, `Data.Product.Base`
 not found — stdlib ≥ 2.0 is required, which is why `proofs.yml` now pins Agda 2.7.0.1
 + stdlib 2.0 by checksum (reproduced here, 58 s). (2) The 2026-06-22 entry's "10/10"
@@ -132,6 +132,10 @@ that mean something are `just check`, `just build-agda`, `just trope-rust` and
 `FateA.Q_add_left_cancel` and `FateA.atten_cancel_on_normalForms` (`GradeRatified.lean`)
 depend on `Classical.choice` as well as `propext`/`Quot.sound`; the "`propext`/`Quot.sound`
 only" wording in spec §9.3, PROOF-STATUS and the proofs README overclaimed and now reads
-"no `sorryAx`, no user axiom". `GradeBoundary.lean`'s own footer had said so all along.
+"no `sorryAx`, no user axiom". `GradeBoundary.lean`'s own footer had said so all along. (4) `EffectAtoms.lean` imports
+`GradeBoundary`, so the atom factorisation cited for O1-carrier is a theorem about the
+v0.1 `Grade`; no `GradeR` restatement exists. The factorisation is componentwise and
+should transfer, but that is an argument, not a proof — recorded in PROOF-STATUS (Open)
+and left for the owner where `spec/calculus.adoc §6/§10` cite it as ratified-carrier.
 
 — Run by the Phase 0 agent; the owner signs on landing.

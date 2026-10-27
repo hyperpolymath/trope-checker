@@ -5,8 +5,8 @@
 == Current status
 
 Alpha. The schema, the Idris2 reference checker, the Rust fast core and the
-conformance suite are green; the verified developments carry no axioms behind
-their claimed lemmas. Spec v0.2 is the normative document; what is proved and
+conformance suite are green; the verified developments carry no `sorryAx` and no user
+axiom behind their claimed lemmas. Spec v0.2 is the normative document; what is proved and
 what is open: `docs/status/PROOF-STATUS.adoc`, `AFFIRMATION.adoc`,
 `spec/calculus.adoc §10`.
 

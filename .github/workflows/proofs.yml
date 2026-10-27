@@ -61,10 +61,15 @@ jobs:
               echo "::error::gated file is missing: $f"; fail=1; continue
             fi
             echo "--- gating $f ---"
-            if grep -nE '(:=|by|;|<;>|=>|\|)[[:space:]]*(sorry|admit)\b|\bnative_decide\b' "$f"; then
+            # Comment-aware and token-based: strip -- and /- -/ comments first
+            # (tests/lib/strip-proof-comments.awk; line numbers preserved), then match
+            # the bare tokens, so `:= by` with an indented `sorry` on the NEXT line is
+            # caught while the honest "sorry-free" prose in comments is not.
+            stripped=$(awk -f tests/lib/strip-proof-comments.awk "$f")
+            if grep -nE '(^|[^[:alnum:]_.])(sorry|admit)([^[:alnum:]_]|$)|\bnative_decide\b' <<<"$stripped"; then
               echo "::error file=$f::forbidden Lean tactic (sorry/admit/native_decide)"; fail=1
             fi
-            if grep -nE '^[[:space:]]*axiom\b' "$f"; then
+            if grep -nE '^[[:space:]]*axiom\b' <<<"$stripped"; then
               echo "::error file=$f::user axiom declared"; fail=1
             fi
           done

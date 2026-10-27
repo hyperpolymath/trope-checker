@@ -88,7 +88,7 @@ toc::[]
 3+^| _Factorisation_
 
 | O1-carrier (atom factorisation)
-| Every grade is the stem:[\triangleright]-product of its single-slot projections; nine atom families, each realised, pairwise disjoint.
+| Every grade is the stem:[\triangleright]-product of its single-slot projections; nine atom families, each realised, pairwise disjoint. Stated on the v0.1 `Grade` (`EffectAtoms.lean` imports `GradeBoundary`): the construction is componentwise and does not touch the clause (A1) changed, but a restatement on `GradeR` is not mechanised (see Open).
 | Lean `EffectAtoms.lean`: `Trope.Grade.atom_factorization`, `Trope.nine_families`, `Trope.family_realized`, `Trope.families_disjoint`, `fateFamily_none_iff`.
 
 | Tropical factorisation, (B′) sighted
@@ -144,6 +144,11 @@ Each is specified; none is asserted. Status words follow `spec/calculus.adoc §1
   its mechanisation in Agda, steps 1–5 of that note's §6 extending `TB.Reduction`,
   is OPEN. It closes Theorem B Target 3 (`fix`, NOT-REACHED, no postulate) and
   grade soundness for conservative lowering (`spec/calculus.adoc §7–§8`).
+* *O1-carrier on `GradeR`* — `atom_factorization` and the nine-family results
+  (`EffectAtoms.lean`) are theorems about the v0.1 `Grade`; porting them to the
+  ratified `GradeR` — expected to be mechanical, the factorisation being
+  componentwise — is OPEN. Until then the ratified-carrier reading in
+  `spec/calculus.adoc §6` and `§10` rests on that transfer argument, not a proof.
 * *O1-coord* — whether `fate`, `bond`, `merge` are exhaustive ways to
   individuate-and-lose; live probe: the bond-transfer move (`spec/calculus.adoc
   §10`; workbench WP-5).

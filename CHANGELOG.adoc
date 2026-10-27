@@ -27,7 +27,8 @@ NOT RUN in that session); the `+fix+` footer of
 model and records O4 as resolved.
 * *`+proofs.yml+`* pins Agda 2.7.0.1 + agda-stdlib 2.0 by SHA-256 (the runner's apt
 pair fails at `+Data.Product.Base+`); the Lean honesty gate and `+verify-all+` cover
-every tracked `+.lean+` file.
+every tracked `+.lean+` file and are comment-aware and token-based (a `+sorry+` on the
+line after `+:= by+` is caught; "sorry-free" prose in comments is not).
 
 * *IR 0.2 — A3 `+Attenuated(0)+` ingest normalization (R-2026-07-07-03,
 ADR 0004, #28).* Both checkers (Idris2 reference, Rust fast-core)

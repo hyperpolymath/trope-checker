@@ -144,12 +144,13 @@ https://github.com/hyperpolymath/trope-checker/tree/8f58d2409227b065fed01a898c02
 == Status
 
 Alpha. The IR schema, the executable checker and the conformance suite are green,
-and the verified developments carry no axioms behind their claimed lemmas. On the
-ratified carrier (ADR 0004, R-2026-07-07) the grade algebra is a commutative
+and the verified developments carry no `sorryAx` and no user axiom behind their
+claimed lemmas (the Lean results rest on the standard library's `propext`/`Quot.sound`,
+and `Classical.choice` in three theorems). On the ratified carrier (ADR 0004, R-2026-07-07) the grade algebra is a commutative
 monoid with the three deceptive bottoms as two-sided zeros; L1–L6, conicality, the
 cancellation boundary (left-cancellative iff ε), the Honest Generation and
-Veridicality theorems, the atom factorisation (O1's carrier half) and a
-veridicality-sighted tropical factorisation are proved across Agda, Idris2 and
+Veridicality theorems, the atom factorisation (O1's carrier half — stated on the v0.1 `Grade`,
+not yet restated on `GradeR`) and a veridicality-sighted tropical factorisation are proved across Agda, Idris2 and
 Lean; Theorem B gives grade-exact substitution and β/let subject reduction. The
 named open problems are *CO-1* — the operational model for `fix` is designed
 (`spec/notes/2026-07-07-co1-operational-model.adoc`) and awaits mechanisation,
