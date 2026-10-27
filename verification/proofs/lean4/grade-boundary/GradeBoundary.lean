@@ -35,7 +35,7 @@ Calculus spec `spec/calculus.adoc`, `:revnumber: 0.1`. Ground-truth carrier:
   cancellation fails on the absorbing elements and holds on the honest finite-
   fidelity core.
 
-## What is proved (complete proofs; see `#print axioms` block at the foot)
+## What is proved (sorryAx-free; see `#print axioms` block at the foot)
 
 * **Deliverable 1 (Discriminator).** `instance : Monoid Grade` as the componentwise
   product of the coordinate monoids — DEGENERATE-TO-PRODUCT confirmed
@@ -414,7 +414,7 @@ end Grade
 
 end Trope
 
-/-! ## Axiom audit (proof completeness)
+/-! ## Axiom audit (sorryAx-free check)
 
 Each deliverable depends only on Lean/Mathlib's standard axioms
 (`propext`, `Classical.choice`, `Quot.sound`) — crucially **no `sorryAx`**. -/

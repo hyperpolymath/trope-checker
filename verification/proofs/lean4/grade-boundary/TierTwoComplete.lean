@@ -254,7 +254,7 @@ end Grade
 
 end Trope
 
-/-! ## Axiom audit (proof completeness) -/
+/-! ## Axiom audit (sorryAx-free check) -/
 section AxiomAudit
 open Trope
 #print axioms Trope.Bond.withheld_honest_not_cancel
