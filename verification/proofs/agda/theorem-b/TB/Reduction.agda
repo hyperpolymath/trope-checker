@@ -113,28 +113,40 @@ seq-stays-core : ∀ {Γ A B g₁ g₂} → Γ ⊢ A ! g₁ → (Γ , A) ⊢ B !
 seq-stays-core {g₁ = g₁} {g₂ = g₂} _ _ c₁ c₂ = core-closed-▷ g₁ g₂ c₁ c₂
 
 --------------------------------------------------------------------------------
--- fix / lfp — NOT-REACHED (precise statement; NO postulate).
+-- fix — NOT-REACHED (precise statement; NO postulate).
 --------------------------------------------------------------------------------
--- The calculus's general recursion (`fix`, §7) grades a recursive trope-
--- transformer by the LEAST FIXED POINT of its grade functional. Subject
--- reduction for the fix-unfold step
+-- The calculus's general recursion (`fix`, spec §7) grades a recursive trope-
+-- transformer by the greatest post-fixed point of its grade functional in the
+-- retention order (the least fixed point in the loss order), checked by the
+-- declared-signature rule T-Fix-Decl. Subject reduction for the fix-unfold step
 --
 --     fix x. e  ↝  e [ fix x. e / x ]
 --
--- is NOT-REACHED here, and is NOT postulated. Two things are genuinely missing,
--- exactly as flagged by the spec (§7, O4) and PROOF-STATUS:
+-- is NOT-REACHED here, and is NOT postulated. One thing is missing:
 --
---   (1) an OPERATIONAL model: there is no ↝ rule for fix and no definition of
---       the observed retention ρ against which grade soundness for the unfold
---       would be stated. (The spec is a type DISCIPLINE; reduction beyond β/let
---       is not given.)
---   (2) a LIMIT CARRIER for the lfp grade: ordering iterated unbounded
---       attenuation beyond ω is the open O4 fork (Conat-vs-tag). The lfp's
---       fidelity lands in the absorbing tops {total, unknown}, which ARE
---       ▷-fixed (TB.Grade.total-absorb-Q, unknown-absorbL) — so the GRADE is
---       tier-stable — but the operational unfold-preserves-tier step needs (1)+(2).
+--   (1) the OPERATIONAL model: there is no ↝ rule for fix in this module and no
+--       definition of the observed retention ρ against which grade soundness
+--       for the unfold would be stated. The model is DESIGNED in
+--       spec/notes/2026-07-07-co1-operational-model.adoc — the core language
+--       λ-trope, an instrumented small-step semantics with tagged values v@h
+--       (ρ is read off the output tag), and T-Fix-Decl (accept iff γ ⊑ F(γ);
+--       no fixed point is computed). Its mechanisation plan is that note's §6,
+--       steps 1–5, extending THIS module: tag erasure commutes with reduction;
+--       each atomic-move step emits exactly the typing rule's grade; T-Sub and
+--       application via TB.Order.fateL4Mono{R,L}; F monotone in the assumed
+--       latent grade; T-Fix-Decl soundness by induction on call depth.
+--
+-- What used to be listed as a second obstruction — a LIMIT CARRIER for ordering
+-- iterated attenuation beyond ω, the O4 fork (Conat-vs-tag) — is RESOLVED by
+-- ADR 0004: the finitary carrier ℕ ∪ {∞, ⊤} suffices, because transfinitely
+-- deep `fix` nesting is inexpressible in finitary syntax. For a body that
+-- attenuates and recurses without bound the gfp's fidelity lands in the
+-- absorbing tops {total, unknown}, which ARE ▷-fixed (TB.Grade.total-absorb-Q,
+-- unknown-absorbL), so that GRADE is tier-stable; a body that does not use its
+-- binder, or F(γ) = γ, has a finite gfp (Present for the identity), which the
+-- fix proof must cover separately. In every case only the operational
+-- unfold-preserves-tier step, item (1), remains.
 --
 -- The honest verdict for fix-subject-reduction is therefore NOT-REACHED, with
--- the obstruction characterised: it is the missing operational semantics + the
--- O4 limit carrier, NOT a defect of the grade algebra (whose lfp endpoint is
--- already tier-stable).
+-- the obstruction characterised: the mechanisation of the designed operational
+-- model (CO-1), NOT a defect of the grade algebra.

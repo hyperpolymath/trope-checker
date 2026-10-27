@@ -8,9 +8,10 @@
 ||| Misbound for bond, Conflated for merge): the BOTTOM of its order (worst
 ||| retention) and absorbing under ▷ — TWO-SIDEDLY on fate since R-2026-07-07 (A1)
 ||| — so a deceptive grade fails every honest floor and never composes away
-||| (calculus §3.3, HC-2). Provenance tags on Fused are erased here
-||| (they are metadata; they do not affect the lattice laws) — the executable
-||| checker (src/checker) carries them.
+||| (calculus §3.3, HC-2). Predicate labels and provenance tags on Fused are
+||| erased here: Predicated and Fused are nullary. The laws concern erased
+||| loss-shapes and assert no equality of predicate labels or nested provenance
+||| pairs (calculus L1/L6).
 module Trope.Coords
 
 import Data.Nat

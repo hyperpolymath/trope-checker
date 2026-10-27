@@ -4,12 +4,12 @@
 # FORMAL VERIFICATION (PROOFS)
 #
 # Imported by ../../Justfile via `import? "build/just/proofs.just"`.
-# Recipes here check formal proofs across Idris2, Lean4, Agda, and Coq, plus
+# Recipes here check formal proofs across Idris2, Lean4 and Agda, plus
 # scan for dangerous/unsafe constructs and report status. Run via
 # `just proof-check-all` for the full sweep.
 
-# Check all formal proofs (Idris2 + Lean4 + Agda + Coq)
-proof-check-all: proof-check-idris2 proof-check-lean4 proof-check-agda proof-check-coq proof-scan-dangerous
+# Check all formal proofs (Idris2 + Lean4 + Agda)
+proof-check-all: proof-check-idris2 proof-check-lean4 proof-check-agda proof-scan-dangerous
     @echo "=== All proof checks complete ==="
 
 # Check Idris2 proofs (ABI, types, dependent type proofs)
@@ -150,8 +150,6 @@ proof-status:
     echo "Idris2: $(find verification/proofs/idris2 -name '*.idr' 2>/dev/null | wc -l) files"
     echo "Lean4:  $(find verification/proofs/lean4 -name '*.lean' 2>/dev/null | wc -l) files"
     echo "Agda:   $(find verification/proofs/agda -name '*.agda' 2>/dev/null | wc -l) files"
-    echo "Coq:    $(find verification/proofs/coq -name '*.v' 2>/dev/null | wc -l) files"
-    echo "TLA+:   $(find verification/proofs/tlaplus -name '*.tla' 2>/dev/null | wc -l) files"
     echo ""
     # PROOF-STATUS may live at root, docs/status/ (post-#20), .md or .adoc (post-#23)
     for candidate in docs/status/PROOF-STATUS.adoc docs/status/PROOF-STATUS.md PROOF-STATUS.adoc PROOF-STATUS.md; do
@@ -191,6 +189,8 @@ build-agda:
     #!/usr/bin/env bash
     set -euo pipefail
     echo "=== build-agda: Theorem B metatheory (--safe --without-K) ==="
+    # Needs Agda >= 2.6.4 and agda-stdlib >= 2.0 (Data.Product.Base); the CI job
+    # pins Agda 2.7.0.1 + stdlib 2.0 by checksum — see proofs.yml agda-theorem-b.
     cd verification/proofs/agda/theorem-b
     agda --safe --without-K All.agda
     agda --safe --without-K Smoke.agda
@@ -204,12 +204,14 @@ verify-all: build-lean build-agda
     #!/usr/bin/env bash
     set -euo pipefail
     echo "=== verify-all: Lean source honesty gate ==="
-    for f in verification/proofs/lean4/grade-boundary/GradeBoundary.lean \
-             verification/proofs/lean4/grade-factorisation/GradeFactorisation.lean; do
+    # Every Lean source (mirrors proofs.yml lean-source-honesty; keep the two in step).
+    for f in $(git ls-files 'verification/proofs/lean4/*.lean' 'verification/proofs/lean4/*/*.lean'); do
         echo "--- gating $f ---"
-        if grep -nE '(:=|by|;|<;>|=>|\|)[[:space:]]*(sorry|admit)\b|\bnative_decide\b' "$f"; then
+        # Comment-aware, token-based (mirrors proofs.yml; keep the two in step).
+        stripped=$(awk -f tests/lib/strip-proof-comments.awk "$f")
+        if grep -nE '(^|[^[:alnum:]_.])(sorry|admit)([^[:alnum:]_]|$)|\bnative_decide\b' <<<"$stripped"; then
             echo "FAIL: forbidden Lean tactic (sorry/admit/native_decide) in $f"; exit 1; fi
-        if grep -nE '^[[:space:]]*axiom\b' "$f"; then
+        if grep -nE '^[[:space:]]*axiom\b' <<<"$stripped"; then
             echo "FAIL: user axiom declared in $f"; exit 1; fi
     done
     echo "PASS: verify-all — Lean green & axiom-clean (propext/Quot.sound only); Agda --safe --without-K green."

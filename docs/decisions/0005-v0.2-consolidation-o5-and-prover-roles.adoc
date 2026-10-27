@@ -1,0 +1,118 @@
+// SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= ADR 0005 — Spec v0.2 consolidation, O5 adopted, O6 opened, prover roles, template removal; the carrier-as-parameter question recorded
+:revdate: 2026-10-27
+
+== Status
+
+*Proposed — owner to accept.* Drafted in the Phase 0 pass ("make the status
+surfaces true"); the spec consolidation it ratifies landed as
+`docs(spec): consolidate the calculus at v0.2` (2026-10-13). Nothing here changes
+a semantics; D6 is recorded, not decided.
+
+== Context
+
+After ADR 0004 (R-2026-07-07) the normative text was split across four
+documents written against two different carriers: `spec/calculus.adoc` v0.1
+(2026-06-22) with the ratification spliced in as notes, the never-merged
+addendum `spec/calculus-v0.2-draft.adoc` (2026-06-23), and the two design notes
+of 2026-07-07 (the L4 boundary and atoms; the CO-1 operational model). The spec
+still said "seven effects" while the vocabulary, `EffectAtoms.lean` and the IR
+said nine. The third firewall ("veridicality is declared and propagated, not
+checked") cited an obligation O5 that §10 never defined; the workbench proposed
+the missing entry on 2026-07-17
+(`trope-particularity-workbench/docs/theory/formalisms/defining-o5-veridicality-oracle.adoc`).
+T-Sub's one-sidedness means the verdict certifies sufficiency only, which the
+privacy direction (a ceiling on retention) cannot use. The estate's proof-kernel
+ruling of 2026-10-12 fixed the role of each prover across repositories, and this
+repo still described itself as a "four-prover" stack and carried three
+never-instantiated Coq / TLA+ / Agda templates from the repository mint.
+
+== Decisions
+
+[cols="1,3",options="header"]
+|===
+| ID | Decision
+
+| *D1 (one normative document)* | `spec/calculus.adoc` v0.2 (the consolidation
+of 2026-10-13) is the normative text. The addendum is folded in and removed; the
+two 2026-07-07 notes and `verification/proofs/INTEGRATION-REPORT.adoc` are
+history and analysis, cited from the spec where they carry the argument, never
+the other way round. Where any older status surface disagrees with the spec, the
+spec wins.
+
+| *D2 (O5 adopted)* | §10 gains O5, the veridicality oracle, adopted from the
+workbench proposal of 2026-07-17 unchanged in substance: Remark O5-a
+(IR-relative undecidability of veridicality), the oracle interface with O5-1
+soundness, O5-2 attestation and O5-3 no-laundering, the falsifier, and the
+upgrade path (mechanise O5-1 as a side condition on an `Oracle`-indexed verdict
+judgement). Status in §10: DEFINED; mechanisation OPEN. Vocarium's warrants are
+O5-2 attestations; Hermeneia's _licensed_ band is where O5-backed claims sit.
+
+| *D3 (O6 opened)* | §10 gains O6, the ceiling verdict: the dual theorem
+stem:[\rho \sqsubseteq g_{\mathrm{ceiling}}] that a "no more than this may be
+retained" use-model needs, which T-Sub's downward-only weakening does not give for
+conservative lowering. Deliverable: the dual verdict proved for the exact-lowering
+fragment and stated as unavailable for the conservative one, or a second,
+upper-bound grade on edges. Status: OPEN.
+
+| *D4 (prover roles)* | The estate kernel ruling of 2026-10-12 applied here
+(§9.3): *Agda* is the normative kernel (Theorem B; CO-1 mechanisation targets it);
+*Idris2* is the executable reference (the verified core and the reference
+`tropecheck`); *Lean 4 + Mathlib* is provenance (the grade-algebra boundary, the
+atom and tropical factorisations, kept with their axiom audits); *Rust* is the
+fast core, validated against the reference over the conformance corpus.
+Consequence: `docs/status/PROOF-STATUS.adoc` leads with Agda, and new
+metatheory goes to Agda unless an ADR says otherwise.
+
+| *D5 (three provers; templates removed)* | `verification/proofs/coq/TypeSafety.v`,
+`verification/proofs/tlaplus/StateMachine.tla` and
+`verification/proofs/agda/Properties.agda` — mint templates whose own text says
+"Replace with your project's …", never instantiated — are removed, with their
+tree and recipe references. The repository describes itself as three provers
+(Agda, Idris2, Lean) plus a Rust fast core.
+
+| *D6 (recorded, not decided)* | Whether the fidelity carrier should be a
+*parameter* — any resource algebra with two adjoined tops, instantiated from
+`hyperpolymath/resource-algebra` — rather than the one instance
+stem:[\mathbb{N}\cup\{\infty,\top\}]. This would answer the "uncalibrated
+ordinal arithmetic" objection (the finite part of the carrier adds losses whose
+unit is unstated) by making the unit the instance's business. O4 is RESOLVED for
+the instance (ADR 0004); the parameterisation is Phase 1A work and is *not*
+decided by this ADR.
+|===
+
+== Consequences
+
+* One place to read the calculus; "nine effects" throughout, reconciled with
+  "seven" as nine atom families of which six are writable and three are faults.
+* The third firewall now cites a defined obligation. O5 is dischargeable in
+  principle (mechanise O5-1) and refutable (its falsifier is stated).
+* The privacy direction has a named obligation (O6) instead of an unstated gap;
+  the verdict's one-sidedness is written down as a limitation, not hidden.
+* Status surfaces (`PROOF-STATUS`, `ROADMAP`, `AFFIRMATION`, the Agda `fix`
+  footer) are rewritten to the ratified world in the same pass; the Lean
+  honesty gate and `verify-all` cover every tracked Lean source.
+* `just proof-check-all` no longer invokes the Coq recipe; `just proof-status`
+  reports three provers. The historical mention of the templates in
+  `INTEGRATION-REPORT.adoc` stays as the record of what was there.
+* D6 leaves the carrier an instance; downstream (vocarium, hermeneia) may keep
+  reading `Attenuated(δ)` with stem:[\delta \in \mathbb{N}].
+
+== Rejected alternatives
+
+* *Keep the addendum as a separate v0.2 document* — rejected: two normative
+  texts on two carriers is how readers and agents kept landing in the
+  pre-ratification world.
+* *"Four-prover" wording, Rust as a prover* — rejected: the fast core proves
+  nothing; it is validated against the reference. Naming it a prover overclaims.
+* *Keep the Coq / TLA+ / Agda templates as future placeholders* — rejected: they
+  were never instantiated, each advertises a prover the roles ruling does not
+  assign here, and `proof-check-coq` skipping silently is a gate that cannot fail.
+* *Decide D6 now (make the carrier a parameter in this pass)* — rejected: it
+  changes the carrier every proof development is stated over; it belongs to
+  Phase 1A with `resource-algebra` as the instance supplier, after CO-1
+  mechanisation lands on the fixed instance.
+* *Leave O5 as the workbench proposal* — rejected: an obligation cited by the
+  checker's firewalls must live in the checker's spec, not in a proposal
+  downstream cannot cite as normative.

@@ -53,16 +53,23 @@ jobs:
         run: |
           set -euo pipefail
           fail=0
-          for f in verification/proofs/lean4/grade-boundary/GradeBoundary.lean \
-                   verification/proofs/lean4/grade-factorisation/GradeFactorisation.lean; do
+          # Every Lean source, not only the two v0.1 files: the ratified-carrier
+          # results (GradeRatified, L4Monotonicity, TierTwoComplete, EffectAtoms,
+          # GradeFactorisationR) are what the current spec cites.
+          for f in $(git ls-files 'verification/proofs/lean4/*.lean' 'verification/proofs/lean4/*/*.lean'); do
             if [ ! -f "$f" ]; then
               echo "::error::gated file is missing: $f"; fail=1; continue
             fi
             echo "--- gating $f ---"
-            if grep -nE '(:=|by|;|<;>|=>|\|)[[:space:]]*(sorry|admit)\b|\bnative_decide\b' "$f"; then
+            # Comment-aware and token-based: strip -- and /- -/ comments first
+            # (tests/lib/strip-proof-comments.awk; line numbers preserved), then match
+            # the bare tokens, so `:= by` with an indented `sorry` on the NEXT line is
+            # caught while the honest "sorry-free" prose in comments is not.
+            stripped=$(awk -f tests/lib/strip-proof-comments.awk "$f")
+            if grep -nE '(^|[^[:alnum:]_.])(sorry|admit)([^[:alnum:]_]|$)|\bnative_decide\b' <<<"$stripped"; then
               echo "::error file=$f::forbidden Lean tactic (sorry/admit/native_decide)"; fail=1
             fi
-            if grep -nE '^[[:space:]]*axiom\b' "$f"; then
+            if grep -nE '^[[:space:]]*axiom\b' <<<"$stripped"; then
               echo "::error file=$f::user axiom declared"; fail=1
             fi
           done
@@ -73,41 +80,49 @@ jobs:
   # so this is a real check of postulate-freedom and not a word-grep (a grep would
   # false-positive on the honest "postulate-free" prose in the comments).
   #
-  # NOTE ON THE VERSION PIN: theorem-b.agda-lib is developed against Agda 2.8.0
-  # (ADR 0003). The runner's packaged Agda is older. The version is printed, not
-  # asserted, because asserting a version the runner cannot supply produces a
-  # permanently-red gate rather than a signal — and the substantive guarantee here
-  # comes from --safe --without-K, which holds across versions. Verified locally
-  # under 2.6.4.3: All.agda and Smoke.agda both typecheck, exit 0.
+  # TOOLCHAIN: pinned release artefacts, not the runner's apt. ubuntu-latest is
+  # 24.04, whose agda-stdlib is 1.7.3; Theorem B imports Data.Product.Base, which
+  # exists from stdlib 2.0, so `apt-get install agda agda-stdlib` there fails at
+  # scope checking (exit 42) — reproduced 2026-10-13. The job now fetches the
+  # Agda 2.7.0.1 release binary and the stdlib v2.0 source archive, verifies
+  # both SHA-256 sums, and registers the stdlib under the name the .agda-lib
+  # depends on. Verified 2026-10-13 with exactly these artefacts: All.agda and
+  # Smoke.agda typecheck under --safe --without-K, exit 0 (~100 s). A checksum
+  # mismatch fails loudly rather than silently testing a different stdlib.
   agda-theorem-b:
     name: "Agda Theorem B (--safe --without-K)"
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7.0.1
-      - name: Install Agda and register the standard library
+      - name: Install Agda 2.7.0.1 and agda-stdlib 2.0 (pinned, checksummed)
         shell: bash
+        env:
+          AGDA_URL: https://github.com/agda/agda/releases/download/v2.7.0.1/Agda-v2.7.0.1-linux.tar.xz
+          AGDA_SHA256: 975b515a14877ab6bce5bfc641e16c4a3ee52ca5d7f846577dee80aa2145db8a
+          STDLIB_URL: https://github.com/agda/agda-stdlib/archive/refs/tags/v2.0.tar.gz
+          STDLIB_SHA256: 14eecb83d62495f701e1eb03ffba59a2f767491f728a8ab8c8bb9243331399d8
         run: |
           set -euo pipefail
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq --no-install-recommends agda agda-stdlib
-          echo "agda --version -> $(agda --version | head -1)"
-          echo "ratified pin (ADR 0003) is Agda 2.8.0; --safe --without-K is the substantive check"
-
-          # Installing the package is not enough: Agda only sees a library that is
-          # listed in its `libraries` file, and a fresh runner has none. WHICH path
-          # that file lives at is VERSION-DEPENDENT (~/.agda vs ~/.config/agda), so
-          # point AGDA_DIR at a directory we control rather than guessing, and
-          # resolve the .agda-lib from the package rather than hardcoding it.
-          lib="$(dpkg -L agda-stdlib | grep -m1 'standard-library\.agda-lib$' || true)"
-          if [ -z "$lib" ]; then
-            echo "::error::agda-stdlib is installed but standard-library.agda-lib was not found"
-            exit 1
-          fi
-          mkdir -p "${RUNNER_TEMP}/agda"
-          echo "$lib" > "${RUNNER_TEMP}/agda/libraries"
-          echo "AGDA_DIR=${RUNNER_TEMP}/agda" >> "$GITHUB_ENV"
-          echo "registered standard-library at: $lib"
+          mkdir -p "${RUNNER_TEMP}/agda-toolchain" && cd "${RUNNER_TEMP}/agda-toolchain"
+          curl -sSL -o agda.tar.xz "$AGDA_URL"
+          echo "$AGDA_SHA256  agda.tar.xz" | sha256sum -c -
+          curl -sSL -o stdlib.tar.gz "$STDLIB_URL"
+          echo "$STDLIB_SHA256  stdlib.tar.gz" | sha256sum -c -
+          tar -xJf agda.tar.xz && tar -xzf stdlib.tar.gz
+          # theorem-b.agda-lib depends on `standard-library`; the 2.0 archive names
+          # itself `standard-library-2.0`, so register a lib file under the depended-on name.
+          printf 'name: standard-library\ninclude: src\nflags:\n  --warning=noUnsupportedIndexedMatch\n' \
+            > agda-stdlib-2.0/standard-library.agda-lib
+          mkdir -p "${RUNNER_TEMP}/agda-dir"
+          echo "$PWD/agda-stdlib-2.0/standard-library.agda-lib" > "${RUNNER_TEMP}/agda-dir/libraries"
+          {
+            echo "AGDA_DIR=${RUNNER_TEMP}/agda-dir"
+            echo "Agda_datadir=$PWD/Agda-v2.7.0.1/data"
+            echo "LC_ALL=C.UTF-8"
+          } >> "$GITHUB_ENV"
+          echo "$PWD/Agda-v2.7.0.1/bin" >> "$GITHUB_PATH"
+          "$PWD/Agda-v2.7.0.1/bin/agda" --version
       - name: Typecheck Theorem B
         shell: bash
         working-directory: verification/proofs/agda/theorem-b

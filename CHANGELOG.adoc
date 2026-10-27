@@ -10,6 +10,26 @@ https://semver.org/spec/v2.0.0.html[Semantic Versioning].
 
 ==== Changed
 
+* *Spec v0.2 consolidation (2026-10-13).* `+docs(spec)+`: consolidate the calculus
+at v0.2 — nine effects with the atom table, ratified carrier inline (A1–A3), L6
+commutativity and the cancellation structure as laws, the tropical factorisation
+recorded as sighted, §7 restated as greatest post-fixed point with T-Fix-Decl, O5
+defined and O6 (ceiling verdict) opened, prover roles per ADR 0005.
+`+spec/calculus-v0.2-draft.adoc+` folded in and removed; README and
+INTEGRATION-REPORT aligned.
+* *Phase 0 — status surfaces made true (2026-10-27).*
+`+docs/status/PROOF-STATUS.adoc+` rewritten to the ratified carrier (one proved
+table citing only existing lemma names; open list = spec §10; history collapsed);
+`+docs/status/ROADMAP.adoc+` ships v0.2; `+AFFIRMATION.adoc+` gains a 2026-10-27
+entry from re-run checks (13 + 9 conformance on both checkers, Agda green, Lean
+NOT RUN in that session); the `+fix+` footer of
+`+verification/proofs/agda/theorem-b/TB/Reduction.agda+` names the designed CO-1
+model and records O4 as resolved.
+* *`+proofs.yml+`* pins Agda 2.7.0.1 + agda-stdlib 2.0 by SHA-256 (the runner's apt
+pair fails at `+Data.Product.Base+`); the Lean honesty gate and `+verify-all+` cover
+every tracked `+.lean+` file and are comment-aware and token-based (a `+sorry+` on the
+line after `+:= by+` is caught; "sorry-free" prose in comments is not).
+
 * *IR 0.2 — A3 `+Attenuated(0)+` ingest normalization (R-2026-07-07-03,
 ADR 0004, #28).* Both checkers (Idris2 reference, Rust fast-core)
 rewrite `+Attenuated(0)+` to `+Present+` at the IR ingest boundary,
@@ -24,6 +44,12 @@ fault. New conformance fixtures prove `+Atten(0)+` ≡ `+Present+`
 `+spec/trope-ir.adoc+` gains a "`Changes from 0.1`" section.
 
 ==== Added
+
+* *ADR 0005* (`+docs/decisions/0005-v0.2-consolidation-o5-and-prover-roles.adoc+`,
+Proposed): spec v0.2 normative; O5 adopted from the workbench proposal of
+2026-07-17; O6 opened; prover roles (Agda kernel, Idris2 reference, Lean
+provenance, Rust fast core); templates removed; the carrier-as-parameter question
+(D6) recorded, not decided.
 
 * *Grade-algebra ground truth (Lean 4 + Mathlib).*
 `+verification/proofs/lean4/grade-boundary/+`: a sorry-free, axiom-clean
@@ -75,3 +101,11 @@ prose.
 central open problem.
 * `+.gitignore+` now excludes `+.lake/+` (Lean build artifacts +
 vendored Mathlib clones).
+
+==== Removed
+
+* The never-instantiated prover templates `+verification/proofs/coq/TypeSafety.v+`,
+`+verification/proofs/tlaplus/StateMachine.tla+` and
+`+verification/proofs/agda/Properties.agda+`, with their tree and recipe references
+(`+proof-check-all+` no longer runs the Coq recipe; `+proof-status+` reports three
+provers).
