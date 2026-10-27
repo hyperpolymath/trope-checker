@@ -139,10 +139,13 @@ seq-stays-core {g₁ = g₁} {g₂ = g₂} _ _ c₁ c₂ = core-closed-▷ g₁ 
 -- What used to be listed as a second obstruction — a LIMIT CARRIER for ordering
 -- iterated attenuation beyond ω, the O4 fork (Conat-vs-tag) — is RESOLVED by
 -- ADR 0004: the finitary carrier ℕ ∪ {∞, ⊤} suffices, because transfinitely
--- deep `fix` nesting is inexpressible in finitary syntax. The gfp's fidelity
--- lands in the absorbing tops {total, unknown}, which ARE ▷-fixed
--- (TB.Grade.total-absorb-Q, unknown-absorbL), so the GRADE is tier-stable; only
--- the operational unfold-preserves-tier step, item (1), remains.
+-- deep `fix` nesting is inexpressible in finitary syntax. For a body that
+-- attenuates and recurses without bound the gfp's fidelity lands in the
+-- absorbing tops {total, unknown}, which ARE ▷-fixed (TB.Grade.total-absorb-Q,
+-- unknown-absorbL), so that GRADE is tier-stable; a body that does not use its
+-- binder, or F(γ) = γ, has a finite gfp (Present for the identity), which the
+-- fix proof must cover separately. In every case only the operational
+-- unfold-preserves-tier step, item (1), remains.
 --
 -- The honest verdict for fix-subject-reduction is therefore NOT-REACHED, with
 -- the obstruction characterised: the mechanisation of the designed operational
