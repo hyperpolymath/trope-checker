@@ -22,7 +22,7 @@ proofs/
 ├── lean4/           # Lean4 proofs (algebra, lattices)
 │   ├── ApiTypes.lean
 │   ├── grade-boundary/      # grade-algebra GROUND TRUTH: the honest/deceptive cancellation
-│   │                        #   boundary (Lean 4 + Mathlib; sorry-free; propext/Quot.sound only)
+│   │                        #   boundary (Lean 4 + Mathlib; sorry-free; no user axiom)
 │   └── grade-factorisation/ # tropical factorisation probe: imports the carrier; verdict (B)
 │                            #   factors but veridicality-blind (precondition only; not CO-1)
 └── agda/            # Agda proofs (induction, metatheory)

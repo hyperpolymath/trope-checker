@@ -101,9 +101,12 @@ Idris2 0.8.0 (built from tag `v0.8.0` on Chez Scheme 9.5.8); rustc 1.97.0; just 
 * `just build-lean` → *NOT RUN here*: `lake` is not installed and the Lean toolchain
   and Mathlib cache hosts were unreachable from this container. The
   `lean-source-honesty` regexes of `proofs.yml` were run by hand over all 8 tracked
-  `.lean` files: no `sorry` / `admit` / `native_decide`, no user `axiom`. The build and
-  axiom audit are the `proofs.yml` `lean-build` job; its run on this branch is cited in
-  the Phase 0 pull request.
+  `.lean` files: no `sorry` / `admit` / `native_decide`, no user `axiom`. On this
+  branch the `proofs.yml` `lean-build` job (run 40472568287, 2026-10-27T08:18Z) built
+  both packages — `lake build` "Build completed successfully", one axiom line per
+  theorem — and then failed in lean-action's optional `nanoda` step (its lean4export
+  does not compile under the v4.16.0 toolchain), exactly as on `main`; that step, not
+  the build, is why the job is red.
 
 *Proved* (machine-checked; names in `docs/status/PROOF-STATUS.adoc`): L1–L6 on the
 ratified carrier, L4 in full (`fateL4MonoR/L`, `bondComposeMono`, `mergeComposeMono`);
@@ -116,7 +119,7 @@ T-Sub and verdict soundness (`soundFromExact`, `subSound`, `verdictSound`). *Ope
 (`spec/calculus.adoc §10`): CO-1 mechanisation (the `fix` case; designed, not
 mechanised), O1-coord, O2, O3, O5 mechanisation, O6.
 
-*Two findings.* (1) Ubuntu 24.04's apt pair (Agda 2.6.3, agda-stdlib 1.7.3) cannot
+*Three findings.* (1) Ubuntu 24.04's apt pair (Agda 2.6.3, agda-stdlib 1.7.3) cannot
 typecheck Theorem B: `agda --safe --without-K All.agda` exits 42, `Data.Product.Base`
 not found — stdlib ≥ 2.0 is required, which is why `proofs.yml` now pins Agda 2.7.0.1
 + stdlib 2.0 by checksum (reproduced here, 58 s). (2) The 2026-06-22 entry's "10/10"
@@ -125,6 +128,10 @@ proof-check-all` is red for reasons that predate this pass (per-file `idris2 --c
 and `agda --safe` from the repo root cannot resolve module names; the ABI/Types Idris2
 mint templates do not typecheck) — recorded as an issue, not fixed here; the gates
 that mean something are `just check`, `just build-agda`, `just trope-rust` and
-`verify-all`.
+`verify-all`. (3) The CI axiom audit shows `Trope.nine_families` (`EffectAtoms.lean`),
+`FateA.Q_add_left_cancel` and `FateA.atten_cancel_on_normalForms` (`GradeRatified.lean`)
+depend on `Classical.choice` as well as `propext`/`Quot.sound`; the "`propext`/`Quot.sound`
+only" wording in spec §9.3, PROOF-STATUS and the proofs README overclaimed and now reads
+"no `sorryAx`, no user axiom". `GradeBoundary.lean`'s own footer had said so all along.
 
 — Run by the Phase 0 agent; the owner signs on landing.

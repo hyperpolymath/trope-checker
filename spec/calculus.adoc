@@ -693,7 +693,9 @@ Per the estate's proof-kernel ruling of 2026-10-12 (ADR 0005), the roles are:
 * *Provenance — Lean 4 + Mathlib* (`verification/proofs/lean4/`): the
   grade-algebra boundary and its ratified mirror, the atom factorisation and the
   tropical factorisation probe — the Mathlib-facing results, retained with
-  their axiom audits (`propext`/`Quot.sound` only).
+  their axiom audits: no `sorryAx`, no user axiom; `propext`, `Quot.sound` and,
+  in three theorems (`nine_families`, `Q_add_left_cancel`,
+  `atten_cancel_on_normalForms`), `Classical.choice`.
 * *Fast core — Rust* (`src/rust/`, dependency-free): the shipping checker,
   validated against the reference bit-for-bit over the conformance corpus.
 

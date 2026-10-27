@@ -5,8 +5,8 @@
 :toc: macro
 :stem: latexmath
 
-What is *proved* (machine-checked, no axioms beyond `propext`/`Quot.sound` in
-Lean; `--safe --without-K` in Agda; `%default total` with no escape hatch in
+What is *proved* (machine-checked: in Lean no `sorryAx` and no user axiom — the
+audits show `propext`, `Quot.sound` and, in three theorems, `Classical.choice`; `--safe --without-K` in Agda; `%default total` with no escape hatch in
 Idris2) and what is *open* (named, specified, not asserted), on the ratified
 carrier of `spec/calculus.adoc` v0.2 (R-2026-07-07, ADR 0004). Prover roles per
 ADR 0005: Agda is the normative kernel, Idris2 the executable reference, Lean the
