@@ -158,7 +158,9 @@ theorem le_total : ∀ a b : Fate, le a b ∨ le b a := by
   cases a <;> cases b <;> simp [le] <;> exact _root_.le_total _ _
 
 /-- **Commutativity.** With (A1), amended composition is commutative: the sole
-non-commuting pair of the shipped carrier was `(Dropped, Falsified)`. -/
+non-commuting pair of the shipped carrier was `(Dropped, Falsified)`.
+`Fate.predicated` erases its predicate label; this theorem asserts no equality
+of labelled predicates. -/
 theorem comp_comm : ∀ a b : Fate, comp a b = comp b a := by
   intro a b
   cases a <;> cases b <;> simp [comp]

@@ -13,6 +13,9 @@
 -- (verification/proofs/lean4/grade-boundary/L4Monotonicity.lean, FateA).
 -- The original Lean frozen interface (GradeBoundary.lean) describes the
 -- PRE-RATIFICATION carrier and is retained upstream under a provenance note.
+-- Predicate and fusion labels are erased in this carrier: predicated and fused
+-- are nullary. The monoid laws and grade-comm concern erased loss-shapes;
+-- they assert no equality of predicate labels or nested provenance pairs.
 --
 --   F1  Grade is a product Monoid (componentwise)           — gmonoid-{assoc,unitL,unitR}
 --   F2′ the product is COMMUTATIVE on the ratified carrier   — grade-comm

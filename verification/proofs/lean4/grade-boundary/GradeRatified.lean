@@ -14,6 +14,10 @@ fate coordinate — which is exactly `Trope.FateA` of `L4Monotonicity.lean`
 `Dropped ⊑ Predicated`, ratified in ADR 0004 as R-2026-07-07-01 and -02) — with the
 `Bond` and `Merge` coordinates unchanged from `GradeBoundary.lean`.
 
+Predicate and fusion labels are erased: `Fate.predicated` and `Merge.fused`
+are nullary. `instCommMonoid` proves the laws for these erased loss-shapes;
+it asserts no equality of predicate labels or nested provenance pairs.
+
 ## What is proved (sorry-free; `#print axioms` at the foot)
 
 * **`CommMonoid GradeR`** (`instCommMonoid`) — the ratified grade algebra is a

@@ -157,7 +157,8 @@ predicate accepts `Predicated(P)` but rejects `Dropped`.
 bottom is a *two-sided* zero of its coordinate's composition — in particular
 `Dropped ▷ Falsified = Falsified`, replacing the v0.1 clause
 `Dropped ▷ Falsified = Dropped` that let an upstream honest drop erase a
-downstream lie and was the sole source of the algebra's non-commutativity.
+downstream lie and was the sole source of the algebra's non-commutativity
+after erasing predicate and fusion labels.
 (A2) `Dropped ⊑ Predicated`, dissolving the antichain. (A3) `Attenuated(0) =
 Present` is *imposed by normalization at IR ingest*: validators rewrite
 `Attenuated(Q 0)` to `Present` before grading, and composition preserves normal
@@ -306,7 +307,17 @@ two-sided zero. *Merge composition* — meet in `Single ⊐ Fused ⊐ Conflated`
 with `Fused(τ₁) ▷ Fused(τ₂) = Fused(τ₁ ⊗ τ₂)` (nested honest merge, label is the
 pair) and `Conflated` a two-sided zero.
 
-The laws the grade MUST satisfy, each enforced by the verified developments (§9.3):
+The verified developments (§9.3) erase predicate and fusion labels:
+`Predicated(P)` becomes `Predicated` and `Fused(τ)` becomes `Fused`, with all
+other components unchanged. Erasure preserves composition. The laws below
+apply to this erased grade carrier; equality of labels is outside the proof
+contract. In particular, the right-predicate rule above need not commute on
+labels: `Predicated(P) ▷ Predicated(Q) = Predicated(Q)`, whereas reversing the
+operands gives `Predicated(P)`. Nested fusion pairs need neither commute nor
+associate as literal labels: `(τ₁, τ₂)` differs from `(τ₂, τ₁)`, and
+`((τ₁, τ₂), τ₃)` differs from `(τ₁, (τ₂, τ₃))`.
+
+The laws the erased grade MUST satisfy, each enforced by the verified developments:
 
 [cols="1,4",options="header"]
 |===
@@ -317,14 +328,16 @@ The laws the grade MUST satisfy, each enforced by the verified developments (§9
 | *L3 (bottom-absorption)* | Each *deceptive* bottom — `Falsified`, `Misbound`, `Conflated`, and fidelity's `Unknown` — is a *two-sided zero* of its coordinate's composition (R-2026-07-07 (A1)): no honest absorber launders deception, in either composition order. (Lean `FateA.falsified_two_sided_zero`, `GradeR.gBotR_two_sided_zero`; Agda `falsified-absorb{L,R}`, `misbound-absorbL`, `conflated-absorbL`, `deceptive-absorbs-▷`.) The *honest* bottoms (`Dropped`, `Severed`) absorb within the honest fragment, and `Attenuated(⊤)` within the fidelity dimension.
 | *L4 (monotonicity)*  | stem:[\triangleright] is monotone in each argument with respect to the retention order stem:[\sqsubseteq] (§5): composing after more loss never yields more retention. *Holds in full on the ratified carrier.* (Idris2 `Trope.Soundness.{fateL4MonoR,fateL4MonoL}`, `Trope.Order.{bondComposeMono,mergeComposeMono}`; Lean `FateA.comp_mono_{right,left}`; Agda `TB.Order.fateL4Mono{R,L}`.) History: strict L4 failed on the v0.1 carrier at exactly the two points (A1)/(A2) amended — `spec/notes/2026-07-07-l4-boundary-and-atoms.adoc`, `L4Monotonicity.lean` (`comp_not_monotone_{right,left}`, retained as theorems about the pre-ratification carrier).
 | *L5 (deception infectiousness)* | Once any coordinate is at its deceptive bottom, no composition restores an honest value. A corollary of L3, stated separately because it is the non-compositionality-of-deceptive-channels result and the moral core; it covers `Conflated` (v0.1's statement), `Falsified` and `Misbound` alike.
-| *L6 (commutativity)* | stem:[g_1 \triangleright g_2 = g_2 \triangleright g_1]. New at v0.2: on the ratified carrier the grade monoid is *commutative* (Lean `GradeR.instCommMonoid`, `FateA.comp_comm`; Agda `grade-comm`). The v0.1 non-commutativity (`GradeBoundary.grade_mul_not_comm`) was an artefact of the clause (A1) removed. Order-sensitivity, where a producer wants it, MUST come from DAG structure (§9.1), never from stem:[\triangleright].
+| *L6 (commutativity)* | For grades with predicate and fusion labels erased, stem:[g_1 \triangleright g_2 = g_2 \triangleright g_1]. New at v0.2: on this ratified carrier the grade monoid is *commutative* (Lean `GradeR.instCommMonoid`, `FateA.comp_comm`; Agda `grade-comm`). These proofs carry no predicate or fusion labels and assert no equality between labelled grades. The v0.1 non-commutativity (`GradeBoundary.grade_mul_not_comm`) was an artefact of the clause (A1) removed. Order-sensitivity of erased loss-shapes MUST come from DAG structure (§9.1); label metadata may retain composition order.
 |===
 
 [NOTE]
 ====
-L1–L2 make stem:[(\text{grades}, \triangleright, \varepsilon)] a monoid, L6 a
-commutative one; the effect system is a *graded monad* on the term category
-with this monoid as its grade object. L4 is what the verdict subsumption
+L1–L2 make stem:[(\text{erased grades}, \triangleright, \varepsilon)] a monoid,
+L6 a commutative one; the effect system is a *graded monad* on the term
+category with this erased monoid as its grade object. Label metadata is
+retained separately and is not covered by these monoid equalities.
+L4 is what the verdict subsumption
 (§5–§6) and the recursion rule (§7) need. None of L1–L6 is novel as a _shape_;
 the content is that this carrier is the right grade object for
 trope-particularity, which §10-O1 marks as the open adequacy question.
@@ -652,9 +665,9 @@ normalization). An *OPTIONAL* Nickel authoring contract MAY be offered
 front-side; the schema is the trust boundary. The grade algebra —
 stem:[\triangleright], stem:[\sqsubseteq], and stem:[\mathrm{floor}] — is
 specified in the IR spec itself, language-neutrally, so that two independent
-checker implementations agree by construction. Order-sensitivity, where a
-producer needs it, lives in the DAG (routing, multi-parent nodes), not in
-stem:[\triangleright] (L6).
+checker implementations agree by construction. Order-sensitivity of erased
+loss-shapes lives in the DAG (routing, multi-parent nodes); predicate and
+fusion labels may retain composition order (L6).
 
 === The checker as a pure function
 
