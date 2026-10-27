@@ -4,12 +4,12 @@
 # FORMAL VERIFICATION (PROOFS)
 #
 # Imported by ../../Justfile via `import? "build/just/proofs.just"`.
-# Recipes here check formal proofs across Idris2, Lean4, Agda, and Coq, plus
+# Recipes here check formal proofs across Idris2, Lean4 and Agda, plus
 # scan for dangerous/unsafe constructs and report status. Run via
 # `just proof-check-all` for the full sweep.
 
-# Check all formal proofs (Idris2 + Lean4 + Agda + Coq)
-proof-check-all: proof-check-idris2 proof-check-lean4 proof-check-agda proof-check-coq proof-scan-dangerous
+# Check all formal proofs (Idris2 + Lean4 + Agda)
+proof-check-all: proof-check-idris2 proof-check-lean4 proof-check-agda proof-scan-dangerous
     @echo "=== All proof checks complete ==="
 
 # Check Idris2 proofs (ABI, types, dependent type proofs)
@@ -150,8 +150,6 @@ proof-status:
     echo "Idris2: $(find verification/proofs/idris2 -name '*.idr' 2>/dev/null | wc -l) files"
     echo "Lean4:  $(find verification/proofs/lean4 -name '*.lean' 2>/dev/null | wc -l) files"
     echo "Agda:   $(find verification/proofs/agda -name '*.agda' 2>/dev/null | wc -l) files"
-    echo "Coq:    $(find verification/proofs/coq -name '*.v' 2>/dev/null | wc -l) files"
-    echo "TLA+:   $(find verification/proofs/tlaplus -name '*.tla' 2>/dev/null | wc -l) files"
     echo ""
     # PROOF-STATUS may live at root, docs/status/ (post-#20), .md or .adoc (post-#23)
     for candidate in docs/status/PROOF-STATUS.adoc docs/status/PROOF-STATUS.md PROOF-STATUS.adoc PROOF-STATUS.md; do

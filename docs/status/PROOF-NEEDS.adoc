@@ -113,12 +113,8 @@ verification/proofs/
 │   └── *.idr        # Project-specific Idris2 proofs
 ├── lean4/           # Lean4 proofs (algebra, lattices)
 │   └── *.lean
-├── agda/            # Agda proofs (induction, metatheory)
-│   └── *.agda
-├── coq/             # Coq proofs (type systems, compilation)
-│   └── *.v
-└── tlaplus/         # TLA+ specs (distributed protocols)
-    └── *.tla
+└── agda/            # Agda proofs (induction, metatheory)
+    └── *.agda
 ----
 
 == References
