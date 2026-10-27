@@ -3,7 +3,7 @@
 import GradeBoundary
 
 /-!
-# Tropical factorisation probe — does the grade admit a commutative cost-quotient?
+# Tropical factorisation probe — does the grade support a commutative cost-quotient?
 
 This development **imports** the proved carrier from `grade-boundary`
 (`Trope.{Delta, Fate, Bond, Merge, Grade}`) and asks a single, purely algebraic
@@ -398,7 +398,7 @@ theorem phi_hom_heads :
 end Factorisation
 end Trope
 
-/-! ## Axiom audit (sorry-free, axiom-clean check)
+/-! ## Axiom audit (proof completeness and permitted axioms)
 
 Every deliverable depends only on Lean/Mathlib's standard axioms (`propext`,
 `Classical.choice`, `Quot.sound`) — crucially **no `sorryAx`**, no user `axiom`, no

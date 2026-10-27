@@ -218,7 +218,7 @@ end FateA
 
 end Trope
 
-/-! ## Axiom audit (sorry-free check) -/
+/-! ## Axiom audit (proof completeness) -/
 section AxiomAudit
 open Trope
 #print axioms Trope.Fate.comp_not_monotone_right

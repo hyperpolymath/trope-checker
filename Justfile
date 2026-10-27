@@ -140,15 +140,9 @@ test-smoke:
     @echo "Smoke test..."
     # TODO: Add basic sanity checks
 
-# Run end-to-end tests (full pipeline: build → run → verify)
+# Run end-to-end conformance tests (build first with `just trope-build`).
 e2e:
-    @echo "Running E2E tests..."
-    # TODO: Replace with your E2E test command. Examples:
-    #   bash tests/e2e.sh                    # Shell-based E2E
-    #   npx playwright test                  # Browser E2E
-    #   mix test test/integration/e2e_test.exs  # Elixir E2E
-    #   cargo test --test end_to_end         # Rust E2E
-    @echo "E2E tests passed!"
+    bash tests/e2e.sh
 
 # Run aspect tests (cross-cutting concern validation)
 aspect:
