@@ -175,7 +175,7 @@ theorem families_disjoint :
 
 end Trope
 
-/-! ## Axiom audit (sorry-free check) -/
+/-! ## Axiom audit (sorryAx-free check) -/
 section AxiomAudit
 open Trope
 #print axioms Trope.Grade.atom_factorization
