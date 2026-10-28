@@ -8,15 +8,16 @@ Agda.
 
 ## Verification streams
 
-** **Verified core* (Idris2) — `verification/proofs/idris2/`: the grade algebra reused by
+- **Verified core** (Idris2) — `verification/proofs/idris2/`: the grade algebra reused by
   the executable checker; the thing that runs is the thing that is proved.
-** **Grade-algebra ground truth* (Lean 4 + Mathlib) — `verification/proofs/lean4/grade-boundary/`:
+- **Grade-algebra ground truth** (Lean 4 + Mathlib) — `verification/proofs/lean4/grade-boundary/`:
   the non-commutative product monoid, full-carrier conicality, and the three-tier strict
   honest/deceptive cancellation boundary. Sorry-free; axioms `propext`/`Quot.sound` only.
-** **Tropical factorisation probe* (Lean 4 + Mathlib) — `verification/proofs/lean4/grade-factorisation/`:
-  see [Tropical Factorisation Probe](Tropical-Factorisation-Probe). Verdict *(B) factors
-  but veridicality-blind*. A precondition only.
-** **Calculus metatheory — Theorem B* (Agda `--safe --without-K`) — `verification/proofs/agda/theorem-b/`:
+- **Tropical factorisation probe** (Lean 4 + Mathlib) — `verification/proofs/lean4/grade-factorisation/`:
+  see [Tropical Factorisation Probe](Tropical-Factorisation-Probe). Ratified-carrier verdict
+  *(B′) FACTORS AND VERIDICALITY-SIGHTED*; historical (B) applies to the
+  pre-ratification carrier. A precondition only.
+- **Calculus metatheory — Theorem B** (Agda `--safe --without-K`) — `verification/proofs/agda/theorem-b/`:
   intrinsic graded calculus, value substitution, β/let subject reduction, Honest
   Generation. Zero postulates. (`fix`/lfp open — CO-1.)
 

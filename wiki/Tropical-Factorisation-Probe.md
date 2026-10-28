@@ -7,7 +7,25 @@ projection onto a commutative tropical cost, with all non-commutativity confined
 complement?* Source: `verification/proofs/lean4/grade-factorisation/`; full write-up:
 `verification/proofs/lean4/grade-factorisation/REPORT.adoc`.
 
-## Verdict — (B) FACTORS but VERIDICALITY-BLIND
+## Verdict — (B′) FACTORS AND VERIDICALITY-SIGHTED (ratified carrier)
+
+Under the ratified carrier (R-2026-07-07, ADR 0004 A1/A2), a nontrivial, surjective
+monoid homomorphism `πR : (GradeR, ▷, ε) → (Δ, +, Q 0)` exists (`piR_hom`, `piR_one`,
+`piRHom`, `piR_nontrivial`, `piR_surjective`). It distinguishes honest `Dropped`
+from deceptive `Falsified`: `∞` (`total`) versus `⊤` (`unknown`), proved by
+`phiR_sighted` and `piR_sighted` in `GradeFactorisationR.lean`.
+
+This sightedness has a trade-off: attenuation payload `⊤` is squashed to `∞`, so
+`Atten ∞` and `Atten ⊤` share a cost (`sighted_forces_squash`). `Predicated` and
+`Dropped` also share the honest total-loss cost (`phiR_collapses_predicated_dropped`).
+See the report's “Re-run under the ratified carrier” section for the full result.
+
+## Historical verdict — (B) FACTORS but VERIDICALITY-BLIND (pre-ratification)
+
+The following result applies only to the pre-ratification carrier, whose fate
+composition has `Dropped ▷ Falsified = Dropped` and `Falsified ▷ Dropped = Falsified`.
+The ratified carrier instead has `Dropped ▷ Falsified = Falsified`; the forced-collapse
+claim below does not apply to it.
 
 A **nontrivial** monoid homomorphism `π : (Grade, ▷, ε) → (Δ, +, Q 0)` onto the
 commutative tropical fidelity carrier `Δ = WithTop (WithTop ℕ)` **exists** — but **every**
@@ -21,7 +39,7 @@ honest/deceptive distinction that collapses of necessity, because that coordinat
 disagreeing absorbing heads. The **commutative** `Bond`/`Merge` coordinates carry no such
 obstruction — their deceptions stay tropically separable.
 
-## What is proved (Lean 4 + Mathlib; sorry-free; `propext`/`Quot.sound` only)
+## Historical proofs (Lean 4 + Mathlib; sorry-free; `propext`/`Quot.sound` only)
 
 | Theorem | Statement |
 | --- | --- |
