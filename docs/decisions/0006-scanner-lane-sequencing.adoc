@@ -185,6 +185,39 @@ Measured, not predicted:
   resolver's canonical query needed the regression harness's `gh` stub to
   answer canonical-name lookups (now a permanent fixture case).
 
+== Allow-list landed; first executions (2026-10-28, PR #107 at `09b3e09`)
+
+The owner added `metadatastician/standards/.github/workflows/*@*`; canary
+push `73f82b9` and follow-up `09b3e09` measured the result:
+
+* *Secret Scan succeeds*, and the ruleset-required `scan / gitleaks`
+  context is present and green for the first time.
+* *Fork Governance completes `success`* (run `40784118396`): DEED 🟢,
+  fleet report-backs ran for the first time (rhodibot 🟢, glambot 🔵,
+  finishingbot 🔴 advisory), Hypatia job success, and the first
+  `fork-governance-verdict` comment was posted *and* regenerated in
+  place on the next run. K9 opened 🔴 (8 of 10 committed K9 files are
+  pre-v1.0.0 template debt) and is now 🟡 via the shrink-only ledger
+  `.machine_readable/k9-contract-debt.txt`, baselined under a declared
+  `Ratchet-exception` — the same grandfathering standards applied to
+  its own 25 files.
+* *Governance runs 20/21 green.* The sole failure, `Allowlist
+  Preflight`, is an upstream canon defect, reproduced locally with the
+  pinned script: `allowed-actions.json` at `34cf03f` (and at standards
+  main `e1f59d5`) still lists `hyperpolymath/*` but no
+  `metadatastician/*`, so the preflight flags the very canonical
+  coordinates the transfer mandates. One-line upstream fix (see prompt
+  S): add `metadatastician/*` to `patterns_allowed`. Until it lands and
+  the pin is bumped, that one job stays red estate-wide for every
+  migrated repo. It is a 🟡 check, not a ruleset-required context.
+* The Hypatia verdict *grid* still paints 🔴 while its *job* succeeds:
+  the gating row's highs are CSA staleness meta-alerts over stored
+  code-scanning alerts (99-day `shell_download_then_run` on
+  `build/setup.sh`, whose advertised `curl|sh` line this PR removed),
+  plus advisory finishingbot template-completeness highs. Grid-vs-gate
+  divergence remains prompt-S/H territory; the blocking SARIF path is
+  clean (0 critical, no unbaselined high in scope).
+
 == Upstream prompts (paste into the named repository)
 
 === S — `metadatastician/standards`
