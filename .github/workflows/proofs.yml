@@ -74,10 +74,14 @@ jobs:
             # body for foreign code). The semantic gates below (kernel build,
             # leanchecker, axiom allowlist) are the real enforcement; this is
             # the cheap early tripwire that also covers files no package builds.
-            if grep -nE '(^|[^[:alnum:]_.])(sorry|admit|unsafe)([^[:alnum:]_]|$)|\bnative_decide\b|\bsorryAx\b|\bofReduceBool\b|\bextern\b|\bimplemented_by\b' <<<"$stripped"; then
-              echo "::error file=$f::forbidden Lean construct (sorry/admit/native_decide/sorryAx/ofReduceBool/unsafe/extern/implemented_by)"; fail=1
+            if grep -nE '(^|[^[:alnum:]_.])(sorry|admit|unsafe)([^[:alnum:]_]|$)|\bnative_decide\b|\bsorryAx\b|\bofReduceBool\b|\bextern\b|\bimplemented_by\b|\baddDecl\b|\baxiomDecl\b' <<<"$stripped"; then
+              echo "::error file=$f::forbidden Lean construct (sorry/admit/native_decide/sorryAx/ofReduceBool/unsafe/extern/implemented_by/addDecl/axiomDecl)"; fail=1
             fi
-            if grep -nE '^[[:space:]]*axiom\b' <<<"$stripped"; then
+            # Token-based, not line-initial: `private axiom foo`, `protected
+            # axiom foo` and attribute-prefixed declarations are axioms too.
+            # `axiom` is a keyword, so a bare token in comment-stripped source
+            # is a declaration (#print axioms does not match: token `axioms`).
+            if grep -nE '(^|[^[:alnum:]_.])axiom([^[:alnum:]_]|$)' <<<"$stripped"; then
               echo "::error file=$f::user axiom declared"; fail=1
             fi
           done
@@ -281,40 +285,65 @@ jobs:
           report="$work/report.json"
           # Lean 4.16 stores compiler IR (`_cstage*`, equation/match auxiliaries)
           # as environment constants and axiom-audit v0.1.2 audits them as if
-          # they were source declarations. Ignore those generated declaration
-          # candidates, after first unmangling `_private...` so a private
-          # theorem remains audited. Every source declaration still fails on
-          # any axiom outside the allowlist; only compiler-generated names
-          # (`lcProof`, `_cstage*`, `_spec`/`_at` specialisations, …) are
-          # removed from an otherwise-source declaration's dependency list.
-          jq -s '
+          # they were source declarations, and likewise misclassifies compiler
+          # specialisation constants (npowBinRec._at.<inst>._spec_2,
+          # _hyg-mangled decEq specialisations, …) as axioms used. Those
+          # generated names must be excused — but name-shape alone cannot
+          # prove a name compiler-generated: a source axiom can be GIVEN an
+          # internal-looking name (`private axiom forged_spec`), so a
+          # substring filter could hide exactly what this gate exists to
+          # catch. The excuse below is therefore bounded three ways:
+          #   (1) component shapes are ANCHORED to names only the compiler
+          #       mints (_at, _spec_N, _cstage*, _unfold*, _eq_N, _hyg*,
+          #       match_N/eq_N, lcProof/lcUnreachable) — a component merely
+          #       CONTAINING _spec (forged_spec) does not qualify;
+          #   (2) any axiom name DECLARED in the gated sources (computed
+          #       next, comment-stripped) is never excused, whatever its
+          #       shape;
+          #   (3) a violation is dropped only when NOTHING non-allowlisted
+          #       remains in it after excusing — an internal-looking
+          #       DECLARATION depending on a real axiom (sorryAx, a user
+          #       axiom) still counts, whoever declares it.
+          declared_txt="$work/declared-axioms.txt"
+          : > "$declared_txt"
+          for f in $(git -C "$GITHUB_WORKSPACE" ls-files 'verification/proofs/lean4/*.lean' 'verification/proofs/lean4/*/*.lean'); do
+            awk -f "$GITHUB_WORKSPACE/tests/lib/strip-proof-comments.awk" "$GITHUB_WORKSPACE/$f" \
+              | grep -oE '(^|[^[:alnum:]_.])axiom[[:space:]]+[A-Za-z_][A-Za-z0-9_.]*' \
+              | sed -E 's/.*axiom[[:space:]]+//' >> "$declared_txt" || true
+          done
+          declared_json=$(jq -R -s 'split("\n") | map(select(length > 0)) | map(., (split(".") | last)) | unique' "$declared_txt")
+          # axiom-filter-jq:begin (extracted verbatim by tests/workflows/review_regressions_test.sh)
+          jq -s --argjson declared_axioms "$declared_json" '
             def user_name:
               (split(".") as $parts
                | if $parts[0] == "_private" then
                    ([$parts | to_entries[] | select(.key > 0 and (.value | test("^[0-9]+$"))) | .key][0] // 0) as $idx
                    | ($parts[$idx + 1:] | join("."))
                  else . end);
+            def source_declared_axiom:
+              (user_name) as $u
+              | (($declared_axioms | index($u)) != null)
+                or (($declared_axioms | index($u | split(".") | last)) != null);
+            def internal_component:
+              . == "_at" or . == "lcProof" or . == "lcUnreachable"
+              or test("^_cstage") or test("^_unfold") or test("^_hyg")
+              or test("^_spec(_[0-9]+)?$") or test("^_eq(_[0-9]+)?$")
+              or test("^(match|eq)_[0-9]+");
             def internal_decl:
-              (user_name | split(".") | any(
-                startswith("_")
-                or . == "lcProof"
-                or . == "lcUnreachable"
-                or test("^(match|eq)_[0-9]+")
-                or test("(_cstage|_spec|_unfold)")));
-            # The same internal-name predicate, applied to the *axiom* side:
-            # axiom-audit also misclassifies compiler specialisation
-            # constants (npowBinRec._at.<inst>._spec_2, Nat.binaryRec._at.…,
-            # _hyg-mangled decEq specialisations) as axioms used. No real
-            # axiom — sorryAx, Lean.ofReduceBool, Classical.choice, a user
-            # `axiom` — has an internal-mangled name (after _private
-            # unmangling), so filtering these cannot hide one.
-            def compiler_placeholder: internal_decl;
-            def filtered_axioms: ((.axiomsUsed // []) | map(select(compiler_placeholder | not)));
+              (user_name | split(".") | any(internal_component));
+            def compiler_placeholder:
+              internal_decl and (source_declared_axiom | not);
+            def kept_axioms: map(select(compiler_placeholder | not));
+            def filtered_axioms: ((.axiomsUsed // []) | kept_axioms);
+            def all_violations:
+              [(.violations[]? | .axioms |= kept_axioms)];
             def filtered_violations:
-              [(.violations[]? | select(.decl | internal_decl | not)
-                | .axioms |= map(select(compiler_placeholder | not))
-                | select(.axioms | length > 0))];
-            def internal_violations: [(.violations[]? | select(.decl | internal_decl))];
+              [(all_violations[]
+                | select(((.axioms - ["propext","Classical.choice","Quot.sound"]) | length) > 0))];
+            def internal_violations:
+              [(all_violations[]
+                | select((.decl | internal_decl)
+                         and (((.axioms - ["propext","Classical.choice","Quot.sound"]) | length) == 0)))];
             {
               ok: all(.[];
                 (.audited > 0)
@@ -327,6 +356,7 @@ jobs:
               internalViolationDecls: (map(internal_violations | map(.decl)) | add | unique)
             }' \
             "$work"/report-*.json > "$report"
+          # axiom-filter-jq:end
           cat "$report"
           # Non-vacuous and clean: declarations were actually audited, no
           # source declaration has a filtered violation, and every logical

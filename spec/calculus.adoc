@@ -243,9 +243,12 @@ stem:[\varepsilon] in exactly one slot; atoms come in nine families, one per
 non-unit coordinate value kind. *Every pre-ratification `Grade` factors as a
 ▷-product of its single-slot projections* (`EffectAtoms.lean`, importing the
 historical `GradeBoundary` carrier: `Grade.atom_factorization`, `nine_families`,
-`family_realized`, `families_disjoint`). This proves O1's carrier-relative half
-for that historical carrier only; restating it on ratified `GradeR` remains
-open (§10).
+`family_realized`, `families_disjoint`). The same factorisation is proved on
+the ratified carrier this calculus actually uses (`EffectAtomsRatified.lean`:
+`GradeR.atom_factorization`); the nine-family classification classifies
+*coordinate values*, which ratification did not change, so it carries over
+unchanged. O1's carrier-relative half is therefore PROVED for `GradeR` (§10);
+what remains open is O1-coord, the adequacy of the coordinates themselves.
 
 [cols="2,1,1,2,1",options="header"]
 |===
@@ -275,6 +278,23 @@ Two structure theorems fix this table rather than leaving it a list:
   (`Trope.Veridicality.{fate,bond,merge}DeceptiveUnique`; Agda
   `TB.Honest.{fate,bond,merge}DeceptiveUnique`). One cannot deceptively assert
   a loss; the only deceptions are false value, false bearer, false singleness.
+
+[NOTE]
+====
+*Two senses of "deceptive", kept apart.* *Grade-deceptive* is the
+veridicality sense above: `Falsified`, `Misbound`, `Conflated` — grades that
+claim a faithfulness they do not have. The fidelity carrier Δ has its own
+*tier* classification (`TB.Tier.dTier`), under which `⊤` (`Unknown`, loss of
+unknown amount) is the *tier-deceptive* element: worst-case opacity about
+*how much* was lost. These are different claims. `Attenuated(⊤)` is
+grade-*honest* — it declares its ignorance rather than asserting a bound it
+does not have — and tier-deceptive. Unqualified "deceptive" in this document
+means grade-deceptive; the fidelity sense is always written
+*tier-deceptive*. The distinction is load-bearing at L3 (§4.1): no-laundering
+quantifies over grade-deception, while `Dropped` absorbing `Attenuated(⊤)`
+is an honest absorber subsuming admitted ignorance — retention only
+decreases (L4), and no false claim is erased, because none was made.
+====
 
 So "seven effects" (six writable plus the conflation fault), which earlier
 versions of this document used, and "nine effects" (the vocabulary) describe the
@@ -327,7 +347,7 @@ The laws the erased grade MUST satisfy, each enforced by the verified developmen
 
 | *L1 (associativity)* | stem:[(g_1 \triangleright g_2)\triangleright g_3 = g_1 \triangleright (g_2 \triangleright g_3)]. (`Trope.Laws.gradeAssoc`; Agda `gmonoid-assoc`; Lean `GradeR.instCommMonoid`.)
 | *L2 (unit)*          | stem:[\varepsilon \triangleright g = g = g \triangleright \varepsilon]. (`Trope.Grade.{gradeUnitL,gradeUnitR}`; Agda `gmonoid-unit{L,R}`.)
-| *L3 (bottom-absorption)* | Each *deceptive* bottom — `Falsified`, `Misbound`, `Conflated`, and fidelity's `Unknown` — is a *two-sided zero* of its coordinate's composition (R-2026-07-07 (A1)): no honest absorber launders deception, in either composition order. (Lean `FateA.falsified_two_sided_zero`, `GradeR.gBotR_two_sided_zero`; Agda `falsified-absorb{L,R}`, `misbound-absorbL`, `conflated-absorbL`, `deceptive-absorbs-▷`.) The *honest* bottoms (`Dropped`, `Severed`) absorb within the honest fragment, and `Attenuated(⊤)` within the fidelity dimension.
+| *L3 (bottom-absorption)* | Each *deceptive* bottom — `Falsified`, `Misbound`, `Conflated` — is a *two-sided zero* of its coordinate's composition (R-2026-07-07 (A1)): no honest absorber launders deception, in either composition order. (Lean `FateA.falsified_two_sided_zero`, `GradeR.gBotR_two_sided_zero`; Agda `falsified-absorb{L,R}`, `misbound-absorbL`, `conflated-absorbL`, `deceptive-absorbs-▷`.) The *honest* bottoms (`Dropped`, `Severed`) absorb within the honest fragment. Fidelity's `Unknown` (`⊤`) is a two-sided zero of the *fidelity* composition (Δ-addition) only, and is *tier*-deceptive, not grade-deceptive (§3.5 note): `Attenuated(⊤)` is honest, so its absorption by `Dropped` at the fate coordinate launders nothing — total admitted loss subsumes unquantified admitted loss. What A1 forbids is exactly the deceptive case, e.g. `Dropped ▷ Falsified = Falsified`, never `Dropped`.
 | *L4 (monotonicity)*  | stem:[\triangleright] is monotone in each argument with respect to the retention order stem:[\sqsubseteq] (§5): composing after more loss never yields more retention. *Holds in full on the ratified carrier.* (Idris2 `Trope.Soundness.{fateL4MonoR,fateL4MonoL}`, `Trope.Order.{bondComposeMono,mergeComposeMono}`; Lean `FateA.comp_mono_{right,left}`; Agda `TB.Order.fateL4Mono{R,L}`.) History: strict L4 failed on the v0.1 carrier at exactly the two points (A1)/(A2) amended — `spec/notes/2026-07-07-l4-boundary-and-atoms.adoc`, `L4Monotonicity.lean` (`comp_not_monotone_{right,left}`, retained as theorems about the pre-ratification carrier).
 | *L5 (deception infectiousness)* | Once any coordinate is at its deceptive bottom, no composition restores an honest value. A corollary of L3, stated separately because it is the non-compositionality-of-deceptive-channels result and the moral core; it covers `Conflated` (v0.1's statement), `Falsified` and `Misbound` alike.
 | *L6 (commutativity)* | For grades with predicate and fusion labels erased, stem:[g_1 \triangleright g_2 = g_2 \triangleright g_1]. New at v0.2: on this ratified carrier the grade monoid is *commutative* (Lean `GradeR.instCommMonoid`, `FateA.comp_comm`; Agda `grade-comm`). These proofs carry no predicate or fusion labels and assert no equality between labelled grades. The v0.1 non-commutativity (`GradeBoundary.grade_mul_not_comm`) was an artefact of the clause (A1) removed. Order-sensitivity of erased loss-shapes MUST come from DAG structure (§9.1); label metadata may retain composition order.
@@ -356,8 +376,8 @@ amended by R-2026-07-07):
 | ID | Fact
 
 | *C1 (conicality)* | stem:[g_1 \triangleright g_2 = \varepsilon \Rightarrow g_1 = g_2 = \varepsilon]: nothing lossy composes back to no-loss. (Lean `GradeR.conical`, `FateA.conical`; Agda `grade-conical`.)
-| *C2 (the cancellation boundary)* | Cancellation holds *only* on the finite-fidelity core stem:[\mathcal{C}] (the additive submonoid `Q ℕ ≅ (ℕ,+,0)` of the fidelity dimension) and fails on the honest-but-lossy and deceptive tiers alike: an element of the grade monoid is left-cancellative *iff* it is stem:[\varepsilon]. (Lean `Grade.grade_leftCancel_iff`, `GradeR.gradeR_leftCancel_iff`, with the per-element witnesses of `TierTwoComplete.lean`; Agda `TB.Tier.Q-cancelʳ` and the six `*-not-cancel` lemmas.) Consequence: a lossless *split / rejoin* can be cancellative only inside stem:[\mathcal{C}]; any such operator (§10, CO-1) MUST be stated against this boundary.
-| *C3 (partition)* | `Dropped`, `Total` (stem:[\infty]), `Severed`, `Predicated`, `Withheld` and `Fused` are *honest* non-cancellative elements; `Falsified`, `Misbound`, `Conflated` and `Unknown` (stem:[\top]) are the *deceptive* ones. Absorbing is not the same as lying. (Lean `dropped_absorbing`, `fidelity_total_honest_not_cancel`; Agda `TB.Tier` classifiers.) Tier preservation under composition is *closure*, not a homomorphism: `tierOf (g ▷ h) = tierOf g ⊓ tierOf h` is false on fate even on the ratified carrier (`TB.Tier.fate-tier-meet-hom-fails`).
+| *C2 (the cancellation boundary)* | The boundary is carrier-relative, and both carriers matter. On the *unquotiented* carrier, an element of the grade monoid is left-cancellative *iff* it is stem:[\varepsilon] — finite attenuation fails to cancel there, correctly, because `Attenuated(Q 0)` is a distinct element from `Present` and the two collide (Lean `GradeR.gradeR_leftCancel_iff`; historical carrier: `Grade.grade_leftCancel_iff`; per-element witnesses in `TierTwoComplete.lean`). On the *A3-normalized* carrier — the one IR ingest actually stores, where `Attenuated(Q 0)` is rewritten to `Present` — that collision disappears and finite attenuation *is* left-cancellative on the fate coordinate (Lean `FateA.atten_cancel_on_normalForms`; Δ-level: Agda `TB.Tier.Q-cancelʳ`), so cancellation holds exactly on the finite-fidelity core stem:[\mathcal{C}] (fates in `Q ℕ ≅ (ℕ,+,0)`, `bond = Intact`, `merge = Single`) and fails on the honest-but-lossy and deceptive tiers alike (Agda's six `*-not-cancel` lemmas). C1/C2 in this section quantify over the normalized carrier unless stated. Consequence: a lossless *split / rejoin* can be cancellative only inside stem:[\mathcal{C}]; any such operator (§10, CO-1) MUST be stated against this boundary.
+| *C3 (partition)* | `Dropped`, `Total` (stem:[\infty]), `Severed`, `Predicated`, `Withheld`, `Fused` and `Attenuated(⊤)` (`Unknown`) are *honest* non-cancellative elements; `Falsified`, `Misbound` and `Conflated` are the *deceptive* ones. `Unknown` is deceptive only in the fidelity-*tier* sense (§3.5 note): it asserts no bound, so it makes no false claim. Absorbing is not the same as lying, and neither is admitted ignorance. (Lean `dropped_absorbing`, `fidelity_total_honest_not_cancel`; Agda `TB.Tier` classifiers.) Tier preservation under composition is *closure*, not a homomorphism: `tierOf (g ▷ h) = tierOf g ⊓ tierOf h` is false on fate even on the ratified carrier (`TB.Tier.fate-tier-meet-hom-fails`).
 |===
 
 === The tropical factorisation
@@ -369,7 +389,7 @@ to *which honest* absorber acted but not to *whether the absorber was honest*
 (`GradeFactorisationR.lean`: `piR_hom`, `piR_nontrivial`, `piR_surjective`,
 `piR_sighted`). The naive hom that reads the attenuation payload off verbatim is
 *not* a homomorphism on the ratified carrier (`phiId_not_hom`); the repair
-squashes `Unknown` to the deceptive top. On the v0.1 carrier every such hom was
+squashes `Unknown` to the fidelity top `⊤`. On the v0.1 carrier every such hom was
 forced to collapse `Dropped` with `Falsified` (`GradeFactorisation.lean`,
 `forced_collapse_general`) — a theorem about the pre-ratification carrier only.
 This factorisation is a *precondition*, not a recursion result: whether a
@@ -515,13 +535,28 @@ a validation error rather than a guideline.
 [IMPORTANT]
 .Normative variant (deception as a verdict-boundary primitive)
 ====
-Implementations MAY instead admit conflation as a writable primitive caught at
-the verdict rather than at validation. Exactly three things change, and nothing
-else:
+Implementations MAY instead admit the deceptive duals as writable primitives
+caught at the verdict rather than at validation. The variant applies
+*uniformly to all three duals* — a profile that defers one deception to the
+verdict while preventing another at validation is neither profile and MUST
+NOT be claimed. Exactly three things change, and nothing else:
 
-. *Add* a rule `T-Conflate : Γ ⊢ e₁ : A ! g₁,  Γ ⊢ e₂ : A ! g₂  ⟹  Γ ⊢ conflate e₁ e₂ : A ! (g₁ ⊓ g₂) ▷ unlabel`, where `unlabel` sets `merge = Conflated`.
-. *Relax* T-Fuse so an untagged merge is well-formed and elaborates to `conflate`.
-. *Move* the conflation check from the validation boundary (§9) to the verdict (§6.2): a `Conflated` grade is then rejected only when `floor(U)` demands `merge ⊒ Fused`.
+. *Add* one grade-forming rule per coordinate, each setting exactly its own
+  coordinate to the deceptive bottom and composing the rest as the erased
+  grade: `T-Falsify` (sets a fate to `Falsified` — a claimed-faithful value
+  substitution), `T-Misbind` (sets `bond = Misbound` — a bearer
+  substitution), and `T-Conflate : Γ ⊢ e₁ : A ! g₁,  Γ ⊢ e₂ : A ! g₂  ⟹  Γ ⊢ conflate e₁ e₂ : A ! (g₁ ⊓ g₂) ▷ unlabel`, where `unlabel` sets `merge = Conflated`.
+. *Relax* the corresponding prevent-side writability restrictions: grade
+  literals may carry `Falsified` / `Misbound` / `Conflated`, and T-Fuse
+  admits an untagged merge as well-formed, elaborating to `conflate`.
+. *Move* all three checks from the validation boundary (§9) to the verdict
+  (§6.2): a deceptive grade is then rejected exactly when `floor(U)`
+  constrains its coordinate above the bottom — `Conflated` only when the
+  floor demands `merge ⊒ Fused`, `Falsified` only when it demands a fate
+  above `Falsified`, `Misbound` only when it demands `bond ⊒ Intact`. A
+  deceptive grade under a floor indifferent to its coordinate is *not*
+  rejected under detect. That floor-dependence is the price of the variant,
+  and precisely why it is not the recommended reading.
 
 The recommended reading (R-2026-06-22) is _prevent_; the variant is _detect_.
 An implementation MUST pick one and state which in its conformance profile. The
@@ -738,7 +773,7 @@ conformance suite for the taxonomy; the machine suite is its formal sibling.
 |===
 | ID | Obligation / falsifier | Status
 
-| *O1-carrier (exhaustiveness relative to the carrier)* | Every grade factors as a ▷-product of single-slot projections drawn from the nine atom families; the effect typology is exhaustive *relative to the three-coordinate carrier*. | PROVED (`EffectAtoms.lean`: `atom_factorization`, `nine_families`, `family_realized`, `families_disjoint`).
+| *O1-carrier (exhaustiveness relative to the carrier)* | Every grade factors as a ▷-product of single-slot projections drawn from the nine atom families; the effect typology is exhaustive *relative to the three-coordinate carrier*. | PROVED on the ratified carrier (`EffectAtomsRatified.lean`: `GradeR.atom_factorization`); the coordinate-value classification (`EffectAtoms.lean`: `nine_families`, `family_realized`, `families_disjoint`) is carrier-independent and carries over unchanged. (`EffectAtoms.lean`'s `Grade.atom_factorization` is the same statement over the historical pre-ratification carrier, retained as history.)
 | *O1-coord (metaphysical adequacy)* | Are `fate`, `bond`, `merge` themselves exhaustive as ways to individuate-and-lose? A claim about the world, not the algebra. *Falsifier:* a particularity-affecting operation that no atom family captures. *Live probe:* the transposition of a quality between bearers (the classic *swapping* problem) is not expressible — it is neither `sever` nor `fuse` nor any bond value — and a *bond-transfer* move with an honest (labelled) and a deceptive (`Misbound`) form is the candidate tenth family. Either it reduces to the existing atoms or it is a fourth generator; the adequacy argument must say which. | OPEN (workbench WP-5).
 | *O2 (lowering correctness)* | Per front end: a proof that each source construct it lowers to an effect edge *is* that effect. Separate from grade soundness (§8, firewall 2). Not dischargeable by the core. | OPEN per producer; no producer has discharged it.
 | *O3 (the produce/demand adjunction)* | Whether the producing graded monad and the demanding graded comonad form an adjunction with produce/demand as unit/counit. Requires the triangle laws checked against the ratified carrier (now pinned, so no longer gated by O1-carrier). Until then, the verdict is a subsumption, *not* an adjunction cancellation. | OPEN (conjecture).

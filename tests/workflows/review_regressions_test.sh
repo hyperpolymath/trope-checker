@@ -6,7 +6,7 @@ set -euo pipefail
 
 ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 CHECK="$ROOT/.github/affirmation-trusted/check.sh"
-for tool in git gpg gpgconf awk perl python3; do
+for tool in git gpg gpgconf awk jq perl python3; do
   command -v "$tool" >/dev/null || { echo "Missing test prerequisite: $tool" >&2; exit 1; }
 done
 
@@ -242,6 +242,21 @@ assert_contains 'resolved 2 distinct external uses refs'
 grep -Fq 'repos/owner/other/git/ref/tags/v2.3.4' "$resolver/calls" || fail 'second version tag was not resolved'
 pass 'uses-ref scanner resolves exact tags in both extensions'
 
+# Several reusable workflows from the SAME repo at the SAME ref (the standards
+# lanes): the workflow-PATH existence check must run per coordinate, not once
+# per (repo, ref) — otherwise a renamed sibling workflow passes this linter
+# and dies invisibly at startup.
+printf 'uses: owner/repo/.github/workflows/a.yml@v1.2.3\n' >"$resolver/.github/workflows/one.yml"
+printf 'uses: owner/repo/.github/workflows/b.yml@v1.2.3\n' >"$resolver/.github/workflows/two.yaml"
+: >"$resolver/calls"
+(
+  cd "$resolver"
+  expect_exit 0 env PATH="$resolver/bin:$PATH" CALL_LOG="$resolver/calls" python3 resolve.py
+)
+grep -Fq 'repos/owner/repo/contents/.github/workflows/a.yml' "$resolver/calls" || fail 'first reusable path was not checked'
+grep -Fq 'repos/owner/repo/contents/.github/workflows/b.yml' "$resolver/calls" || fail 'second reusable path was not checked (deduped by repo@ref)'
+pass 'uses-ref scanner checks every reusable path at a shared repo@ref'
+
 # A moved repository still resolves over REST/git (the redirect is followed),
 # so pin resolution alone stays green while every reusable call under the old
 # name dies at startup — the 2026-10-28 standards-transfer outage. Only the
@@ -254,5 +269,45 @@ pass 'uses-ref scanner resolves exact tags in both extensions'
 assert_contains 'MOVED repository'
 assert_contains 'newowner/other'
 pass 'uses-ref scanner rejects a moved repository coordinate'
+
+# Axiom-audit filter soundness (proofs.yml): extractor takes the jq program
+# verbatim from between the axiom-filter-jq markers. A compiler-placeholder
+# excuse keyed on name substrings alone could hide a source axiom given an
+# internal-looking name (`private axiom forged_spec`); the filter must catch
+# it declared AND undeclared, must not drop a real axiom behind an
+# internal-looking declaration, and must still excuse genuine compiler IR.
+axiomfilter="$scratch/axiom-filter"
+mkdir -p "$axiomfilter"
+python3 - "$ROOT/.github/workflows/proofs.yml" >"$axiomfilter/filter.jq" <<'PY'
+import sys
+lines = open(sys.argv[1]).read().splitlines()
+begin = next(i for i, l in enumerate(lines) if 'axiom-filter-jq:begin' in l)
+end = next(i for i, l in enumerate(lines) if 'axiom-filter-jq:end' in l)
+block = lines[begin + 1:end]
+assert 'jq -s' in block[0], block[0]
+prog = []
+for l in block[1:]:
+    if "}'" in l and l.rstrip().endswith('\\'):
+        prog.append('}')
+        break
+    prog.append(l)
+sys.stdout.write('\n'.join(prog) + '\n')
+PY
+
+axiom_ok() { # declared-json expected-ok report-json
+  printf '%s\n' "$3" >"$axiomfilter/report-x.json"
+  jq -s --argjson declared_axioms "$1" -f "$axiomfilter/filter.jq" \
+    "$axiomfilter/report-x.json" >"$case_log" || fail "axiom filter errored on: $3"
+  [[ "$(jq -r .ok "$case_log")" == "$2" ]] || fail "axiom filter ok != $2 for: $3 (declared: $1)"
+}
+
+axiom_ok '[]' true  '{"audited":5,"axiomsUsed":["Classical.choice","npowBinRec._at.Inst._spec_2"],"violations":[]}'
+axiom_ok '["forged_spec"]' false '{"audited":5,"axiomsUsed":["forged_spec"],"violations":[{"decl":"RealThm","axioms":["forged_spec"]}]}'
+axiom_ok '[]' false '{"audited":5,"axiomsUsed":["forged_spec"],"violations":[{"decl":"RealThm","axioms":["forged_spec"]}]}'
+axiom_ok '[]' false '{"audited":5,"axiomsUsed":["sorryAx"],"violations":[{"decl":"match_1","axioms":["sorryAx"]}]}'
+axiom_ok '[]' true  '{"audited":5,"axiomsUsed":[],"violations":[{"decl":"foo._cstage1","axioms":["bar._at.X._spec_1"]}]}'
+axiom_ok '["forged_spec"]' false '{"audited":5,"axiomsUsed":["_private.Grade.0.forged_spec"],"violations":[{"decl":"RealThm","axioms":["_private.Grade.0.forged_spec"]}]}'
+axiom_ok '[]' false '{"audited":0,"axiomsUsed":[],"violations":[]}'
+pass 'axiom-audit filter cannot hide a source axiom behind a compiler-internal name'
 
 echo "All $checks regression cases passed."
