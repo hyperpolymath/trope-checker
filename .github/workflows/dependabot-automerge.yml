@@ -118,9 +118,11 @@ jobs:
           else
             echo "action=skip" >> "$GITHUB_OUTPUT"
           fi
-          echo "security=$is_security" >> "$GITHUB_OUTPUT"
-          echo "update_type=$UPDATE_TYPE" >> "$GITHUB_OUTPUT"
-          echo "ghsa=$GHSA_ID" >> "$GITHUB_OUTPUT"
+          {
+            echo "security=$is_security"
+            echo "update_type=$UPDATE_TYPE"
+            echo "ghsa=$GHSA_ID"
+          } >> "$GITHUB_OUTPUT"
       - name: Approve PR (if policy allows)
         if: steps.actor-check.outputs.proceed == 'true' && steps.policy.outputs.action == 'automerge'
         env:

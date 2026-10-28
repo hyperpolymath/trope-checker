@@ -18,12 +18,10 @@ on:
   push:
     paths:
       - '.github/workflows/**'
-      - '.github/actionlint.yaml'
       - '.github/zizmor.yml'
   pull_request:
     paths:
       - '.github/workflows/**'
-      - '.github/actionlint.yaml'
       - '.github/zizmor.yml'
   workflow_dispatch:
 
@@ -193,7 +191,17 @@ jobs:
           ./shellcheck --version | head -2
 
       - name: actionlint (workflow semantics + shellcheck over run scripts)
+        id: actionlint
         run: actionlint -no-color -verbose
+
+      # Failure-only: re-run actionlint in annotation format so every finding
+      # lands on the PR as a file/line check annotation, readable via the
+      # checks API without downloading raw logs. (A bare `exit code 1`
+      # annotation cost a full debug cycle once already.)
+      - name: actionlint diagnostics (annotations, on failure only)
+        if: failure() && steps.actionlint.outcome == 'failure'
+        run: |
+          actionlint -no-color -format '{{range $err := .}}::error file={{$err.Filepath}},line={{$err.Line}},col={{$err.Column}}::{{$err.Kind}}: {{$err.Message}}{{printf "\n"}}{{end}}' || true
 
       - name: Install pinned zizmor
         run: |

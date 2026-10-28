@@ -331,6 +331,9 @@ jobs:
             and ((.violations | length) == 0)
             and ((.axiomsUsed - ["propext","Classical.choice","Quot.sound"]) | length == 0)
           ' "$report" >/dev/null || {
-            echo "::error::axiom audit failed or was vacuous — see report above"; exit 1; }
+            echo "::error::axiom audit failed or was vacuous — see report above"
+            # The same facts as annotations (checks-API readable without logs):
+            echo "::error::axiomsUsed=$(jq -c '.axiomsUsed' "$report") violations=$(jq -c '.violations[0:10]' "$report") internalIgnored=$(jq -c '.internalViolationDecls[0:20]' "$report")"
+            exit 1; }
           echo "::notice title=axiom-audit::audited $(jq -r .audited "$report") declarations; axioms used: $(jq -r '.axiomsUsed | join(", ")' "$report"); ignored $(jq -r .internalViolationsIgnored "$report") compiler-generated declaration(s)"
           rm -rf "$work"

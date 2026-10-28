@@ -86,12 +86,14 @@ jobs:
           MEDIUM=$(jq '[.[] | select(.severity == "medium")] | length' panic-attack-findings.json 2>/dev/null || echo 0)
           LOW=$(jq '[.[] | select(.severity == "low")] | length' panic-attack-findings.json 2>/dev/null || echo 0)
 
-          echo "total=$TOTAL" >> "$GITHUB_OUTPUT"
-          echo "critical=$CRITICAL" >> "$GITHUB_OUTPUT"
-          echo "high=$HIGH" >> "$GITHUB_OUTPUT"
-          echo "medium=$MEDIUM" >> "$GITHUB_OUTPUT"
-          echo "low=$LOW" >> "$GITHUB_OUTPUT"
-          echo "exit_code=$PA_EXIT" >> "$GITHUB_OUTPUT"
+          {
+            echo "total=$TOTAL"
+            echo "critical=$CRITICAL"
+            echo "high=$HIGH"
+            echo "medium=$MEDIUM"
+            echo "low=$LOW"
+            echo "exit_code=$PA_EXIT"
+          } >> "$GITHUB_OUTPUT"
       - name: Emit check annotations
         if: steps.install.outputs.installed == 'true'
         run: |
@@ -220,11 +222,13 @@ jobs:
           MEDIUM=$(jq '[.[] | select(.severity == "medium")] | length' hypatia-findings.json 2>/dev/null || echo 0)
           LOW=$(jq '[.[] | select(.severity == "low")] | length' hypatia-findings.json 2>/dev/null || echo 0)
 
-          echo "total=$TOTAL" >> "$GITHUB_OUTPUT"
-          echo "critical=$CRITICAL" >> "$GITHUB_OUTPUT"
-          echo "high=$HIGH" >> "$GITHUB_OUTPUT"
-          echo "medium=$MEDIUM" >> "$GITHUB_OUTPUT"
-          echo "low=$LOW" >> "$GITHUB_OUTPUT"
+          {
+            echo "total=$TOTAL"
+            echo "critical=$CRITICAL"
+            echo "high=$HIGH"
+            echo "medium=$MEDIUM"
+            echo "low=$LOW"
+          } >> "$GITHUB_OUTPUT"
       - name: Emit check annotations
         if: steps.build.outputs.ready == 'true'
         run: |
@@ -267,9 +271,11 @@ jobs:
         if: steps.build.outputs.ready != 'true'
         run: |
           echo "[]" > hypatia-findings.json
-          echo "## Hypatia Scan" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "**DID NOT RUN** — the Hypatia scanner was not available in this environment. The empty result is absence of evidence, not evidence of absence." >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "## Hypatia Scan"
+            echo ""
+            echo "**DID NOT RUN** — the Hypatia scanner was not available in this environment. The empty result is absence of evidence, not evidence of absence."
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Upload hypatia findings
         uses: actions/upload-artifact@v7.0.2
         with:
@@ -333,10 +339,12 @@ jobs:
           CONCATENATIVE=$(jq '.concatenative // 0' bridge-report.json)
           INFORMATIONAL=$(jq '.informational // 0' bridge-report.json)
 
-          echo "unmitigable=$UNMITIGABLE" >> "$GITHUB_OUTPUT"
-          echo "mitigated=$MITIGATED" >> "$GITHUB_OUTPUT"
-          echo "concatenative=$CONCATENATIVE" >> "$GITHUB_OUTPUT"
-          echo "informational=$INFORMATIONAL" >> "$GITHUB_OUTPUT"
+          {
+            echo "unmitigable=$UNMITIGABLE"
+            echo "mitigated=$MITIGATED"
+            echo "concatenative=$CONCATENATIVE"
+            echo "informational=$INFORMATIONAL"
+          } >> "$GITHUB_OUTPUT"
       - name: Write step summary
         if: steps.install.outputs.installed == 'true'
         env:
@@ -453,11 +461,13 @@ jobs:
           MEDIUM=$(jq '[.findings[] | select(.severity == "medium")] | length' findings/unified-findings.json)
           LOW=$(jq '[.findings[] | select(.severity == "low")] | length' findings/unified-findings.json)
 
-          echo "total=$TOTAL"       >> "$GITHUB_OUTPUT"
-          echo "critical=$CRITICAL" >> "$GITHUB_OUTPUT"
-          echo "high=$HIGH"         >> "$GITHUB_OUTPUT"
-          echo "medium=$MEDIUM"     >> "$GITHUB_OUTPUT"
-          echo "low=$LOW"           >> "$GITHUB_OUTPUT"
+          {
+            echo "total=$TOTAL"      
+            echo "critical=$CRITICAL"
+            echo "high=$HIGH"        
+            echo "medium=$MEDIUM"    
+            echo "low=$LOW"          
+          } >> "$GITHUB_OUTPUT"
       - name: Upload unified findings (fleet scanner picks these up)
         uses: actions/upload-artifact@v7.0.2
         with:
