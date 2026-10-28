@@ -129,8 +129,10 @@ detect_platform() {
 }
 
 # ── Install just ──
-# Pinned+checksummed just fallback (never curl|bash - CWE-494). Linux x86_64 only;
-# every other platform has a package-manager path above.
+# Install the pinned just release in /usr/local/bin from a checksum-verified
+# tarball (never curl|bash - CWE-494). Supports Linux x86_64 only; uses sudo
+# when /usr/local/bin is not writable. Returns 1 for an unsupported platform
+# or a checksum mismatch; removes the download after a mismatch or install attempt.
 install_just_pinned() {
     _just_version="1.59.0"; _just_sha="409044617b6f06517c1035e55ca38c8c856ff8b650e41bc2aa1ef82d5903a23e"
     if [ "$(uname -s)-$(uname -m)" != "Linux-x86_64" ]; then
@@ -146,6 +148,10 @@ install_just_pinned() {
     rm -rf "$_just_tmp"
 }
 
+# Ensure just is on PATH, reusing an existing installation when available.
+# Uses PKG_MGR from detect_platform; a failed apt install or an unhandled
+# manager uses the pinned Linux x86_64 fallback. May install system packages
+# or write to /usr/local/bin using sudo. Returns 1 if just remains unavailable.
 install_just() {
     if command -v just >/dev/null 2>&1; then
         ok "just already installed: $(just --version 2>/dev/null | head -1)"

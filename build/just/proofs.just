@@ -165,6 +165,10 @@ build-lean:
     #!/usr/bin/env bash
     set -euo pipefail
     ROOT="$(pwd)"
+    # Build the package named by $1 under verification/proofs/lean4 and check
+    # its reported axioms against propext, Classical.choice and Quot.sound.
+    # Add its receipt count to TOTAL_RECEIPTS; build, re-elaboration or
+    # axiom-allowlist failures terminate the recipe.
     audit_pkg() {
         local pkg="$1"
         echo "=== build-lean: ${pkg} (Lean 4 + Mathlib, pinned) ==="

@@ -72,6 +72,8 @@ Q a     ⊕d Q b     = Q (a + b)
 -- constructor injectivity that does not compute through transports
 -- (UnsupportedIndexedMatch), whereas this proof is transport-clean.
 private
+  -- Evidence that a fidelity is Q n: equality of finite losses for Q m,
+  -- and the empty type for total or unknown.
   Qcode : ℕ → Δ → Set
   Qcode n (Q m)   = n ≡ m
   Qcode n total   = ⊥
