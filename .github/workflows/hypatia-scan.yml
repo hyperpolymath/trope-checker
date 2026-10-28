@@ -20,4 +20,19 @@ permissions:
 
 jobs:
   scan:
-    uses: hyperpolymath/standards/.github/workflows/hypatia-scan-reusable.yml@cc58c0cb23f73fc2019ce85a56a468e5248a93b3
+    # Explicit on the calling job (a job-level block replaces, never merges
+    # with, the workflow-level one). The previous pin (cc58c0c…) no longer
+    # exists in hyperpolymath/standards, so this gate failed at startup with
+    # zero jobs — invisible in `gh pr checks`. Re-pinned 2026-10-28 to a
+    # verified-existing commit; workflow-linter.yml now re-resolves pins.
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    uses: hyperpolymath/standards/.github/workflows/hypatia-scan-reusable.yml@34cf03f988b8ca95b91b45d9b3351f7d3babfb65
+    with:
+      # Highest of the reusable's two modes: block merges on current
+      # high/critical findings (after validated baseline filtering), rather
+      # than reporting them and passing. This workflow is named a 🔴 Gate;
+      # report-only would not be one.
+      block-on-high: true

@@ -48,7 +48,9 @@ permissions:
 jobs:
   automerge:
     # Only run for PRs actually authored by Dependabot.
-    if: github.actor == 'dependabot[bot]' && github.event.pull_request.user.login == 'dependabot[bot]'
+    # Deliberate belt-and-braces: user.login alone also matches a
+    # human pushing to a bot-opened PR branch; actor excludes that re-trigger.
+    if: github.actor == 'dependabot[bot]' && github.event.pull_request.user.login == 'dependabot[bot]' # zizmor: ignore[bot-conditions]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -110,9 +112,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_URL: ${{ github.event.pull_request.html_url }}
+          STEPS_POLICY_OUTPUTS_GHSA: ${{ steps.policy.outputs.ghsa }}
+          STEPS_POLICY_OUTPUTS_UPDATE_TYPE: ${{ steps.policy.outputs.update_type }}
         run: |
           gh pr review --approve "$PR_URL" \
-            --body "Auto-approving Dependabot security update (${{ steps.policy.outputs.ghsa }}, ${{ steps.policy.outputs.update_type }}). Policy: low/moderate security patches/minors only."
+            --body "Auto-approving Dependabot security update ($STEPS_POLICY_OUTPUTS_GHSA, $STEPS_POLICY_OUTPUTS_UPDATE_TYPE). Policy: low/moderate security patches/minors only."
       - name: Enable auto-merge (if policy allows)
         if: steps.policy.outputs.action == 'automerge'
         env:

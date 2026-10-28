@@ -35,18 +35,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7.0.1
         with:
+          persist-credentials: false
           fetch-depth: 0
       - name: Install panic-attack (if available)
         id: install
         run: |
           # Try to fetch the latest release binary from the org
-          PA_URL="https://github.com/hyperpolymath/panic-attack/releases/latest/download/panic-attack-linux-x86_64"
-          if curl -fsSL --head "$PA_URL" >/dev/null 2>&1; then
-            curl -fsSL -o /usr/local/bin/panic-attack "$PA_URL"
+          PA_URL="https://github.com/hyperpolymath/panic-attack/releases/download/v1.0.1/panic-attack-linux-x86_64"
+          if curl --fail --proto '=https' --proto-redir '=https' --tlsv1.2 -fsSL --head "$PA_URL" >/dev/null 2>&1; then
+            curl --fail --proto '=https' --proto-redir '=https' --tlsv1.2 -fsSL -o /usr/local/bin/panic-attack "$PA_URL"
             chmod +x /usr/local/bin/panic-attack
             echo "installed=true" >> "$GITHUB_OUTPUT"
           else
-            echo "::warning::panic-attack binary NOT AVAILABLE — assail DID NOT RUN. Empty findings below mean "not scanned", not "clean"."
+            echo "::warning::panic-attack binary NOT AVAILABLE — assail DID NOT RUN. Empty findings below mean \"not scanned\", not \"clean\"."
             echo "installed=false" >> "$GITHUB_OUTPUT"
           fi
       - name: Run panic-attack assail
@@ -110,17 +111,23 @@ jobs:
           ' panic-attack-findings.json || true
       - name: Write step summary
         if: steps.install.outputs.installed == 'true'
+        env:
+          STEPS_ASSAIL_OUTPUTS_CRITICAL: ${{ steps.assail.outputs.critical }}
+          STEPS_ASSAIL_OUTPUTS_HIGH: ${{ steps.assail.outputs.high }}
+          STEPS_ASSAIL_OUTPUTS_MEDIUM: ${{ steps.assail.outputs.medium }}
+          STEPS_ASSAIL_OUTPUTS_LOW: ${{ steps.assail.outputs.low }}
+          STEPS_ASSAIL_OUTPUTS_TOTAL: ${{ steps.assail.outputs.total }}
         run: |
           cat <<EOF >> "$GITHUB_STEP_SUMMARY"
           ## panic-attack assail Results
 
           | Severity | Count |
           |----------|-------|
-          | Critical | ${{ steps.assail.outputs.critical }} |
-          | High     | ${{ steps.assail.outputs.high }} |
-          | Medium   | ${{ steps.assail.outputs.medium }} |
-          | Low      | ${{ steps.assail.outputs.low }} |
-          | **Total**| ${{ steps.assail.outputs.total }} |
+          | Critical | $STEPS_ASSAIL_OUTPUTS_CRITICAL |
+          | High     | $STEPS_ASSAIL_OUTPUTS_HIGH |
+          | Medium   | $STEPS_ASSAIL_OUTPUTS_MEDIUM |
+          | Low      | $STEPS_ASSAIL_OUTPUTS_LOW |
+          | **Total**| $STEPS_ASSAIL_OUTPUTS_TOTAL |
           EOF
       - name: Create stub findings (when panic-attack unavailable)
         if: steps.install.outputs.installed != 'true'
@@ -137,8 +144,10 @@ jobs:
           retention-days: 90
       - name: Fail on critical findings
         if: steps.install.outputs.installed == 'true' && steps.assail.outputs.critical > 0
+        env:
+          STEPS_ASSAIL_OUTPUTS_CRITICAL: ${{ steps.assail.outputs.critical }}
         run: |
-          echo "::error::panic-attack found ${{ steps.assail.outputs.critical }} critical issue(s) — blocking merge"
+          echo "::error::panic-attack found $STEPS_ASSAIL_OUTPUTS_CRITICAL critical issue(s) — blocking merge"
           exit 1
   # ---------------------------------------------------------------------------
   # Job 2: hypatia-scan
@@ -151,6 +160,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7.0.1
         with:
+          persist-credentials: false
           fetch-depth: 0
       - name: Setup Elixir for Hypatia scanner
         id: beam
@@ -163,9 +173,13 @@ jobs:
         id: build
         continue-on-error: true
         run: |
-          git clone https://github.com/hyperpolymath/hypatia.git "$HOME/hypatia" 2>/dev/null || true
+          HYPATIA_REF="aa34a4cc6ba39d873710ff39763fdb9cde715f9d"
+          if git clone https://github.com/hyperpolymath/hypatia.git "$HOME/hypatia" 2>/dev/null; then
+            git -C "$HOME/hypatia" -c advice.detachedHead=false checkout "$HYPATIA_REF" 2>/dev/null \
+              || { echo "::warning::could not pin hypatia to $HYPATIA_REF"; rm -rf "$HOME/hypatia"; }
+          fi
           if [ -f "$HOME/hypatia/mix.exs" ]; then
-            cd "$HOME/hypatia"
+            cd "$HOME/hypatia" || exit 1
             # Build escript if neither hypatia nor hypatia-v2 exists
             if [ ! -f hypatia ] && [ ! -f hypatia-v2 ]; then
               mix deps.get
@@ -173,7 +187,7 @@ jobs:
             fi
             echo "ready=true" >> "$GITHUB_OUTPUT"
           else
-            echo "::warning::Hypatia scanner NOT AVAILABLE — scan DID NOT RUN. Empty findings below mean "not scanned", not "clean"."
+            echo "::warning::Hypatia scanner NOT AVAILABLE — scan DID NOT RUN. Empty findings below mean \"not scanned\", not \"clean\"."
             echo "ready=false" >> "$GITHUB_OUTPUT"
           fi
       - name: Run Hypatia scan
@@ -236,17 +250,23 @@ jobs:
           ' hypatia-findings.json || true
       - name: Write step summary
         if: steps.build.outputs.ready == 'true'
+        env:
+          STEPS_SCAN_OUTPUTS_CRITICAL: ${{ steps.scan.outputs.critical }}
+          STEPS_SCAN_OUTPUTS_HIGH: ${{ steps.scan.outputs.high }}
+          STEPS_SCAN_OUTPUTS_MEDIUM: ${{ steps.scan.outputs.medium }}
+          STEPS_SCAN_OUTPUTS_LOW: ${{ steps.scan.outputs.low }}
+          STEPS_SCAN_OUTPUTS_TOTAL: ${{ steps.scan.outputs.total }}
         run: |
           cat <<EOF >> "$GITHUB_STEP_SUMMARY"
           ## Hypatia Scan Results
 
           | Severity | Count |
           |----------|-------|
-          | Critical | ${{ steps.scan.outputs.critical }} |
-          | High     | ${{ steps.scan.outputs.high }} |
-          | Medium   | ${{ steps.scan.outputs.medium }} |
-          | Low      | ${{ steps.scan.outputs.low }} |
-          | **Total**| ${{ steps.scan.outputs.total }} |
+          | Critical | $STEPS_SCAN_OUTPUTS_CRITICAL |
+          | High     | $STEPS_SCAN_OUTPUTS_HIGH |
+          | Medium   | $STEPS_SCAN_OUTPUTS_MEDIUM |
+          | Low      | $STEPS_SCAN_OUTPUTS_LOW |
+          | **Total**| $STEPS_SCAN_OUTPUTS_TOTAL |
           EOF
       - name: Create stub findings (when Hypatia unavailable)
         if: steps.build.outputs.ready != 'true'
@@ -263,8 +283,10 @@ jobs:
           retention-days: 90
       - name: Fail on critical security findings
         if: steps.build.outputs.ready == 'true' && steps.scan.outputs.critical > 0
+        env:
+          STEPS_SCAN_OUTPUTS_CRITICAL: ${{ steps.scan.outputs.critical }}
         run: |
-          echo "::error::Hypatia found ${{ steps.scan.outputs.critical }} critical security issue(s) — blocking merge"
+          echo "::error::Hypatia found $STEPS_SCAN_OUTPUTS_CRITICAL critical security issue(s) — blocking merge"
           exit 1
   # ---------------------------------------------------------------------------
   # Job 3: patch-bridge triage (CVE contextual assessment)
@@ -277,17 +299,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7.0.1
         with:
+          persist-credentials: false
           fetch-depth: 0
       - name: Install panic-attack (if available)
         id: install
         run: |
-          PA_URL="https://github.com/hyperpolymath/panic-attack/releases/latest/download/panic-attack-linux-x86_64"
-          if curl -fsSL --head "$PA_URL" >/dev/null 2>&1; then
-            curl -fsSL -o /usr/local/bin/panic-attack "$PA_URL"
+          PA_URL="https://github.com/hyperpolymath/panic-attack/releases/download/v1.0.1/panic-attack-linux-x86_64"
+          if curl --fail --proto '=https' --proto-redir '=https' --tlsv1.2 -fsSL --head "$PA_URL" >/dev/null 2>&1; then
+            curl --fail --proto '=https' --proto-redir '=https' --tlsv1.2 -fsSL -o /usr/local/bin/panic-attack "$PA_URL"
             chmod +x /usr/local/bin/panic-attack
             echo "installed=true" >> "$GITHUB_OUTPUT"
           else
-            echo "::warning::panic-attack binary NOT AVAILABLE — Patch Bridge DID NOT RUN. An empty CVE report below means "not triaged", not "no CVEs"."
+            echo "::warning::panic-attack binary NOT AVAILABLE — Patch Bridge DID NOT RUN. An empty CVE report below means \"not triaged\", not \"no CVEs\"."
             echo "installed=false" >> "$GITHUB_OUTPUT"
           fi
       - name: Run Patch Bridge triage
@@ -299,6 +322,10 @@ jobs:
           PB_EXIT=$?
           set -e
 
+          echo "panic-attack bridge exit: ${PB_EXIT}"
+          if [ "$PB_EXIT" -ne 0 ]; then
+            echo "::warning::panic-attack bridge exited ${PB_EXIT}; payload will be replaced by the stub unless it is valid JSON"
+          fi
           if [ ! -s bridge-report.json ] || ! jq empty bridge-report.json 2>/dev/null; then
             echo '{"cves":[],"mitigated":0,"unmitigable":0,"concatenative":0,"informational":0}' > bridge-report.json
           fi
@@ -314,16 +341,21 @@ jobs:
           echo "informational=$INFORMATIONAL" >> "$GITHUB_OUTPUT"
       - name: Write step summary
         if: steps.install.outputs.installed == 'true'
+        env:
+          STEPS_TRIAGE_OUTPUTS_UNMITIGABLE: ${{ steps.triage.outputs.unmitigable }}
+          STEPS_TRIAGE_OUTPUTS_MITIGATED: ${{ steps.triage.outputs.mitigated }}
+          STEPS_TRIAGE_OUTPUTS_CONCATENATIVE: ${{ steps.triage.outputs.concatenative }}
+          STEPS_TRIAGE_OUTPUTS_INFORMATIONAL: ${{ steps.triage.outputs.informational }}
         run: |
           cat <<EOF >> "$GITHUB_STEP_SUMMARY"
           ## Patch Bridge CVE Triage
 
           | Classification | Count |
           |----------------|-------|
-          | Unmitigable    | ${{ steps.triage.outputs.unmitigable }} |
-          | Mitigated      | ${{ steps.triage.outputs.mitigated }} |
-          | Concatenative  | ${{ steps.triage.outputs.concatenative }} |
-          | Informational  | ${{ steps.triage.outputs.informational }} |
+          | Unmitigable    | $STEPS_TRIAGE_OUTPUTS_UNMITIGABLE |
+          | Mitigated      | $STEPS_TRIAGE_OUTPUTS_MITIGATED |
+          | Concatenative  | $STEPS_TRIAGE_OUTPUTS_CONCATENATIVE |
+          | Informational  | $STEPS_TRIAGE_OUTPUTS_INFORMATIONAL |
 
           Unmitigable CVEs require dependency replacement or rearchitecture.
           Mitigated CVEs have active controls with soundness proofs.
@@ -344,8 +376,10 @@ jobs:
           retention-days: 90
       - name: Fail on unmitigable CVEs in critical paths
         if: steps.install.outputs.installed == 'true' && steps.triage.outputs.unmitigable > 0
+        env:
+          STEPS_TRIAGE_OUTPUTS_UNMITIGABLE: ${{ steps.triage.outputs.unmitigable }}
         run: |
-          echo "::warning::Patch Bridge found ${{ steps.triage.outputs.unmitigable }} unmitigable CVE(s) — review required"
+          echo "::warning::Patch Bridge found $STEPS_TRIAGE_OUTPUTS_UNMITIGABLE unmitigable CVE(s) — review required"
           # Warning only, not blocking. Unmitigable means the developer needs
           # to make an architectural decision, not that the PR is wrong.
   # ---------------------------------------------------------------------------
@@ -375,6 +409,11 @@ jobs:
           path: findings/
       - name: Combine findings into unified report
         id: combine
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_REF: ${{ github.ref }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
         run: |
           PA_FILE="findings/panic-attack-findings.json"
           HYP_FILE="findings/hypatia-findings.json"
@@ -398,10 +437,10 @@ jobs:
 
           # Build unified report envelope
           jq -n \
-            --arg repo   "${{ github.repository }}" \
-            --arg sha    "${{ github.sha }}" \
-            --arg ref    "${{ github.ref }}" \
-            --arg run_id "${{ github.run_id }}" \
+            --arg repo   "$GITHUB_REPOSITORY" \
+            --arg sha    "$GITHUB_SHA" \
+            --arg ref    "$GITHUB_REF" \
+            --arg run_id "$GITHUB_RUN_ID" \
             --arg ts     "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             --slurpfile pa     /tmp/pa-tagged.json \
             --slurpfile hyp    /tmp/hyp-tagged.json \
@@ -435,21 +474,29 @@ jobs:
           path: findings/unified-findings.json
           retention-days: 90
       - name: Write deposit summary
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_SHA: ${{ github.sha }}
+          STEPS_COMBINE_OUTPUTS_CRITICAL: ${{ steps.combine.outputs.critical }}
+          STEPS_COMBINE_OUTPUTS_HIGH: ${{ steps.combine.outputs.high }}
+          STEPS_COMBINE_OUTPUTS_MEDIUM: ${{ steps.combine.outputs.medium }}
+          STEPS_COMBINE_OUTPUTS_LOW: ${{ steps.combine.outputs.low }}
+          STEPS_COMBINE_OUTPUTS_TOTAL: ${{ steps.combine.outputs.total }}
         run: |
           cat <<EOF >> "$GITHUB_STEP_SUMMARY"
           ## Unified Findings Deposit
 
-          **Repository:** ${{ github.repository }}
-          **Commit:** \`${{ github.sha }}\`
+          **Repository:** $GITHUB_REPOSITORY
+          **Commit:** \`$GITHUB_SHA\`
           **Deposited at:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
 
           | Severity | Count |
           |----------|-------|
-          | Critical | ${{ steps.combine.outputs.critical }} |
-          | High     | ${{ steps.combine.outputs.high }} |
-          | Medium   | ${{ steps.combine.outputs.medium }} |
-          | Low      | ${{ steps.combine.outputs.low }} |
-          | **Total**| ${{ steps.combine.outputs.total }} |
+          | Critical | $STEPS_COMBINE_OUTPUTS_CRITICAL |
+          | High     | $STEPS_COMBINE_OUTPUTS_HIGH |
+          | Medium   | $STEPS_COMBINE_OUTPUTS_MEDIUM |
+          | Low      | $STEPS_COMBINE_OUTPUTS_LOW |
+          | **Total**| $STEPS_COMBINE_OUTPUTS_TOTAL |
 
           Findings saved as \`unified-findings\` artifact.
           The gitbot-fleet scanner will ingest these on its next pass.

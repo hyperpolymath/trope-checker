@@ -1,0 +1,31 @@
+// SPDX-License-Identifier: MPL-2.0
+= Affirmation-check trust material
+
+`github-web-flow.gpg` in this directory is GitHub's *current* web-flow
+commit-signing public key:
+
+* fingerprint: `9684 79A1 AFF9 27E3 7D1A 566B B569 0EEE BB95 2194`
+* created 2024-01-16, no expiry
+* fetched 2026-10-28 from `gh api users/web-flow/gpg_keys`
+  (the entry with `key_id` `B5690EEEBB952194`)
+
+== Why it exists
+
+The Affirmation Document Gate (`hyperpolymath/cicd-suite`
+`actions/affirmation-check`, run from `main-estate-audit.yml`) classifies the
+signature on the commit that last changed `AFFIRMATION.adoc`. The copy of the
+web-flow key vendored inside that action is GitHub's *previous* key
+(`5DE3E0509C47EA3CF04A42D34AEE18F83AFDEB23`, expired 2024-01-16) — the action's
+own fingerprint allowlist names the new key, but the new key is not in its
+keyring. Every GitHub-signed commit (web merges, squash landings, and the
+test-merge commit a shallow PR checkout consists of) therefore classified as
+`E` ("cannot be checked"), which the gate treats as "bad, revoked, or failed
+verification" and fails on. That was the `estate-audit` failure on PR #102.
+
+`main-estate-audit.yml` passes this file via the action's
+`trusted-gpg-keys` input so the classification is made against the key
+GitHub actually signs with. The root fix belongs in `cicd-suite` (refresh the
+vendored key; stop conflating `E` with a bad signature); until that lands,
+this file is the in-repo workaround. If GitHub rotates the web-flow key
+again, re-fetch it the same way and update the fingerprint above in the same
+commit.
