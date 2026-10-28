@@ -301,6 +301,10 @@ pub fn dadd(a: &Delta, b: &Delta) -> Delta {
 // fate retention order: x ⊑ y (y retains at least as much as x).
 // R-2026-07-07 (A2): a CHAIN — Falsified ⊏ Dropped ⊏ Predicated ⊏ Atten δ ⊏ Present
 // (Dropped ⊑ Predicated now true; the converse stays false).
+/// Return whether `hi` retains at least as much as `lo`.
+///
+/// Honest fates ascend from `Dropped` through `Predicated` and attenuation to
+/// `Present`; smaller attenuation retains more. `Falsified` compares only with itself.
 #[must_use]
 pub fn fate_le(lo: &Fate, hi: &Fate) -> bool {
     use Fate::{Atten, Dropped, Falsified, Predicated, Present};
@@ -323,6 +327,14 @@ pub fn fate_le(lo: &Fate, hi: &Fate) -> bool {
         _ => false,
     }
 }
+/// Compose two fates, adding attenuation losses.
+///
+/// `Present` is the identity; `Falsified` absorbs either operand, followed by
+/// `Dropped` and then `Predicated`. For attenuation, `Top` absorbs `Inf`, which
+/// absorbs finite losses. Zero attenuation is not normalised here.
+///
+/// # Panics
+/// Panics if finite loss addition overflows with overflow checks enabled.
 #[must_use]
 pub fn fate_compose(a: &Fate, b: &Fate) -> Fate {
     use Fate::{Atten, Dropped, Falsified, Predicated, Present};
@@ -481,7 +493,7 @@ pub struct Doc {
 /// Decode a fidelity delta.
 ///
 /// # Errors
-/// Returns an error unless the value is non-negative, `"inf"`, or `"top"`.
+/// Returns an error unless the value is a non-negative integer, `"inf"`, or `"top"`.
 pub fn dec_delta(path: &str, v: &Json) -> Result<Delta, String> {
     match v {
         Json::Num(n) if *n >= 0 => Ok(Delta::Q(*n)),
@@ -492,7 +504,10 @@ pub fn dec_delta(path: &str, v: &Json) -> Result<Delta, String> {
         )),
     }
 }
-/// Decode a fate, normalizing zero attenuation to presence.
+/// Decode a fate, normalising zero attenuation to presence.
+///
+/// Set `is_q` for the quality coordinate, where `Predicated` is permitted.
+/// `path` identifies the coordinate in errors, including propagated delta errors.
 ///
 /// # Errors
 /// Returns an error for malformed or deceptive fates, or predicates outside quality.
@@ -545,8 +560,10 @@ pub fn dec_bond(path: &str, v: &Json) -> Result<Bond, String> {
 }
 /// Decode a merge in the prevent profile.
 ///
+/// `Fused` requires a non-empty `tau` string; the returned merge discards the tag.
+///
 /// # Errors
-/// Returns an error for an unknown or deceptive merge, or a missing or empty fusion tag.
+/// Returns an error for a missing, unknown, or deceptive merge, or a missing or empty fusion tag.
 pub fn dec_merge(path: &str, v: &Json) -> Result<Merge, String> {
     match v.field("k").and_then(|k| k.as_str()) {
         Some("Single") => Ok(Merge::Single),
@@ -572,6 +589,10 @@ pub fn req<'a>(path: &str, k: &str, v: &'a Json) -> Result<&'a Json, String> {
     v.field(k).ok_or_else(|| format!("{path}: missing \"{k}\""))
 }
 /// Decode a grade and check bearer/bond coherence.
+///
+/// `value` is the grade object; `epath` names its enclosing edge in errors.
+/// After normalisation, a dropped bearer requires `Withheld` or `Severed`;
+/// every other accepted bearer fate requires `Intact`.
 ///
 /// # Errors
 /// Returns an error for missing or invalid coordinates or an incoherent bond.
@@ -625,6 +646,9 @@ pub fn dec_grade(epath: &str, value: &Json) -> Result<Grade, String> {
         merge,
     })
 }
+/// Collect an array's string entries in order, ignoring other entries.
+///
+/// Return an empty list if `v` is not an array.
 #[must_use]
 pub fn str_list(v: &Json) -> Vec<String> {
     v.as_arr().map_or_default(|a| {
@@ -635,8 +659,12 @@ pub fn str_list(v: &Json) -> Vec<String> {
 }
 /// Decode an IR node.
 ///
+/// Missing or non-array `present` fields become empty lists; non-string entries
+/// are ignored.
+///
 /// # Errors
-/// Returns an error for a missing ID or type, unknown type, or a floating bearer.
+/// Returns an error for a missing or non-string ID or type, an unknown type,
+/// or a `FloatingQuality` node listing `bearer` in `present`.
 pub fn dec_node(v: &Json) -> Result<Node, String> {
     let id = v
         .field("id")
@@ -660,6 +688,9 @@ pub fn dec_node(v: &Json) -> Result<Node, String> {
     Ok(Node { id, kind, present })
 }
 /// Decode an IR edge.
+///
+/// Missing or non-array `inputs` fields become empty lists; non-string entries
+/// are ignored. Grade decoding errors are propagated.
 ///
 /// # Errors
 /// Returns an error for a missing ID or output, or a missing or invalid grade.
@@ -687,6 +718,9 @@ pub fn dec_edge(v: &Json) -> Result<Edge, String> {
     })
 }
 /// Decode the optional coordinates of a use-model floor.
+///
+/// Missing coordinates remain `None` and impose no requirement when checked.
+/// Fate coordinates use the same zero-attenuation normalisation as edge grades.
 ///
 /// # Errors
 /// Returns an error if a supplied coordinate is invalid in the prevent profile.

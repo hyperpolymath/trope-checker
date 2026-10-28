@@ -30,6 +30,7 @@ open import TB.Syntax using (atten-atom; drop-atom; sever-atom; predicate-atom)
 -- Veridicality (Veridicality.idr): the THREE deceptive duals, one per coordinate.
 --------------------------------------------------------------------------------
 
+-- Return true exactly for falsified, the deceptive fate.
 isDeceptiveFate : Fate → Bool
 isDeceptiveFate falsified = true
 isDeceptiveFate present = false
@@ -37,12 +38,14 @@ isDeceptiveFate (atten _) = false
 isDeceptiveFate predicated = false
 isDeceptiveFate dropped = false
 
+-- Return true exactly for misbound, the deceptive bond.
 isDeceptiveBond : Bond → Bool
 isDeceptiveBond misbound = true
 isDeceptiveBond intact = false
 isDeceptiveBond withheld = false
 isDeceptiveBond severed = false
 
+-- Return true exactly for conflated, the deceptive merge.
 isDeceptiveMerge : Merge → Bool
 isDeceptiveMerge conflated = true
 isDeceptiveMerge single = false
@@ -82,6 +85,7 @@ moveFate Drop          = dropped
 moveFate Sever         = present
 moveFate Fuse          = present
 
+-- Return severed for Sever, withheld for Drop, and intact for all other moves.
 moveBond : Move → Bond
 moveBond Sever = severed
 moveBond Drop  = withheld
@@ -90,6 +94,7 @@ moveBond (Attenuate _) = intact
 moveBond Predicate = intact
 moveBond Fuse = intact
 
+-- Return fused for Fuse and single for all other moves.
 moveMerge : Move → Merge
 moveMerge Fuse = fused
 moveMerge Preserve = single

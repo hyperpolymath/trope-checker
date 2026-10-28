@@ -49,10 +49,13 @@ private
   VarCase ∅       A P = ⊤
   VarCase (Γ , B) A P = P B → (∀ {C} → Γ ∋ C → P C) → P A
 
+  -- Select atTop for the newest variable or apply atEarlier to an older variable.
   varCase : ∀ {Γ A P} → Γ ∋ A → VarCase Γ A P
   varCase here      atTop atEarlier = atTop
   varCase (there x) atTop atEarlier = atEarlier x
 
+-- Extend a renaming under a binder, keeping the newest variable fixed and
+-- shifting renamed older variables into the extended target context.
 ext : ∀ {Γ Δ B} → Rename Γ Δ → Rename (Γ , B) (Δ , B)
 ext {Δ = Δ} {B = B} ρ x =
   varCase {P = λ A → (Δ , B) ∋ A} x here (λ y → there (ρ y))
@@ -79,6 +82,8 @@ rename ρ (`sub p d)       = `sub p (rename ρ d)
 Subst : Ctx → Ctx → Set
 Subst Γ Δ = ∀ {A} → Γ ∋ A → Δ ⊢ A ! ε
 
+-- Extend a value substitution under a binder, keeping the newest variable and
+-- weakening older replacements into the extended target context at grade ε.
 exts : ∀ {Γ Δ B} → Subst Γ Δ → Subst (Γ , B) (Δ , B)
 exts {Δ = Δ} {B = B} σ x =
   varCase {P = λ A → (Δ , B) ⊢ A ! ε} x (`var here) (λ y → rename there (σ y))

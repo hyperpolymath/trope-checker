@@ -15,6 +15,11 @@
 use std::process::exit;
 use tropecheck_rs::{check, dec_doc, parse_json};
 
+/// Check the IR file named by the first argument and print the verdict to stdout.
+///
+/// Exit with 0 for sufficiency, 1 for insufficiency, 2 for a parse or decoding
+/// fault, or 3 for a file read error. With no file argument, print usage to stderr
+/// and exit with 64.
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     if args.len() < 2 {
