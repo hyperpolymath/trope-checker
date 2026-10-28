@@ -6,7 +6,7 @@
 # Then hands off to `just setup` for project-specific configuration.
 #
 # Usage (after cloning — deliberately no curl|sh one-liner):
-#   ./setup.sh
+#   ./build/setup.sh
 #
 # Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath)
 
