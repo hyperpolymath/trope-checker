@@ -13,7 +13,6 @@ OUTPUT_FORMAT="${2:-human}"  # human | json | csv
 # ANSI colors
 BLUE='\033[0;34m'
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 log_info() {
@@ -24,13 +23,8 @@ log_pass() {
     echo -e "${GREEN}✓${NC} $*"
 }
 
-# Ensure we have required commands
-command -v /usr/bin/time >/dev/null 2>&1 || {
-    echo "Warning: /usr/bin/time not available, using built-in time"
-    TIME_CMD="time"
-}
-
-TIME_CMD="/usr/bin/time -f %e" 2>/dev/null || TIME_CMD="time"
+# (No TIME_CMD: the harness times with `date +%s%N` deltas below; the old
+# /usr/bin/time probe set a variable nothing ever read.)
 
 echo ""
 echo "═══════════════════════════════════════════════════════════════════════════════"

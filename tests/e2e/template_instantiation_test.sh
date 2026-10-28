@@ -25,11 +25,14 @@ TEST_AUTHOR_EMAIL="test@example.com"
 TEST_PROJECT_NAME="Test Project"
 TEST_DESCRIPTION="A test project instantiated from the RSR template"
 TEST_PRIMARY_LANGUAGE="Rust"
+# The placeholder substitution runs in a `find -exec bash -c '...'` child
+# (single-quoted), which only sees EXPORTED variables.
+export TEST_REPO_NAME TEST_OWNER TEST_FORGE TEST_AUTHOR TEST_AUTHOR_EMAIL
+export TEST_PROJECT_NAME TEST_DESCRIPTION TEST_PRIMARY_LANGUAGE
 
 # ANSI colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
@@ -202,7 +205,7 @@ if [ -z "$REMAINING_PLACEHOLDERS" ]; then
     log_pass "No remaining placeholders found"
 else
     log_error "Found remaining placeholders in:"
-    echo "$REMAINING_PLACEHOLDERS" | sed 's/^/  /'
+    while IFS= read -r ph_line; do echo "  $ph_line"; done <<< "$REMAINING_PLACEHOLDERS"
     exit 1
 fi
 
@@ -222,7 +225,7 @@ for file in "${CRITICAL_FILES[@]}"; do
     if [ -f "$TEST_REPO_PATH/$file" ]; then
         # Check that it's not just a template (contains some actual content)
         if grep -q "$TEST_PROJECT_NAME\|$TEST_AUTHOR\|$TEST_REPO_NAME" "$TEST_REPO_PATH/$file" 2>/dev/null || \
-           [ $(wc -l < "$TEST_REPO_PATH/$file") -gt 10 ]; then
+           [ "$(wc -l < "$TEST_REPO_PATH/$file")" -gt 10 ]; then
             log_pass "File instantiated: $file"
         else
             log_error "File appears to be a template: $file"

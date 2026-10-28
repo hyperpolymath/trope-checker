@@ -7,9 +7,10 @@
 # Run everything: typecheck the verified core, build the checker, run conformance.
 check: trope-proofs trope-build trope-conformance
 
-# Typecheck the verified core (the proofs) — no axioms.
+# Typecheck the verified core (the proofs) — no axioms — and the ABI seam.
 trope-proofs:
     cd verification/proofs/idris2 && idris2 --typecheck trope.ipkg
+    idris2 --typecheck abi.ipkg
 
 # Install the verified core as a package, then build the executable checker.
 trope-build:
@@ -27,5 +28,5 @@ tropecheck ir:
 # Build the Rust fast-core and validate it against the SAME conformance corpus
 # (cross-checks it agrees with the Idris2 reference). Dep-free; builds offline.
 trope-rust:
-    cd src/rust && cargo build --release
+    cd src/rust && cargo fmt --all --check && cargo clippy --locked --all-targets -- -D warnings -D clippy::pedantic && cargo test --locked && cargo build --locked --release
     TROPECHECK_BIN=src/rust/target/release/tropecheck-rs bash tests/conformance/run.sh
