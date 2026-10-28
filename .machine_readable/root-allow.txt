@@ -40,6 +40,7 @@ abi.ipkg                   # Idris2 package for the ABI seam; sourcedir=src/inte
 # ─── Directories ─────────────────────────────────────────────────────────────
 .devcontainer/             # VS Code dev container spec; tool-required at root
 .git/
+.gitbot-fleet/             # fleet enrolment and report-backs; paths declared in trope-checker_chora.deed
 .githooks/                 # validate-a2ml.sh, validate-k9.sh — LOAD-BEARING: run
                            # directly by .github/workflows/dogfood-gate.yml (the
                            # "Validate A2ML manifests" and "Validate K9 contracts"
