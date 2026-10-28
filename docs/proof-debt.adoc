@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: CC-BY-SA-4.0
 // Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 = Proof-Debt Ledger — trope-checker
-:revdate: 2026-06-29
+:revdate: 2026-10-28
 
 Seeded per the schema in
 `hyperpolymath/standards/docs/TRUSTED-BASE-REDUCTION-POLICY.adoc`, in response to
@@ -59,3 +59,14 @@ or *(FP)* a false positive (convention comment — construct forbidden, not used
   meantime.
 * Should a genuine escape hatch ever be introduced, it MUST be added here under
   class (a), (b), or (c) with its justification before the proof is accepted.
+
+== Addendum (2026-10-28)
+
+The six Idris2 rows above cite files (`verification/proofs/idris2/Types.idr`,
+`verification/proofs/idris2/ABI/*`) that no longer exist: they were
+uninstantiated template mint files, deleted for the same reason PR #102's T5
+deleted the Coq/TLA+/Agda templates (no package built them; PR #102 records
+they did not typecheck). The currently-live false positives are the two Lean
+audit-comment rows only. This ledger's summary claim is unchanged: net
+soundness-relevant escape hatches remain 0, now additionally enforced by the
+comment-aware banned-construct gate over all Idris2 trees in CI.

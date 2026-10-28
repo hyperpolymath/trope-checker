@@ -11,39 +11,34 @@ This directory contains formal proofs organised by proof assistant.
 proofs/
 ├── INTEGRATION-REPORT.adoc  # Theorem B reconciliation: unified R-id↔Lean↔Agda↔status
 │                            #   table, the central open problem, divergence adjudication
-├── idris2/          # Idris2 proofs (ABI, dependent types)
-│   ├── ABI/         # ABI-specific proofs (mandatory)
-│   │   ├── Pointers.idr    # Non-null pointer safety
-│   │   ├── Layout.idr      # Memory layout correctness
-│   │   ├── Platform.idr    # Platform type size proofs
-│   │   ├── Foreign.idr     # FFI return type proofs
-│   │   └── Compliance.idr  # C ABI compliance
-│   └── Types.idr    # Core data type well-formedness
+├── idris2/          # the verified core (package trope, trope.ipkg)
+│   └── Trope/       # %default total; the grade algebra + laws (see PROOF-STATUS)
 ├── lean4/           # Lean4 proofs (algebra, lattices)
-│   ├── ApiTypes.lean
 │   ├── grade-boundary/      # grade-algebra GROUND TRUTH: the honest/deceptive cancellation
 │   │                        #   boundary (Lean 4 + Mathlib; sorry-free; no user axiom)
 │   └── grade-factorisation/ # tropical factorisation probe: imports the carrier; verdict (B)
 │                            #   factors but veridicality-blind (precondition only; not CO-1)
 └── agda/            # Agda proofs (induction, metatheory)
     └── theorem-b/           # Theorem B: calculus metatheory over the grade algebra
-                             #   (Agda --safe --without-K; zero postulates)
+                             #   (--safe --without-K --cubical-compatible --exact-split; zero postulates)
 ----
 
 == Verification Commands
 
 [source,bash]
 ----
-just proof-check-all       # Run all proof checkers (per-file scan + dangerous-pattern scan)
+just proof-check-all       # Run all proof checkers (package builds + dangerous-pattern scan)
 just proof-check-idris2    # Idris2 only
 just proof-check-lean4     # Lean4 only
 just proof-check-agda      # Agda only
 
 # The two pinned developments need a real build (lake+Mathlib / an All.agda entry),
-# not a bare per-file check — use these:
+# not a bare per-file check — proof-check-{idris2,lean4,agda} now do exactly that
+# (the ABI seam's abi.ipkg, at the repo root over src/interface/Abi, is checked
+# by proof-check-idris2 too). The fuller merges-gate equivalents:
 just verify-all            # grade-boundary + grade-factorisation (Lean) + Theorem B (Agda): build + honesty gate
 just build-lean            # both Lean harnesses (grade-boundary + grade-factorisation) + axiom audits
-just build-agda            # Agda Theorem B (--safe --without-K)
+just build-agda            # Agda Theorem B (--safe --without-K --cubical-compatible --exact-split -W error)
 # the probe also has its own subproject harness:
 ( cd lean4/grade-factorisation && just falsify )   # sorry-free, axiom-clean, falsifier witnesses live
 ----
@@ -64,7 +59,13 @@ the provers themselves (`agda --safe` rejects postulates/`trustMe`/`TERMINATING`
 Lean axiom audit rejects `sorryAx`), which cannot be evaded by comment tricks. The
 `just proof-scan-dangerous` lint is a *comment-aware* pre-filter (it strips comments
 before matching, so honest prose like "sorry-free" / "no postulate" is not flagged) and
-is advisory, not a CI gate. CI enforcement is `panic-attack assail`.
+is a pre-filter. CI enforcement is the provers themselves, at full strictness
+(`.github/workflows/proofs.yml`, `trope-check.yml`): kernel builds with
+warnings as errors, leanchecker re-checking the compiled Lean environment, an
+axiom allowlist audit over every Lean module, Agda under `--safe --without-K
+--cubical-compatible --exact-split --warning=error`, Idris2 package typechecks
+under `%default total`, plus the comment-aware source gates in the same
+workflows.
 
 == Adding New Proofs
 
