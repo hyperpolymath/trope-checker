@@ -215,6 +215,15 @@ printf 'uses: owner/other@main\n' >"$resolver/.github/workflows/two.yaml"
 cat >"$resolver/bin/gh" <<'SH'
 #!/bin/sh
 printf '%s\n' "$*" >>"$CALL_LOG"
+# Answer the resolver's three query shapes: canonical full_name for
+# repos/<owner>/<repo> (CANONICAL_OVERRIDE simulates a moved repository),
+# a non-empty path for reusable-workflow contents lookups, and bare
+# success for commit/tag resolution.
+case "$2" in
+  */contents/*) printf '%s\n' 'contents-ok' ;;
+  repos/*/*/*) : ;;
+  repos/*/*) printf '%s\n' "${CANONICAL_OVERRIDE:-${2#repos/}}" ;;
+esac
 SH
 chmod 700 "$resolver/bin/gh"
 (
@@ -232,5 +241,18 @@ printf 'uses: owner/other@v2.3.4\n' >"$resolver/.github/workflows/two.yaml"
 assert_contains 'resolved 2 distinct external uses refs'
 grep -Fq 'repos/owner/other/git/ref/tags/v2.3.4' "$resolver/calls" || fail 'second version tag was not resolved'
 pass 'uses-ref scanner resolves exact tags in both extensions'
+
+# A moved repository still resolves over REST/git (the redirect is followed),
+# so pin resolution alone stays green while every reusable call under the old
+# name dies at startup — the 2026-10-28 standards-transfer outage. Only the
+# canonical full_name comparison sees it; simulate the move via the stub.
+(
+  cd "$resolver"
+  expect_exit 1 env PATH="$resolver/bin:$PATH" CALL_LOG="$resolver/calls" \
+    CANONICAL_OVERRIDE=newowner/other python3 resolve.py
+)
+assert_contains 'MOVED repository'
+assert_contains 'newowner/other'
+pass 'uses-ref scanner rejects a moved repository coordinate'
 
 echo "All $checks regression cases passed."

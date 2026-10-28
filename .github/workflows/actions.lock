@@ -27,6 +27,9 @@ workflows:
     '.github/workflows/mirror.yml': []
     '.github/workflows/openssf-compliance.yml':
         - 'actions/checkout@v7.0.1'
+    '.github/workflows/patch-bridge.yml':
+        - 'actions/checkout@v7.0.1'
+        - 'actions/upload-artifact@v7.0.2'
     '.github/workflows/proofs.yml':
         - 'actions/checkout@v7.0.1'
         - 'leanprover/lean-action@v1.6.2'

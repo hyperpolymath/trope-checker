@@ -148,7 +148,9 @@ jobs:
               if repo not in canonical:
                   r = subprocess.run(['gh', 'api', f'repos/{repo}', '--jq', '.full_name'],
                                      capture_output=True, text=True)
-                  canonical[repo] = r.stdout.strip() if r.returncode == 0 else None
+                  # Empty stdout with a zero exit is not a canonical name;
+                  # treat it as unresolved rather than as a move to "".
+                  canonical[repo] = (r.stdout.strip() or None) if r.returncode == 0 else None
               return canonical[repo]
           for path in sorted(glob.glob('.github/workflows/*.yml') + glob.glob('.github/workflows/*.yaml')):
               for n, line in enumerate(open(path, encoding='utf-8'), 1):
