@@ -158,6 +158,33 @@ owns.
   must land in the workflow-linter's canonical-name assertion as a failing
   check with the new owner named, not as a silent zero-job run.
 
+== Canary results (2026-10-28, PR #107 at `60e1600`)
+
+Measured, not predicted:
+
+* 28 check runs success, 1 neutral, 1 skipped, *zero failed*. The new
+  `patch-bridge.yml` runs and uploads its `not_applicable` envelope;
+  workflow-linter (canonical-name resolver + actionlint + zizmor) and the
+  quality regression harness (incl. the new moved-repository fixture) pass.
+* Exactly three workflow runs still `startup_failure` — fork-governance,
+  governance, secret-scan — each annotated: the canonical
+  `metadatastician/standards` reusables "are not allowed in
+  hyperpolymath/trope-checker" under the selected-actions policy. No other
+  cause remains. The one owner action that completes the repair:
+  Settings → Actions → General → "Allow select actions and reusable
+  workflows" → add `metadatastician/standards/.github/workflows/*@*`
+  (see prompt S1 for the estate-wide version). Note the secret-scan lane
+  carries the ruleset-required `scan / gitleaks` context, so main cannot
+  go green until this lands. The fallback, if the allow-list must not
+  widen, is the fork-local reusable pattern (MetaManifold-WebUI) — viable
+  but deliberately not taken here: it vendors ~1,400 lines of upstream
+  YAML per repo to work around one settings pattern.
+* Two canary defects were found and fixed in the same sweep: a missing
+  `actions.lock` entry makes GitHub's dependency locking refuse a new
+  workflow's actions at startup (allowlist-worded error), and the
+  resolver's canonical query needed the regression harness's `gh` stub to
+  answer canonical-name lookups (now a permanent fixture case).
+
 == Upstream prompts (paste into the named repository)
 
 === S — `metadatastician/standards`
