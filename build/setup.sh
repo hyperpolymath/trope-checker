@@ -5,9 +5,7 @@
 # Detects your shell, platform, and installs prerequisites.
 # Then hands off to `just setup` for project-specific configuration.
 #
-# Usage:
-#   curl -fsSL https://raw.githubusercontent.com/hyperpolymath/rsr-template-repo/main/setup.sh | sh
-#   # or after cloning:
+# Usage (after cloning — deliberately no curl|sh one-liner):
 #   ./setup.sh
 #
 # Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath)
