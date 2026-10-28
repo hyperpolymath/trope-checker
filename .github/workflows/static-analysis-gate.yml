@@ -30,31 +30,32 @@ jobs:
   panic-attack-assail:
     name: panic-attack assail
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
           fetch-depth: 0
-      - name: Install panic-attack (if available)
+      - name: Install panic-attack v2.5.5 from pinned source
         id: install
+        env:
+          # v2.5.5 has a tag but no GitHub Release/assets. Build the exact
+          # tagged commit with its lockfile instead of downloading a
+          # non-existent v1.0.1 binary and silently skipping the scan.
+          PANIC_ATTACK_REV: 2dc1393c0ac982dbad98ba07f78a580d319456a5
         run: |
-          # Try to fetch the latest release binary from the org
-          PA_URL="https://github.com/hyperpolymath/panic-attack/releases/download/v1.0.1/panic-attack-linux-x86_64"
-          if curl --fail --proto '=https' --proto-redir '=https' --tlsv1.2 -fsSL --head "$PA_URL" >/dev/null 2>&1; then
-            curl --fail --proto '=https' --proto-redir '=https' --tlsv1.2 -fsSL -o /usr/local/bin/panic-attack "$PA_URL"
-            chmod +x /usr/local/bin/panic-attack
-            echo "installed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "::warning::panic-attack binary NOT AVAILABLE — assail DID NOT RUN. Empty findings below mean \"not scanned\", not \"clean\"."
-            echo "installed=false" >> "$GITHUB_OUTPUT"
-          fi
+          set -euo pipefail
+          cargo install --git https://github.com/hyperpolymath/panic-attack.git \
+            --rev "$PANIC_ATTACK_REV" --locked --bin panic-attack \
+            --root "$RUNNER_TEMP/panic-attack"
+          "$RUNNER_TEMP/panic-attack/bin/panic-attack" --version
+          echo "$RUNNER_TEMP/panic-attack/bin" >> "$GITHUB_PATH"
+          echo "installed=true" >> "$GITHUB_OUTPUT"
       - name: Run panic-attack assail
         id: assail
         if: steps.install.outputs.installed == 'true'
         run: |
-          # shellcheck disable=SC2129 # step-summary prose: one echo per line, kept reviewable on purpose
           set +e
           panic-attack assail --format json . > panic-attack-findings.json
           PA_EXIT=$?
@@ -130,14 +131,6 @@ jobs:
           | Low      | $STEPS_ASSAIL_OUTPUTS_LOW |
           | **Total**| $STEPS_ASSAIL_OUTPUTS_TOTAL |
           EOF
-      - name: Create stub findings (when panic-attack unavailable)
-        if: steps.install.outputs.installed != 'true'
-        run: |
-          # shellcheck disable=SC2129 # step-summary prose: one echo per line, kept reviewable on purpose
-          echo "[]" > panic-attack-findings.json
-          echo "## panic-attack assail" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "**DID NOT RUN** — panic-attack was not available in this environment. The empty result is absence of evidence, not evidence of absence." >> "$GITHUB_STEP_SUMMARY"
       - name: Upload panic-attack findings
         uses: actions/upload-artifact@v7.0.2
         with:
@@ -196,7 +189,6 @@ jobs:
         id: scan
         if: steps.build.outputs.ready == 'true'
         run: |
-          # shellcheck disable=SC2129 # step-summary prose: one echo per line, kept reviewable on purpose
           set +e
           HYPATIA_FORMAT=json "$HOME/hypatia/hypatia-cli.sh" scan . --exit-zero > hypatia-findings.json
           HYP_EXIT=$?
@@ -274,7 +266,6 @@ jobs:
       - name: Create stub findings (when Hypatia unavailable)
         if: steps.build.outputs.ready != 'true'
         run: |
-          # shellcheck disable=SC2129 # step-summary prose: one echo per line, kept reviewable on purpose
           echo "[]" > hypatia-findings.json
           echo "## Hypatia Scan" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
@@ -298,30 +289,32 @@ jobs:
   patch-bridge-triage:
     name: Patch Bridge CVE triage
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
           fetch-depth: 0
-      - name: Install panic-attack (if available)
+      - name: Install panic-attack v2.5.5 from pinned source
         id: install
+        env:
+          # v2.5.5 has a tag but no GitHub Release/assets. Build the exact
+          # tagged commit with its lockfile instead of downloading a
+          # non-existent v1.0.1 binary and silently skipping the scan.
+          PANIC_ATTACK_REV: 2dc1393c0ac982dbad98ba07f78a580d319456a5
         run: |
-          PA_URL="https://github.com/hyperpolymath/panic-attack/releases/download/v1.0.1/panic-attack-linux-x86_64"
-          if curl --fail --proto '=https' --proto-redir '=https' --tlsv1.2 -fsSL --head "$PA_URL" >/dev/null 2>&1; then
-            curl --fail --proto '=https' --proto-redir '=https' --tlsv1.2 -fsSL -o /usr/local/bin/panic-attack "$PA_URL"
-            chmod +x /usr/local/bin/panic-attack
-            echo "installed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "::warning::panic-attack binary NOT AVAILABLE — Patch Bridge DID NOT RUN. An empty CVE report below means \"not triaged\", not \"no CVEs\"."
-            echo "installed=false" >> "$GITHUB_OUTPUT"
-          fi
+          set -euo pipefail
+          cargo install --git https://github.com/hyperpolymath/panic-attack.git \
+            --rev "$PANIC_ATTACK_REV" --locked --bin panic-attack \
+            --root "$RUNNER_TEMP/panic-attack"
+          "$RUNNER_TEMP/panic-attack/bin/panic-attack" --version
+          echo "$RUNNER_TEMP/panic-attack/bin" >> "$GITHUB_PATH"
+          echo "installed=true" >> "$GITHUB_OUTPUT"
       - name: Run Patch Bridge triage
         id: triage
         if: steps.install.outputs.installed == 'true'
         run: |
-          # shellcheck disable=SC2129 # step-summary prose: one echo per line, kept reviewable on purpose
           set +e
           panic-attack bridge triage --format json . > bridge-report.json 2>&1
           PB_EXIT=$?
@@ -366,14 +359,6 @@ jobs:
           Mitigated CVEs have active controls with soundness proofs.
           Concatenative risks are CVE combinations that multiply severity.
           EOF
-      - name: Create stub report (when unavailable)
-        if: steps.install.outputs.installed != 'true'
-        run: |
-          # shellcheck disable=SC2129 # step-summary prose: one echo per line, kept reviewable on purpose
-          echo '{"cves":[],"mitigated":0,"unmitigable":0,"concatenative":0,"informational":0}' > bridge-report.json
-          echo "## Patch Bridge CVE Triage" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "**DID NOT RUN** — panic-attack was not available in this environment. The empty result is absence of evidence, not evidence of absence." >> "$GITHUB_STEP_SUMMARY"
       - name: Upload bridge report
         uses: actions/upload-artifact@v7.0.2
         with:
@@ -421,7 +406,6 @@ jobs:
           GITHUB_REF: ${{ github.ref }}
           GITHUB_RUN_ID: ${{ github.run_id }}
         run: |
-          # shellcheck disable=SC2129 # step-summary prose: one echo per line, kept reviewable on purpose
           PA_FILE="findings/panic-attack-findings.json"
           HYP_FILE="findings/hypatia-findings.json"
 

@@ -16,6 +16,7 @@ permissions:
 jobs:
   estate-audit:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       # fetch-depth: 0 is load-bearing for the Affirmation Document Gate: it
       # classifies the signature on the commit that last changed
@@ -59,9 +60,6 @@ jobs:
         
       - name: Affirmation Document Gate
         if: ${{ !cancelled() }}
-        env:
-          # Supplement the historical upstream key with GitHub's current key.
-          AFFIRMATION_TRUSTED_GPG_KEYS: .github/affirmation-trusted/github-web-flow.gpg
         run: bash .github/affirmation-trusted/check.sh
         
       - name: Academic Referencing Gate
@@ -129,6 +127,7 @@ jobs:
         uses: hyperpolymath/cicd-suite/actions/trust-humans-check@bf7dd95cf49733019343ff485c2f45c6b261839c
         
       - name: Are We UnAPI Gate (Secret Scanning)
+        if: ${{ !cancelled() }}
         uses: hyperpolymath/cicd-suite/actions/secrets-check@bf7dd95cf49733019343ff485c2f45c6b261839c
         
       - name: Reasonably Good Token Validation Gate

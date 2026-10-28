@@ -52,7 +52,6 @@ jobs:
         env:
           STEPS_DETECT_OUTPUTS_COUNT: ${{ steps.detect.outputs.count }}
         run: |
-          # shellcheck disable=SC2129 # step-summary prose: one echo per line, kept reviewable on purpose
           DEED_COUNT="$STEPS_DETECT_OUTPUTS_COUNT"
           if [ "$DEED_COUNT" -eq 0 ]; then
             cat <<'EOF' >> "$GITHUB_STEP_SUMMARY"
@@ -103,7 +102,6 @@ jobs:
           STEPS_DETECT_OUTPUTS_K9_COUNT: ${{ steps.detect.outputs.k9_count }}
           STEPS_DETECT_OUTPUTS_CONFIG_COUNT: ${{ steps.detect.outputs.config_count }}
         run: |
-          # shellcheck disable=SC2129 # step-summary prose: one echo per line, kept reviewable on purpose
           K9_COUNT="$STEPS_DETECT_OUTPUTS_K9_COUNT"
           CFG_COUNT="$STEPS_DETECT_OUTPUTS_CONFIG_COUNT"
           if [ "$K9_COUNT" -eq 0 ]; then
@@ -137,7 +135,6 @@ jobs:
       - name: Scan for invisible characters
         id: lint
         run: |
-          # shellcheck disable=SC2129 # step-summary prose: one echo per line, kept reviewable on purpose
           # Inline invisible character detection (from empty-linter's core patterns).
           # Checks for: zero-width spaces, zero-width joiners, BOM, soft hyphens,
           # non-breaking spaces, null bytes, and other invisible Unicode in source files.
@@ -174,7 +171,6 @@ jobs:
           STEPS_LINT_OUTPUTS_READY: ${{ steps.lint.outputs.ready }}
           STEPS_LINT_OUTPUTS_FINDINGS: ${{ steps.lint.outputs.findings }}
         run: |
-          # shellcheck disable=SC2129 # step-summary prose: one echo per line, kept reviewable on purpose
           if [ "$STEPS_LINT_OUTPUTS_READY" = "true" ]; then
             FINDINGS="$STEPS_LINT_OUTPUTS_FINDINGS"
             if [ "$FINDINGS" -gt 0 ] 2>/dev/null; then
@@ -209,7 +205,6 @@ jobs:
       - name: Check for Groove manifest
         id: groove
         run: |
-          # shellcheck disable=SC2129 # step-summary prose: one echo per line, kept reviewable on purpose
           # Check for static or dynamic Groove endpoints
           HAS_MANIFEST="false"
           HAS_GROOVE_CODE="false"
@@ -250,7 +245,6 @@ jobs:
           STEPS_GROOVE_OUTPUTS_HAS_GROOVE_CODE: ${{ steps.groove.outputs.has_groove_code }}
           STEPS_GROOVE_OUTPUTS_HAS_SERVER: ${{ steps.groove.outputs.has_server }}
         run: |
-          # shellcheck disable=SC2129 # step-summary prose: one echo per line, kept reviewable on purpose
           echo "## Groove Protocol Check" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "| Check | Status |" >> "$GITHUB_STEP_SUMMARY"
@@ -302,7 +296,6 @@ jobs:
         env:
           STEPS_ECLEX_OUTPUTS_HAS_MANIFEST: ${{ steps.eclex.outputs.has_manifest }}
         run: |
-          # shellcheck disable=SC2129 # step-summary prose: one echo per line, kept reviewable on purpose
           if [ "$STEPS_ECLEX_OUTPUTS_HAS_MANIFEST" = "true" ]; then
             echo "## Eclexiaiser Manifest" >> "$GITHUB_STEP_SUMMARY"
             echo "" >> "$GITHUB_STEP_SUMMARY"

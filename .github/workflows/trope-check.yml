@@ -27,6 +27,7 @@ permissions:
 jobs:
   ir-wellformed:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7.0.1
         with:
@@ -144,6 +145,7 @@ jobs:
 
   rust-fast-core:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7.0.1
         with:

@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: MPL-2.0
+# actionlint project config (auto-discovered). Everything actionlint and its
+# embedded ShellCheck report is an error here, with ONE recorded exception:
+#
+# SC2129 ("group individual >> redirects") in run: blocks that emit GitHub
+# step-summary prose. One `echo ... >> "$GITHUB_STEP_SUMMARY"` per markdown
+# line keeps the summary text reviewable in the workflow source; brace-grouping
+# the sequences would bury prose in shell syntax for zero behavioural gain.
+# (Tracked .sh files get no such pass: quality.yml runs them at
+# --severity=style with an empty ignore list.)
+ignore:
+  - 'shellcheck reported issue in this script: SC2129:'

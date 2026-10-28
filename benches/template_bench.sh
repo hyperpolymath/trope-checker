@@ -14,6 +14,8 @@ OUTPUT_FORMAT="${2:-human}"  # human | json | csv
 BLUE='\033[0;34m'
 GREEN='\033[0;32m'
 NC='\033[0m' # No Color
+BENCH_RULE='═══════════════════════════════════════════════════════════════════════════════'
+SKIPPED='skipped'
 
 log_info() {
     echo -e "${BLUE}→${NC} $*"
@@ -27,9 +29,9 @@ log_pass() {
 # /usr/bin/time probe set a variable nothing ever read.)
 
 echo ""
-echo "═══════════════════════════════════════════════════════════════════════════════"
+echo "$BENCH_RULE"
 echo "Template Benchmarks"
-echo "═══════════════════════════════════════════════════════════════════════════════"
+echo "$BENCH_RULE"
 echo ""
 
 declare -A results
@@ -41,7 +43,7 @@ declare -A results
 log_info "Running template validation benchmark"
 
 # Warm-up run
-if [ -f "$REPO_ROOT/scripts/validate-template.sh" ]; then
+if [[ -f "$REPO_ROOT/scripts/validate-template.sh" ]]; then
     bash "$REPO_ROOT/scripts/validate-template.sh" "$REPO_ROOT" 0 > /dev/null 2>&1 || true
 fi
 
@@ -58,7 +60,7 @@ for i in $(seq 1 $BENCH_RUNS); do
     RUN_TIME=$(( (END - START) / 1000000 ))
     TOTAL_TIME=$(( TOTAL_TIME + RUN_TIME ))
 
-    [ "$OUTPUT_FORMAT" = "human" ] && echo "  Run $i: ${RUN_TIME}ms"
+    [[ "$OUTPUT_FORMAT" = "human" ]] && echo "  Run $i: ${RUN_TIME}ms"
 done
 
 AVG_VALIDATION_TIME=$(( TOTAL_TIME / BENCH_RUNS ))
@@ -73,7 +75,7 @@ log_info "Running Zig build benchmark"
 
 if ! command -v zig &> /dev/null; then
     echo "  ⚠ Zig compiler not found - skipping Zig build benchmark"
-    results[zig_build]="skipped"
+    results[zig_build]="$SKIPPED"
 else
     cd "$REPO_ROOT/src/interface/ffi"
 
@@ -94,7 +96,7 @@ else
         RUN_TIME=$(( (END - START) / 1000000 ))
         TOTAL_TIME=$(( TOTAL_TIME + RUN_TIME ))
 
-        [ "$OUTPUT_FORMAT" = "human" ] && echo "  Run $i: ${RUN_TIME}ms"
+        [[ "$OUTPUT_FORMAT" = "human" ]] && echo "  Run $i: ${RUN_TIME}ms"
     done
 
     AVG_BUILD_TIME=$(( TOTAL_TIME / BENCH_RUNS ))
@@ -112,7 +114,7 @@ log_info "Running Zig test benchmark"
 
 if ! command -v zig &> /dev/null; then
     echo "  ⚠ Zig compiler not found - skipping Zig test benchmark"
-    results[zig_test]="skipped"
+    results[zig_test]="$SKIPPED"
 else
     cd "$REPO_ROOT/src/interface/ffi"
 
@@ -140,7 +142,7 @@ fi
 
 log_info "Running workflow validation benchmark"
 
-if [ -f "$REPO_ROOT/tests/workflows/validate_workflows_test.sh" ]; then
+if [[ -f "$REPO_ROOT/tests/workflows/validate_workflows_test.sh" ]]; then
     START=$(date +%s%N)
     bash "$REPO_ROOT/tests/workflows/validate_workflows_test.sh" "$REPO_ROOT/.github/workflows" > /dev/null 2>&1 || true
     END=$(date +%s%N)
@@ -156,7 +158,7 @@ fi
 
 log_info "Running template instantiation benchmark"
 
-if [ -f "$REPO_ROOT/tests/e2e/template_instantiation_test.sh" ]; then
+if [[ -f "$REPO_ROOT/tests/e2e/template_instantiation_test.sh" ]]; then
     START=$(date +%s%N)
     bash "$REPO_ROOT/tests/e2e/template_instantiation_test.sh" "$REPO_ROOT" > /dev/null 2>&1 || true
     END=$(date +%s%N)
@@ -171,12 +173,12 @@ fi
 #==============================================================================
 
 echo ""
-echo "═══════════════════════════════════════════════════════════════════════════════"
+echo "$BENCH_RULE"
 echo "BENCHMARK RESULTS"
-echo "═══════════════════════════════════════════════════════════════════════════════"
+echo "$BENCH_RULE"
 echo ""
 
-if [ "$OUTPUT_FORMAT" = "json" ]; then
+if [[ "$OUTPUT_FORMAT" = "json" ]]; then
     echo "{"
     echo "  \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\","
     echo "  \"repo\": \"$REPO_ROOT\","
@@ -185,9 +187,9 @@ if [ "$OUTPUT_FORMAT" = "json" ]; then
     count=0
     for key in "${!results[@]}"; do
         value="${results[$key]}"
-        [ $count -gt 0 ] && echo ","
-        if [ "$value" = "skipped" ]; then
-            echo -n "    \"$key\": \"skipped\""
+        [[ $count -gt 0 ]] && echo ","
+        if [[ "$value" = "$SKIPPED" ]]; then
+            echo -n "    \"$key\": \"$SKIPPED\""
         else
             echo -n "    \"$key\": $value"
         fi
@@ -196,11 +198,11 @@ if [ "$OUTPUT_FORMAT" = "json" ]; then
     echo ""
     echo "  }"
     echo "}"
-elif [ "$OUTPUT_FORMAT" = "csv" ]; then
+elif [[ "$OUTPUT_FORMAT" = "csv" ]]; then
     echo "metric,value_ms,timestamp"
     for key in "${!results[@]}"; do
         value="${results[$key]}"
-        if [ "$value" != "skipped" ]; then
+        if [[ "$value" != "$SKIPPED" ]]; then
             echo "$key,$value,$(date -u +%Y-%m-%dT%H:%M:%SZ)"
         fi
     done
@@ -208,7 +210,7 @@ else
     # Human-readable format
     for key in "${!results[@]}"; do
         value="${results[$key]}"
-        if [ "$value" = "skipped" ]; then
+        if [[ "$value" = "$SKIPPED" ]]; then
             printf "  %-30s %s\n" "$key:" "SKIPPED"
         else
             printf "  %-30s %5d ms\n" "$key:" "$value"

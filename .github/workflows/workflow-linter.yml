@@ -18,10 +18,12 @@ on:
   push:
     paths:
       - '.github/workflows/**'
+      - '.github/actionlint.yaml'
       - '.github/zizmor.yml'
   pull_request:
     paths:
       - '.github/workflows/**'
+      - '.github/actionlint.yaml'
       - '.github/zizmor.yml'
   workflow_dispatch:
 

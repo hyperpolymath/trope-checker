@@ -30,6 +30,7 @@ key="$scratch/public.asc"
 gpg --armor --export "$fingerprint" >"$key"
 case_log="$scratch/case.log"
 checks=0
+SIGNATURE_ERROR='::error::Affirmation commit signature'
 
 fail() {
   echo "FAIL: $*" >&2
@@ -45,7 +46,8 @@ expect_exit() {
 }
 
 assert_contains() {
-  grep -Fq -- "$1" "$case_log" || fail "missing diagnostic: $1"
+  local expected_text=$1
+  grep -Fq -- "$expected_text" "$case_log" || fail "missing diagnostic: $expected_text"
 }
 
 pass() {
@@ -70,8 +72,9 @@ new_repo() {
 }
 
 gate() {
-  expect_exit "$1" env GITHUB_WORKSPACE="$repo" AFFIRMATION_REQUIRED=true \
-    AFFIRMATION_TRUSTED_GPG_KEYS="${2:-}" AFFIRMATION_ALLOWED_SIGNERS= bash "$CHECK"
+  local expected_exit=$1 trusted_keys=${2:-}
+  expect_exit "$expected_exit" env GITHUB_WORKSPACE="$repo" AFFIRMATION_REQUIRED=true \
+    AFFIRMATION_TRUSTED_GPG_KEYS="$trusted_keys" AFFIRMATION_ALLOWED_SIGNERS= bash "$CHECK"
 }
 
 new_repo
@@ -90,7 +93,7 @@ if cmp -s "$repo/original-commit" "$repo/tampered-commit"; then fail 'commit was
 tampered=$(fixture_git hash-object -t commit -w "$repo/tampered-commit")
 fixture_git reset -q --hard "$tampered"
 gate 1 "$key"
-assert_contains '::error::Affirmation commit signature'
+assert_contains "$SIGNATURE_ERROR"
 pass 'tampered signature fails'
 
 new_repo
@@ -104,7 +107,7 @@ SH
 chmod 700 "$repo/broken-gpg"
 fixture_git config gpg.program "$repo/broken-gpg"
 gate 1 "$key"
-assert_contains '::error::Affirmation commit signature'
+assert_contains "$SIGNATURE_ERROR"
 pass 'other verification error fails'
 
 new_repo
@@ -119,7 +122,7 @@ SH
 chmod 700 "$repo/broken-gpg"
 fixture_git config gpg.program "$repo/broken-gpg"
 gate 1
-assert_contains '::error::Affirmation commit signature'
+assert_contains "$SIGNATURE_ERROR"
 pass 'missing key does not hide another verification error'
 
 new_repo
@@ -144,7 +147,7 @@ sed 's/:-----BEGIN/-----BEGIN/g' "$GNUPGHOME/openpgp-revocs.d/$fingerprint.rev" 
 gpg --homedir "$revoked_home" --batch --import "$scratch/revocation.asc" >>"$scratch/revoke.log" 2>&1
 gpg --homedir "$revoked_home" --armor --export "$fingerprint" >"$scratch/revoked.asc"
 gate 1 "$scratch/revoked.asc"
-assert_contains '::error::Affirmation commit signature'
+assert_contains "$SIGNATURE_ERROR"
 pass 'revoked signature fails'
 
 # Extract and execute the repository recipe, with only lake replaced by a stub.

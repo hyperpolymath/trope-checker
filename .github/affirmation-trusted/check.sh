@@ -18,7 +18,7 @@ done
 
 if [[ -z "$aff_file" ]]; then
   if [[ "$required" == "true" ]]; then
-    echo "::error::AFFIRMATION.adoc is required by the declared governance-tier capability."
+    echo "::error::AFFIRMATION.adoc is required by the declared governance-tier capability." >&2
     exit 1
   fi
   echo "::notice::AFFIRMATION is not applicable: governance-tier was not required."
@@ -30,7 +30,7 @@ echo "Found AFFIRMATION document: $aff_file"
 
 substantive_lines=$(awk '!/^[[:space:]]*(#|\/\/|;|$)/ { count++ } END { print count + 0 }' "$path")
 if (( substantive_lines < 5 )); then
-  echo "::error::$aff_file has only $substantive_lines substantive lines; it is a stub, not an affirmation."
+  echo "::error::$aff_file has only $substantive_lines substantive lines; it is a stub, not an affirmation." >&2
   exit 1
 fi
 
@@ -42,7 +42,7 @@ fi
 placeholders=$(sed -E 's/`[^`]*`//g' "$path" |
   grep -niE '\{\{|TODO: update|<PROJECT|YOUR_PROJECT|lorem ipsum|example\.com' || true)
 if [[ -n "$placeholders" ]]; then
-  echo "::error::$aff_file contains template placeholders."
+  echo "::error::$aff_file contains template placeholders." >&2
   printf '%s\n' "$placeholders" | head -5
   exit 1
 fi
@@ -65,7 +65,8 @@ fi
 # root, so name such a file only where the tree is protected.
 here=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 github_fingerprints=" 968479A1AFF927E37D1A566BB5690EEEBB952194 5DE3E0509C47EA3CF04A42D34AEE18F83AFDEB23 "
-trusted_gpg_keys=("$here/github-web-flow-previous.gpg")
+vendored_gpg_keys=("$here/github-web-flow.gpg" "$here/github-web-flow-previous.gpg")
+trusted_gpg_keys=()
 if [[ -n "${AFFIRMATION_TRUSTED_GPG_KEYS:-}" ]]; then
   extra_keys=$AFFIRMATION_TRUSTED_GPG_KEYS
   [[ "$extra_keys" == /* ]] || extra_keys=$root/$extra_keys
@@ -82,11 +83,42 @@ fi
 # ultimate owner trust, and print its path. If a key file cannot be imported
 # the home is left empty, so nothing is trusted — the runner's own keyring is
 # never consulted. Prints nothing only if gpg is absent.
+primary_fingerprints_in_home() {
+  local keyring_home=$1
+  gpg --batch --homedir "$keyring_home" --with-colons --fingerprint 2>/dev/null \
+    | awk -F: '$1 == "pub" { primary = 1; next } primary && $1 == "fpr" { print $10; primary = 0 }'
+}
+
 make_trusted_gnupg_home() {
-  local keyring_home key_file
+  local keyring_home key_file imported_fpr
+  local -a imported_fprs=()
   command -v gpg >/dev/null 2>&1 || return 0
   keyring_home=$(mktemp -d)
   chmod 700 "$keyring_home"
+  for key_file in "${vendored_gpg_keys[@]}"; do
+    if [[ ! -s "$key_file" ]] \
+      || ! gpg --batch --quiet --homedir "$keyring_home" --import "$key_file" >/dev/null 2>&1; then
+      echo "::warning::Trusted PGP key file could not be imported: $key_file" >&2
+      rm -rf -- "$keyring_home"
+      keyring_home=$(mktemp -d)
+      chmod 700 "$keyring_home"
+      printf '%s\n' "$keyring_home"
+      return 0
+    fi
+  done
+  mapfile -t imported_fprs < <(primary_fingerprints_in_home "$keyring_home")
+  if ((${#imported_fprs[@]} != ${#vendored_gpg_keys[@]})); then
+    echo "::error::Vendored GitHub web-flow key material did not import exactly the expected keys." >&2
+    rm -rf -- "$keyring_home"
+    return 1
+  fi
+  for imported_fpr in "${imported_fprs[@]}"; do
+    if [[ "$github_fingerprints" != *" $imported_fpr "* ]]; then
+      echo "::error::Vendored GitHub web-flow key fingerprint is not pinned: $imported_fpr" >&2
+      rm -rf -- "$keyring_home"
+      return 1
+    fi
+  done
   for key_file in "${trusted_gpg_keys[@]}"; do
     if [[ ! -s "$key_file" ]] \
       || ! gpg --batch --quiet --homedir "$keyring_home" --import "$key_file" >/dev/null 2>&1; then
@@ -170,7 +202,7 @@ case "$signature" in
      ;;
   U) echo "::notice::Affirmation commit has a valid signature from an untrusted or locally unknown key${signer:+: $signer}." ;;
   K) echo "::notice::Affirmation commit signature cannot be checked: public key unavailable." ;;
-  B|R|E) echo "::error::Affirmation commit signature is bad, revoked, or failed verification."; exit 1 ;;
+  B|R|E) echo "::error::Affirmation commit signature is bad, revoked, or failed verification." >&2; exit 1 ;;
   *) echo "::notice::Affirmation commit signature could not be verified from the available Git history." ;;
 esac
 

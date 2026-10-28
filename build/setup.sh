@@ -31,6 +31,22 @@ fail() { printf "  %s[FAIL]%s %s\n" "$RED" "$RESET" "$1"; }
 warn() { printf "  %s[WARN]%s %s\n" "$YELLOW" "$RESET" "$1"; }
 info() { printf "  %s[INFO]%s %s\n" "$CYAN" "$RESET" "$1"; }
 
+# Run a command with elevation when the platform provides it. Root shells and
+# containers should not fail merely because sudo is absent; OpenBSD's doas is
+# the native equivalent.
+as_root() {
+    if [ "$(id -u 2>/dev/null || echo 1)" = "0" ]; then
+        "$@"
+    elif command -v sudo >/dev/null 2>&1; then
+        sudo "$@"
+    elif command -v doas >/dev/null 2>&1; then
+        doas "$@"
+    else
+        fail "Root privileges required but neither sudo nor doas is available"
+        return 127
+    fi
+}
+
 # ── Shell Detection ──
 detect_shell() {
     # Check the actual running shell, not just $SHELL
@@ -120,38 +136,170 @@ detect_platform() {
             elif command -v choco >/dev/null 2>&1; then PKG_MGR="choco"
             fi
             ;;
-        FreeBSD*)
+        FreeBSD*|DragonFly*)
             OS="freebsd"
             DISTRO="freebsd"
             PKG_MGR="pkg"
+            ;;
+        OpenBSD*)
+            OS="openbsd"
+            DISTRO="openbsd"
+            PKG_MGR="pkg_add"
+            ;;
+        NetBSD*)
+            OS="netbsd"
+            DISTRO="netbsd"
+            if command -v pkgin >/dev/null 2>&1; then PKG_MGR="pkgin"
+            else PKG_MGR="pkg_add"
+            fi
             ;;
     esac
 }
 
 # ── Install just ──
-# Install the pinned just release in /usr/local/bin from a checksum-verified
-# tarball (never curl|bash - CWE-494). Supports Linux x86_64 only; uses sudo
-# when /usr/local/bin is not writable. Returns 1 for an unsupported platform
-# or a checksum mismatch; removes the download after a mismatch or install attempt.
+# Install the pinned just release from a checksum-verified archive (never
+# curl|bash - CWE-494). The matrix is exactly the vendor's 1.59.0 release
+# matrix: Linux (x86_64, aarch64, arm, armv7, riscv64gc, loongarch64),
+# macOS and Windows/MSYS (x86_64, aarch64). Other platforms use their package
+# manager in install_just below or fail with manual instructions. Returns 1
+# for an unsupported platform, a download/checksum failure, or an install
+# failure; the temporary download is removed on every path.
 install_just_pinned() {
-    _just_version="1.59.0"; _just_sha="409044617b6f06517c1035e55ca38c8c856ff8b650e41bc2aa1ef82d5903a23e"
-    if [ "$(uname -s)-$(uname -m)" != "Linux-x86_64" ]; then
-        fail "No pinned 'just' fallback for this platform - install manually: https://just.systems/"
+    _just_version="1.59.0"
+    _just_system=$(uname -s 2>/dev/null || echo unknown)
+    _just_machine=$(uname -m 2>/dev/null || echo unknown)
+
+    case "$_just_system" in
+        Linux) _just_os="unknown-linux-musl"; _just_ext="tar.gz"; _just_binary="just" ;;
+        Darwin) _just_os="apple-darwin"; _just_ext="tar.gz"; _just_binary="just" ;;
+        CYGWIN*|MINGW*|MSYS*) _just_os="pc-windows-msvc"; _just_ext="zip"; _just_binary="just.exe" ;;
+        *)
+            fail "No pinned 'just' archive for $_just_system/$_just_machine - install manually: https://just.systems/"
+            return 1
+            ;;
+    esac
+
+    case "$_just_machine" in
+        x86_64|amd64) _just_arch="x86_64" ;;
+        aarch64|arm64) _just_arch="aarch64" ;;
+        armv7*) _just_arch="armv7" ;;
+        armv6*|armhf|arm) _just_arch="arm" ;;
+        riscv64) _just_arch="riscv64gc" ;;
+        loongarch64) _just_arch="loongarch64" ;;
+        *)
+            fail "No pinned 'just' archive for $_just_system/$_just_machine - install manually: https://just.systems/"
+            return 1
+            ;;
+    esac
+
+    if [ "$_just_os" != "unknown-linux-musl" ] \
+        && [ "$_just_arch" != "x86_64" ] && [ "$_just_arch" != "aarch64" ]; then
+        fail "No pinned 'just' archive for $_just_system/$_just_machine - install manually: https://just.systems/"
         return 1
     fi
+    # The Linux ARM release triples spell the hard-float ABI out.
+    if [ "$_just_os" = "unknown-linux-musl" ] \
+        && { [ "$_just_arch" = "arm" ] || [ "$_just_arch" = "armv7" ]; }; then
+        _just_os="unknown-linux-musleabihf"
+    fi
+
+    _just_asset="just-${_just_version}-${_just_arch}-${_just_os}.${_just_ext}"
+    case "$_just_asset" in
+        just-1.59.0-aarch64-apple-darwin.tar.gz) _just_sha="6574cea774ed4cae12e24b6aa11857de33e80dab4667cf628fd5840df96a2a9d" ;;
+        just-1.59.0-aarch64-pc-windows-msvc.zip) _just_sha="a72808bc8f8028c25aaae87cf26405d2bd85d2769a779380b344c69607216971" ;;
+        just-1.59.0-aarch64-unknown-linux-musl.tar.gz) _just_sha="23871b1702bfd550fb5f901778fd4290ecf2ee034a45a889fbe96d89b188086d" ;;
+        just-1.59.0-arm-unknown-linux-musleabihf.tar.gz) _just_sha="080ea650f9aef32e0b371af71dc0c8dc3a355f74007ebbe350dc31d2fb510a02" ;;
+        just-1.59.0-armv7-unknown-linux-musleabihf.tar.gz) _just_sha="928e2a0fe5fcade06415c55210608efefe43e985a757ded3e219ac4a13b6ed0e" ;;
+        just-1.59.0-loongarch64-unknown-linux-musl.tar.gz) _just_sha="c6a684e2094e5a762e45765e35e7beac037f83fa44a521cd40221caa3a170179" ;;
+        just-1.59.0-riscv64gc-unknown-linux-musl.tar.gz) _just_sha="698951bdc89869cd8a3c0229402944c628e67d1e41e9179d8ef2b35301b666b4" ;;
+        just-1.59.0-x86_64-apple-darwin.tar.gz) _just_sha="036ead9df9bc31dbae9934ae3b4236ed124d0bafcffd33439460ae084d5c9cb7" ;;
+        just-1.59.0-x86_64-pc-windows-msvc.zip) _just_sha="9c5463e2d0974e31bee71346aa5cbf19167de1585a4abc1bae7b3b04604ea9c0" ;;
+        just-1.59.0-x86_64-unknown-linux-musl.tar.gz) _just_sha="409044617b6f06517c1035e55ca38c8c856ff8b650e41bc2aa1ef82d5903a23e" ;;
+        *) fail "No checksum pinned for $_just_asset"; return 1 ;;
+    esac
     _just_tmp=$(mktemp -d)
-    curl --fail --proto '=https' --proto-redir '=https' --tlsv1.2 -sSL -o "$_just_tmp/just.tar.gz" \
-        "https://github.com/casey/just/releases/download/${_just_version}/just-${_just_version}-x86_64-unknown-linux-musl.tar.gz"
-    echo "${_just_sha}  $_just_tmp/just.tar.gz" | sha256sum -c - >/dev/null || { fail "just tarball checksum mismatch"; rm -rf "$_just_tmp"; return 1; }
-    tar -xzf "$_just_tmp/just.tar.gz" -C "$_just_tmp" just
-    if [ -w /usr/local/bin ]; then install -m 0755 "$_just_tmp/just" /usr/local/bin/just; else sudo install -m 0755 "$_just_tmp/just" /usr/local/bin/just; fi
+    if ! curl --fail --proto '=https' --proto-redir '=https' --tlsv1.2 -sSL \
+        -o "$_just_tmp/$_just_asset" \
+        "https://github.com/casey/just/releases/download/${_just_version}/${_just_asset}"; then
+        fail "Could not download pinned just archive $_just_asset"
+        rm -rf "$_just_tmp"
+        return 1
+    fi
+
+    if command -v sha256sum >/dev/null 2>&1; then
+        printf '%s  %s\n' "$_just_sha" "$_just_tmp/$_just_asset" | sha256sum -c - >/dev/null 2>&1
+    elif command -v shasum >/dev/null 2>&1; then
+        printf '%s  %s\n' "$_just_sha" "$_just_tmp/$_just_asset" | shasum -a 256 -c - >/dev/null 2>&1
+    else
+        fail "Neither sha256sum nor shasum is available to verify the just archive"
+        rm -rf "$_just_tmp"
+        return 1
+    fi || {
+        fail "just archive checksum mismatch"
+        rm -rf "$_just_tmp"
+        return 1
+    }
+
+    if [ "$_just_ext" = "zip" ]; then
+        if ! command -v unzip >/dev/null 2>&1; then
+            fail "unzip is required to extract the pinned Windows just archive"
+            rm -rf "$_just_tmp"
+            return 1
+        fi
+        unzip -q "$_just_tmp/$_just_asset" "$_just_binary" -d "$_just_tmp" || {
+            fail "Could not extract $_just_binary from $_just_asset"
+            rm -rf "$_just_tmp"
+            return 1
+        }
+    else
+        tar -xzf "$_just_tmp/$_just_asset" -C "$_just_tmp" "$_just_binary" || {
+            fail "Could not extract $_just_binary from $_just_asset"
+            rm -rf "$_just_tmp"
+            return 1
+        }
+    fi
+
+    if [ -w /usr/local/bin ]; then
+        _just_dest="/usr/local/bin"
+        _just_elevated="false"
+    elif [ "$(id -u 2>/dev/null || echo 1)" = "0" ] \
+        || command -v sudo >/dev/null 2>&1 || command -v doas >/dev/null 2>&1; then
+        _just_dest="/usr/local/bin"
+        _just_elevated="true"
+    elif [ -n "${HOME:-}" ]; then
+        _just_dest="$HOME/.local/bin"
+        _just_elevated="false"
+        mkdir -p "$_just_dest"
+        warn "Installing just into $_just_dest; ensure it is on PATH for future shells"
+    else
+        fail "No writable install directory for just"
+        rm -rf "$_just_tmp"
+        return 1
+    fi
+
+    if [ "$_just_elevated" = "true" ] && [ ! -w "$_just_dest" ]; then
+        as_root install -m 0755 "$_just_tmp/$_just_binary" "$_just_dest/$_just_binary" || {
+            fail "Could not install just into $_just_dest"
+            rm -rf "$_just_tmp"
+            return 1
+        }
+    else
+        install -m 0755 "$_just_tmp/$_just_binary" "$_just_dest/$_just_binary" || {
+            fail "Could not install just into $_just_dest"
+            rm -rf "$_just_tmp"
+            return 1
+        }
+    fi
+    PATH="$_just_dest:$PATH"
+    export PATH
     rm -rf "$_just_tmp"
 }
 
 # Ensure just is on PATH, reusing an existing installation when available.
-# Uses PKG_MGR from detect_platform; a failed apt install or an unhandled
-# manager uses the pinned Linux x86_64 fallback. May install system packages
-# or write to /usr/local/bin using sudo. Returns 1 if just remains unavailable.
+# Every PKG_MGR value emitted by detect_platform has an arm here; an unknown
+# manager uses the checksum-pinned vendor archive matrix above. May install
+# system packages or write to an install directory with elevation. Returns 1
+# if just remains unavailable.
 install_just() {
     if command -v just >/dev/null 2>&1; then
         ok "just already installed: $(just --version 2>/dev/null | head -1)"
@@ -161,20 +309,26 @@ install_just() {
     info "Installing just (task runner)..."
 
     case "$PKG_MGR" in
-        dnf)        sudo dnf install -y just ;;
-        apt)        sudo apt-get install -y just 2>/dev/null || {
-                        # just not in older apt repos - pinned tarball fallback
+        dnf)        as_root dnf install -y just ;;
+        apt)        as_root apt-get install -y just 2>/dev/null || {
+                        # just is absent from older apt repositories.
                         install_just_pinned
                     } ;;
-        pacman)     sudo pacman -S --noconfirm just ;;
-        apk)        sudo apk add just ;;
+        pacman)     as_root pacman -S --noconfirm just ;;
+        apk)        as_root apk add just ;;
+        zypper)     as_root zypper --non-interactive install just ;;
         brew)       brew install just ;;
+        macports)   as_root port install just ;;
         scoop)      scoop install just ;;
-        winget)     winget install Casey.Just ;;
-        rpm-ostree) sudo rpm-ostree install just ;;
+        winget)     winget install --exact --id Casey.Just ;;
+        choco)      choco install just -y ;;
+        rpm-ostree) as_root rpm-ostree install just ;;
         guix)       guix install just ;;
+        pkg)        as_root pkg install -y just ;;
+        pkg_add)    as_root pkg_add just ;;
+        pkgin)      as_root pkgin -y install just ;;
         *)
-            info "Using pinned just tarball..."
+            info "Using the pinned just release archive..."
             install_just_pinned
             ;;
     esac

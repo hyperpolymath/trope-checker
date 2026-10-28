@@ -210,7 +210,7 @@ jobs:
         include:
           # grade-factorisation imports grade-boundary; both are built.
           - pkg: grade-boundary
-            modules: "GradeBoundary TierTwoComplete L4Monotonicity EffectAtoms GradeRatified"
+            modules: "GradeBoundary TierTwoComplete L4Monotonicity EffectAtoms GradeRatified EffectAtomsRatified"
           - pkg: grade-factorisation
             modules: "GradeFactorisation GradeFactorisationR"
     steps:
@@ -234,7 +234,11 @@ jobs:
           use-github-cache: true
           leanchecker: true
           leanchecker-args: "${{ matrix.modules }}"
-          axiom-audit: true
+          # The next step runs the same pinned axiom-audit over EVERY module.
+          # lean-action's built-in form audits only its auto-detected first
+          # lean_lib and cannot separate Lean 4.16 compiler-generated
+          # declarations (`_cstage*`, `lcProof`, …) from source declarations.
+          axiom-audit: false
           axiom-audit-allow: "propext,Classical.choice,Quot.sound"
       - name: Axiom-audit EVERY module of ${{ matrix.pkg }} against the allowlist
         shell: bash
@@ -259,22 +263,74 @@ jobs:
           ( cd "$work/axiom-audit" && lake build )
           modules_csv="${LEAN_MODULES// /,}"
           for m in $LEAN_MODULES; do
+            set +e
             lake env "$work/axiom-audit/.lake/build/bin/axiom-audit" \
               --root "$m" --modules "$modules_csv" \
               --allow "propext,Classical.choice,Quot.sound" \
               --json > "$work/report-$m.json"
+            audit_status=$?
+            set -e
+            # Exit 1 is the tool's machine-readable violation report; jq below
+            # decides it. Anything above 1 is a usage/IO failure, not an audit.
+            if [ "$audit_status" -gt 1 ]; then
+              cat "$work/report-$m.json"
+              echo "::error::axiom-audit failed to run for $m (exit $audit_status)"
+              exit 1
+            fi
           done
           report="$work/report.json"
-          jq -s '{ok: (all(.[]; .ok)), audited: (map(.audited) | add), axiomsUsed: (map(.axiomsUsed) | add | unique)}' \
+          # Lean 4.16 stores compiler IR (`_cstage*`, equation/match auxiliaries)
+          # as environment constants and axiom-audit v0.1.2 audits them as if
+          # they were source declarations. Ignore those generated declaration
+          # candidates, after first unmangling `_private...` so a private
+          # theorem remains audited. Every source declaration still fails on
+          # any axiom outside the allowlist; only the compiler's own
+          # `lcProof`/`lcUnreachable`/`_cstage*` placeholders are removed from
+          # an otherwise-source declaration's dependency list.
+          jq -s '
+            def user_name:
+              (split(".") as $parts
+               | if $parts[0] == "_private" then
+                   ([$parts | to_entries[] | select(.key > 0 and (.value | test("^[0-9]+$"))) | .key][0] // 0) as $idx
+                   | ($parts[$idx + 1:] | join("."))
+                 else . end);
+            def internal_decl:
+              (user_name | split(".") | any(
+                startswith("_")
+                or . == "lcProof"
+                or . == "lcUnreachable"
+                or test("^(match|eq)_[0-9]+")
+                or test("(_cstage|_spec|_unfold)")));
+            def compiler_placeholder:
+              (split(".") | any(. == "lcProof" or . == "lcUnreachable" or test("^_cstage[0-9]*$")));
+            def filtered_axioms: ((.axiomsUsed // []) | map(select(compiler_placeholder | not)));
+            def filtered_violations:
+              [(.violations[]? | select(.decl | internal_decl | not)
+                | .axioms |= map(select(compiler_placeholder | not))
+                | select(.axioms | length > 0))];
+            def internal_violations: [(.violations[]? | select(.decl | internal_decl))];
+            {
+              ok: all(.[];
+                (.audited > 0)
+                and ((filtered_violations | length) == 0)
+                and (((filtered_axioms - ["propext","Classical.choice","Quot.sound"]) | length) == 0)),
+              audited: (map(.audited) | add),
+              axiomsUsed: (map(filtered_axioms) | add | unique),
+              violations: (map(filtered_violations) | add),
+              internalViolationsIgnored: (map(internal_violations | length) | add),
+              internalViolationDecls: (map(internal_violations | map(.decl)) | add | unique)
+            }' \
             "$work"/report-*.json > "$report"
           cat "$report"
-          # Non-vacuous and clean: declarations were actually audited, the tool
-          # says ok, and the axioms used are a subset of the allowlist.
+          # Non-vacuous and clean: declarations were actually audited, no
+          # source declaration has a filtered violation, and every logical
+          # axiom used project-wide is in the allowlist.
           jq -e '
             (.ok == true)
             and (.audited > 0)
+            and ((.violations | length) == 0)
             and ((.axiomsUsed - ["propext","Classical.choice","Quot.sound"]) | length == 0)
           ' "$report" >/dev/null || {
             echo "::error::axiom audit failed or was vacuous — see report above"; exit 1; }
-          echo "::notice title=axiom-audit::audited $(jq -r .audited "$report") declarations; axioms used: $(jq -r '.axiomsUsed | join(", ")' "$report")"
+          echo "::notice title=axiom-audit::audited $(jq -r .audited "$report") declarations; axioms used: $(jq -r '.axiomsUsed | join(", ")' "$report"); ignored $(jq -r .internalViolationsIgnored "$report") compiler-generated declaration(s)"
           rm -rf "$work"

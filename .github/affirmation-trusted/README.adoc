@@ -22,13 +22,14 @@ test-merge commit a shallow PR checkout consists of) therefore classified as
 `E` ("cannot be checked"), which the gate treats as "bad, revoked, or failed
 verification" and fails on. That was the `estate-audit` failure on PR #102.
 
-`main-estate-audit.yml` passes this file via the action's
-`trusted-gpg-keys` input so the classification is made against the key
-GitHub actually signs with. The workflow now runs `.github/affirmation-trusted/check.sh`, vendored from
+The workflow now runs `.github/affirmation-trusted/check.sh`, vendored from
 `cicd-suite@bf7dd95cf49733019343ff485c2f45c6b261839c` with a local repair:
 `E` accompanied by GnuPG's `NO_PUBKEY` is a notice; bad, revoked, and other failed
-verifications still fail. Document validation and the upstream trust material
-are preserved. The root fix belongs in `cicd-suite`; this file supplies the
-current GitHub key alongside the vendored historical key. If GitHub rotates the web-flow key
+verifications still fail. The local script imports both the current and
+historical vendored GitHub keys and rejects them unless their primary
+fingerprints match the two pinned above. This is a contained workaround, not
+the durable trust boundary: gate code in a pull-request checkout is necessarily
+reviewed code, whereas the root fix belongs in `cicd-suite`, whose pinned
+external action can then be restored. If GitHub rotates the web-flow key
 again, re-fetch it the same way and update the fingerprint above in the same
 commit.

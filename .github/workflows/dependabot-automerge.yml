@@ -95,7 +95,6 @@ jobs:
           UPDATE_TYPE: ${{ steps.meta.outputs.update-type }}
           PR_LABELS: ${{ toJson(github.event.pull_request.labels.*.name) }}
         run: |
-          # shellcheck disable=SC2129 # step-summary prose: one echo per line, kept reviewable on purpose
           set -euo pipefail
 
           is_security=false
