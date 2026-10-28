@@ -258,8 +258,15 @@ jobs:
           cp lean-toolchain "$work/axiom-audit/"
           ( cd "$work/axiom-audit" && lake build )
           modules_csv="${LEAN_MODULES// /,}"
+          for m in $LEAN_MODULES; do
+            lake env "$work/axiom-audit/.lake/build/bin/axiom-audit" \
+              --root "$m" --modules "$modules_csv" \
+              --allow "propext,Classical.choice,Quot.sound" \
+              --json > "$work/report-$m.json"
+          done
           report="$work/report.json"
-          lake env "$work/axiom-audit/.lake/build/bin/axiom-audit"             --modules "$modules_csv"             --allow "propext,Classical.choice,Quot.sound"             --json > "$report"
+          jq -s '{ok: (all(.[]; .ok)), audited: (map(.audited) | add), axiomsUsed: (map(.axiomsUsed) | add | unique)}' \
+            "$work"/report-*.json > "$report"
           cat "$report"
           # Non-vacuous and clean: declarations were actually audited, the tool
           # says ok, and the axioms used are a subset of the allowlist.
