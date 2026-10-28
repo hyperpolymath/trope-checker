@@ -24,21 +24,21 @@ fn main() {
     let src = match std::fs::read_to_string(&args[1]) {
         Ok(s) => s,
         Err(e) => {
-            println!("io-error\t{}", e);
+            println!("io-error\t{e}");
             exit(3);
         }
     };
     let j = match parse_json(&src) {
         Ok(j) => j,
         Err(e) => {
-            println!("validation-fault\tparse: {}", e);
+            println!("validation-fault\tparse: {e}");
             exit(2);
         }
     };
     let doc = match dec_doc(&j) {
         Ok(d) => d,
         Err(e) => {
-            println!("validation-fault\t{}", e);
+            println!("validation-fault\t{e}");
             exit(2);
         }
     };
@@ -48,7 +48,7 @@ fn main() {
             exit(0);
         }
         (_, Some((e, c))) => {
-            println!("p-insufficient\twitness={}\tcoord={}", e, c);
+            println!("p-insufficient\twitness={e}\tcoord={c}");
             exit(1);
         }
         (_, None) => {

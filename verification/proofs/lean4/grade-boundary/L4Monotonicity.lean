@@ -155,7 +155,8 @@ complete linear order (`ℕ ∪ {∞, ⊤}`), the amended fate carrier is a comp
 chain — exactly what §7's Knaster–Tarski argument needs. -/
 theorem le_total : ∀ a b : Fate, le a b ∨ le b a := by
   intro a b
-  cases a <;> cases b <;> (simp [le]; exact _root_.le_total _ _)
+  cases a <;> cases b <;> simp [le]
+  exact _root_.le_total _ _
 
 /-- **Commutativity.** With (A1), amended composition is commutative: the sole
 non-commuting pair of the shipped carrier was `(Dropped, Falsified)`.
@@ -183,14 +184,16 @@ right argument w.r.t. the amended retention order. -/
 theorem comp_mono_right :
     ∀ h x y : Fate, le x y → le (comp h x) (comp h y) := by
   intro h x y hxy
-  cases h <;> cases x <;> cases y <;> (simp_all [comp, le]; exact add_le_add_left hxy _)
+  cases h <;> cases x <;> cases y <;> simp_all [comp, le]
+  exact add_le_add_left hxy _
 
 /-- **L4 restored, left argument**: amended composition is monotone in its
 left argument w.r.t. the amended retention order. -/
 theorem comp_mono_left :
     ∀ x y h : Fate, le x y → le (comp x h) (comp y h) := by
   intro x y h hxy
-  cases x <;> cases y <;> cases h <;> (simp_all [comp, le]; exact add_le_add_right hxy _)
+  cases x <;> cases y <;> cases h <;> simp_all [comp, le]
+  exact add_le_add_right hxy _
 
 /-! ### The boundary survives the repair -/
 

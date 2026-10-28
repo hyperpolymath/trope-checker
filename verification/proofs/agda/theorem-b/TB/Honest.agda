@@ -32,15 +32,21 @@ open import TB.Syntax using (atten-atom; drop-atom; sever-atom; predicate-atom)
 
 isDeceptiveFate : Fate → Bool
 isDeceptiveFate falsified = true
-isDeceptiveFate _         = false
+isDeceptiveFate present = false
+isDeceptiveFate (atten _) = false
+isDeceptiveFate predicated = false
+isDeceptiveFate dropped = false
 
 isDeceptiveBond : Bond → Bool
 isDeceptiveBond misbound = true
-isDeceptiveBond _        = false
+isDeceptiveBond intact = false
+isDeceptiveBond withheld = false
+isDeceptiveBond severed = false
 
 isDeceptiveMerge : Merge → Bool
 isDeceptiveMerge conflated = true
-isDeceptiveMerge _         = false
+isDeceptiveMerge single = false
+isDeceptiveMerge fused = false
 
 -- Uniqueness: each coordinate's deceptive predicate holds for exactly one value.
 fateDeceptiveUnique : ∀ f → isDeceptiveFate f ≡ true → f ≡ falsified
@@ -79,11 +85,18 @@ moveFate Fuse          = present
 moveBond : Move → Bond
 moveBond Sever = severed
 moveBond Drop  = withheld
-moveBond _     = intact
+moveBond Preserve = intact
+moveBond (Attenuate _) = intact
+moveBond Predicate = intact
+moveBond Fuse = intact
 
 moveMerge : Move → Merge
 moveMerge Fuse = fused
-moveMerge _    = single
+moveMerge Preserve = single
+moveMerge (Attenuate _) = single
+moveMerge Predicate = single
+moveMerge Drop = single
+moveMerge Sever = single
 
 -- (1) The atoms produce only HONEST values (never a deceptive dual).
 movesHonestFate : ∀ m → isDeceptiveFate (moveFate m) ≡ false
