@@ -129,6 +129,23 @@ detect_platform() {
 }
 
 # ── Install just ──
+# Pinned+checksummed just fallback (never curl|bash - CWE-494). Linux x86_64 only;
+# every other platform has a package-manager path above.
+install_just_pinned() {
+    _just_version="1.59.0"; _just_sha="409044617b6f06517c1035e55ca38c8c856ff8b650e41bc2aa1ef82d5903a23e"
+    if [ "$(uname -s)-$(uname -m)" != "Linux-x86_64" ]; then
+        fail "No pinned 'just' fallback for this platform - install manually: https://just.systems/"
+        return 1
+    fi
+    _just_tmp=$(mktemp -d)
+    curl --fail --proto '=https' --proto-redir '=https' --tlsv1.2 -sSL -o "$_just_tmp/just.tar.gz" \
+        "https://github.com/casey/just/releases/download/${_just_version}/just-${_just_version}-x86_64-unknown-linux-musl.tar.gz"
+    echo "${_just_sha}  $_just_tmp/just.tar.gz" | sha256sum -c - >/dev/null || { fail "just tarball checksum mismatch"; rm -rf "$_just_tmp"; return 1; }
+    tar -xzf "$_just_tmp/just.tar.gz" -C "$_just_tmp" just
+    if [ -w /usr/local/bin ]; then install -m 0755 "$_just_tmp/just" /usr/local/bin/just; else sudo install -m 0755 "$_just_tmp/just" /usr/local/bin/just; fi
+    rm -rf "$_just_tmp"
+}
+
 install_just() {
     if command -v just >/dev/null 2>&1; then
         ok "just already installed: $(just --version 2>/dev/null | head -1)"
@@ -140,8 +157,8 @@ install_just() {
     case "$PKG_MGR" in
         dnf)        sudo dnf install -y just ;;
         apt)        sudo apt-get install -y just 2>/dev/null || {
-                        # just not in older apt repos — use installer
-                        curl -fsSL https://just.systems/install.sh | bash -s -- --to /usr/local/bin
+                        # just not in older apt repos - pinned tarball fallback
+                        install_just_pinned
                     } ;;
         pacman)     sudo pacman -S --noconfirm just ;;
         apk)        sudo apk add just ;;
@@ -151,8 +168,8 @@ install_just() {
         rpm-ostree) sudo rpm-ostree install just ;;
         guix)       guix install just ;;
         *)
-            info "Using just installer script..."
-            curl -fsSL https://just.systems/install.sh | bash -s -- --to /usr/local/bin
+            info "Using pinned just tarball..."
+            install_just_pinned
             ;;
     esac
 

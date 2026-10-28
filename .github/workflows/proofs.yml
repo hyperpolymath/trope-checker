@@ -125,7 +125,10 @@ jobs:
           printf 'name: standard-library\ninclude: src\nflags:\n  --warning=noUnsupportedIndexedMatch\n' \
             > agda-stdlib-2.0/standard-library.agda-lib
           mkdir -p "${RUNNER_TEMP}/agda-dir"
-          echo "$PWD/agda-stdlib-2.0/standard-library.agda-lib" > "${RUNNER_TEMP}/agda-dir/libraries"
+          {
+            echo "$PWD/agda-stdlib-2.0/standard-library.agda-lib"
+            echo "$GITHUB_WORKSPACE/verification/proofs/agda/theorem-b/theorem-b.agda-lib"
+          } > "${RUNNER_TEMP}/agda-dir/libraries"
           {
             echo "AGDA_DIR=${RUNNER_TEMP}/agda-dir"
             echo "Agda_datadir=$PWD/Agda-v2.7.0.1/data"
@@ -147,13 +150,27 @@ jobs:
           #                         pragma too (stdlib 2.0 already does)
           #   --exact-split         every clause must hold definitionally
           #                         unless explicitly marked CATCHALL
-          #   -W error              warnings are errors, CI-wide
-          # The same set lives in theorem-b.agda-lib's flags: and each
-          # module's OPTIONS pragma, so a local `agda` run cannot quietly
-          # be weaker than this gate.
-          AGDA_FLAGS=(--safe --without-K --cubical-compatible --exact-split --warning=error)
-          agda "${AGDA_FLAGS[@]}" All.agda
-          agda "${AGDA_FLAGS[@]}" Smoke.agda
+          #   -W error              warnings are errors
+          # --exact-split and -W error are scoped to OUR modules (every
+          # theorem-b OPTIONS pragma and theorem-b.agda-lib's flags:), never
+          # the CLI: CLI flags leak into dependency compilation, and the
+          # stdlib's own Data.Maybe.Base.zipWith catch-all is (correctly, for
+          # it) not definitionally exact - a CLI --exact-split fails the
+          # build inside the stdlib (seen on the first run of this gate).
+          # The scan below is the belt to the pragmas' braces: any warning
+          # attributed to a theorem-b file fails the job.
+          AGDA_FLAGS=(--safe --without-K --cubical-compatible)
+          warn_log="${RUNNER_TEMP}/agda-output.log"
+          : > "$warn_log"
+          for f in All.agda Smoke.agda; do
+            echo "--- Checking $f ---"
+            agda "${AGDA_FLAGS[@]}" "$f" 2>&1 | tee -a "$warn_log"
+          done
+          if grep -B1 '^warning:' "$warn_log" | grep -q 'theorem-b'; then
+            echo "::error::Agda emitted warnings for theorem-b modules (warnings are errors here)"
+            grep -B1 '^warning:' "$warn_log" | grep -A1 'theorem-b' || true
+            exit 1
+          fi
           echo "PASS: All.agda + Smoke.agda typecheck (${AGDA_FLAGS[*]}; --safe => postulate-free by construction)"
 
   # The Lean developments actually built. `lean-source-honesty` above is a cheap

@@ -84,7 +84,7 @@ proof-check-agda:
         echo "FAIL: agda not installed (need 2.7.0.1 + stdlib 2.0) — refusing to report a skip as a pass"
         exit 1
     fi
-    AGDA_FLAGS=(--safe --without-K --cubical-compatible --exact-split --warning=error)
+    AGDA_FLAGS=(--safe --without-K --cubical-compatible)  # --exact-split/-Werror live in theorem-b OPTIONS + .agda-lib flags (CLI forms would leak into stdlib compilation)
     ( cd verification/proofs/agda/theorem-b \
         && agda "${AGDA_FLAGS[@]}" All.agda \
         && agda "${AGDA_FLAGS[@]}" Smoke.agda )
@@ -205,7 +205,7 @@ build-agda:
     # --cubical-compatible throughout stdlib); the CI job pins Agda 2.7.0.1 +
     # stdlib 2.0 by checksum — see proofs.yml agda-theorem-b. The same set
     # lives in theorem-b.agda-lib `flags:` and every module's OPTIONS pragma.
-    AGDA_FLAGS=(--safe --without-K --cubical-compatible --exact-split --warning=error)
+    AGDA_FLAGS=(--safe --without-K --cubical-compatible)  # --exact-split/-Werror live in theorem-b OPTIONS + .agda-lib flags (CLI forms would leak into stdlib compilation)
     cd verification/proofs/agda/theorem-b
     agda "${AGDA_FLAGS[@]}" All.agda
     agda "${AGDA_FLAGS[@]}" Smoke.agda

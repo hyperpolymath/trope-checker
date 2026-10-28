@@ -58,8 +58,8 @@ jobs:
           big=$(git ls-files | while IFS= read -r f; do
             [ -f "$f" ] || continue
             s=$(stat -c%s "$f")
-            [ "$s" -gt 1048576 ] && echo "$s $f"
-          done)
+            if [ "$s" -gt 1048576 ]; then echo "$s $f"; fi
+          done; true)
           if [ -n "$big" ]; then
             echo "ERROR: tracked files over 1 MiB (bytes path):"
             echo "$big"
