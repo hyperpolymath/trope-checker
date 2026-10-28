@@ -651,13 +651,17 @@ pub fn dec_grade(epath: &str, value: &Json) -> Result<Grade, String> {
 /// Return an empty list if `v` is not an array.
 #[must_use]
 pub fn str_list(v: &Json) -> Vec<String> {
-    v.as_arr()
-        .map(|a| {
-            a.iter()
-                .filter_map(|x| x.as_str().map(String::from))
-                .collect()
-        })
-        .unwrap_or_default()
+    // Deliberately not Option::map_or_default (unstable on some stable
+    // toolchains) nor map().unwrap_or_default() (clippy::map_unwrap_or
+    // under -D warnings tries to turn it back into map_or_default): the
+    // match is the form every toolchain and lint set accepts.
+    match v.as_arr() {
+        Some(a) => a
+            .iter()
+            .filter_map(|x| x.as_str().map(String::from))
+            .collect(),
+        None => Vec::new(),
+    }
 }
 /// Decode an IR node.
 ///
@@ -678,7 +682,10 @@ pub fn dec_node(v: &Json) -> Result<Node, String> {
         .and_then(|x| x.as_str())
         .ok_or_else(|| format!("nodes/{id}: missing type"))?
         .to_string();
-    let present = v.field("present").map(str_list).unwrap_or_default();
+    let present = match v.field("present") {
+        Some(p) => str_list(p),
+        None => Vec::new(),
+    };
     if kind == "FloatingQuality" && present.iter().any(|p| p == "bearer") {
         return Err(format!(
             "nodes/{id}/present: FloatingQuality may not list a bearer"
@@ -702,7 +709,10 @@ pub fn dec_edge(v: &Json) -> Result<Edge, String> {
         .and_then(|x| x.as_str())
         .ok_or("edges: missing id")?
         .to_string();
-    let inputs = v.field("inputs").map(str_list).unwrap_or_default();
+    let inputs = match v.field("inputs") {
+        Some(i) => str_list(i),
+        None => Vec::new(),
+    };
     let output = v
         .field("output")
         .and_then(|x| x.as_str())
@@ -899,14 +909,15 @@ fn topo_witness_order(doc: &Doc) -> Vec<&Edge> {
     while !remaining.is_empty() {
         // Ready = every produced input already emitted (producerless
         // inputs are roots, grade ε). Pick the smallest edge ID.
+        let is_ready = |e: &Edge| {
+            e.inputs
+                .iter()
+                .all(|i| !producer.contains_key(i.as_str()) || emitted.contains(i.as_str()))
+        };
         let ready = remaining
             .iter()
             .enumerate()
-            .filter(|(_, e)| {
-                e.inputs.iter().all(|i| {
-                    !producer.contains_key(i.as_str()) || emitted.contains(i.as_str())
-                })
-            })
+            .filter(|(_, e)| is_ready(e))
             .min_by(|(_, a), (_, b)| a.id.cmp(&b.id))
             .map(|(idx, _)| idx);
         match ready {
