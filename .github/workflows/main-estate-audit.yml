@@ -21,11 +21,9 @@ jobs:
       # classifies the signature on the commit that last changed
       # AFFIRMATION.adoc. In the default depth-1 checkout that "commit" is
       # the shallow boundary (on a PR, GitHub's test-merge commit), so the
-      # gate graded a checkout artefact, not the affirming commit — and its
-      # vendored GitHub web-flow key predates the key GitHub signs with now,
-      # so the artefact classified as E ("cannot be checked") and failed as
-      # "bad, revoked, or failed verification". Full history + the current
-      # key (see .github/affirmation-trusted/) make it grade the real commit.
+      # gate graded a checkout artefact, not the affirming commit. The local
+      # check treats unavailable public keys as notices and still rejects bad
+      # signatures; the current GitHub key is in .github/affirmation-trusted/.
       - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
@@ -61,11 +59,10 @@ jobs:
         
       - name: Affirmation Document Gate
         if: ${{ !cancelled() }}
-        uses: hyperpolymath/cicd-suite/actions/affirmation-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-        with:
-          # The action's vendored web-flow key is GitHub's previous one
-          # (expired 2024-01-16); see .github/affirmation-trusted/README.adoc.
-          trusted-gpg-keys: .github/affirmation-trusted/github-web-flow.gpg
+        env:
+          # Supplement the historical upstream key with GitHub's current key.
+          AFFIRMATION_TRUSTED_GPG_KEYS: .github/affirmation-trusted/github-web-flow.gpg
+        run: bash .github/affirmation-trusted/check.sh
         
       - name: Academic Referencing Gate
         if: ${{ !cancelled() }}

@@ -133,7 +133,7 @@ jobs:
           uses_re = re.compile(r'^[ \t]*(?:-[ \t]*)?uses:[ \t]*([^ \t#]+/[^\s#@]+)@([^\s#]+)')
           version_re = re.compile(r'^v?\d+(\.\d+)*([-.+][0-9A-Za-z.-]+)?$')
           seen, failed = {}, []
-          for path in sorted(glob.glob('.github/workflows/*.yml')):
+          for path in sorted(glob.glob('.github/workflows/*.yml') + glob.glob('.github/workflows/*.yaml')):
               for n, line in enumerate(open(path, encoding='utf-8'), 1):
                   m = uses_re.match(line)
                   if not m:

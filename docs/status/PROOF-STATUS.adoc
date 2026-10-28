@@ -74,11 +74,11 @@ toc::[]
 | Lean `GradeR.conical`, `FateA.conical`; Agda `TB.Grade.grade-conical`.
 
 | C2 (the cancellation boundary)
-| An element is left-cancellative iff it is stem:[\varepsilon]; cancellation holds only on the finite-fidelity core and fails on the honest-but-lossy and deceptive tiers alike.
+| On the unquotiented `GradeR` model, an element is left-cancellative iff it is stem:[\varepsilon]: `Present` and `Atten(Q 0)` are distinct collision witnesses. Under A3 normalisation they coincide; finite attenuation is cancellative on normal forms. Honest absorbers and deceptive elements remain non-cancellative.
 | Lean `GradeR.{gradeR_leftCancel_iff,gradeR_not_leftCancel,gDroppedR_not_cancel}`; Agda `TB.Tier.{Q-cancelʳ,core-closed-▷}`, `TB.Tier.{dropped,predicated,severed,total}-honest-not-cancel`, `TB.Tier.{falsified,unknown}-not-cancel`.
 
 | Tier-2 membership, exhaustive
-| Every honest-but-lossy element is individually witnessed non-cancellative, `Withheld` and `Fused` included; the per-element witnesses feed the iff.
+| In the unquotiented model, every honest-but-lossy element is individually witnessed non-cancellative (finite attenuation regains cancellation on A3 normal forms), `Withheld` and `Fused` included; the per-element witnesses feed the iff.
 | Lean `TierTwoComplete.lean`: `Bond.withheld_honest_not_cancel`, `Merge.fused_honest_not_cancel`, `Fate.atten_not_cancel`, the `*.leftCancelWitness` family, `Grade.grade_leftCancel_iff`.
 
 | C3 (partition; tier closure is not a homomorphism)
@@ -98,7 +98,7 @@ toc::[]
 3+^| _Metatheory (Theorem B, Agda `--safe --without-K`, zero postulates)_
 
 | Target 1 — intrinsic graded calculus
-| The typing judgement stem:[\Gamma \vdash e : A \mathbin{!} g] over the ratified grade monoid, with the F4 tiers as closures.
+| The intrinsic typing judgement encoded by `TB.Syntax` over the ratified grade monoid, with the F4 tiers as closures. This result covers only that encoded calculus; `fuse`, `fix`, and per-field presence tracking are omitted and remain open.
 | Agda `TB.Syntax`, `TB.Grade`, `TB.Tier`.
 
 | Target 2 — grade-exact substitution
@@ -110,7 +110,7 @@ toc::[]
 | Agda `TB.Reduction.{β-app,β-let,let-redex-grade,let-tier-preserved,seq-stays-core}`. (The `fix` case is open: see CO-1 below.)
 
 | Target 4 — Honest Generation and Veridicality
-| As in the carrier rows above, at the level of terms.
+| Honest grades are closed under composition (`TB.Honest.honest-closed-▷`); the unit and writable effect atoms in `TB.Honest` are honest. This is a grade-level closure result; it does not establish that every typed term has an honest grade.
 | Agda `TB.Honest`.
 
 3+^| _Soundness_
@@ -156,7 +156,7 @@ Each is specified; none is asserted. Status words follow `spec/calculus.adoc §1
   (`spec/calculus.adoc §8` firewall 2, `§10`).
 * *O3* — the produce/demand adjunction; the verdict is a subsumption until the
   triangle laws are checked (`spec/calculus.adoc §6.2`, `§10`).
-* *O5 mechanisation* — O5 is DEFINED (`spec/calculus.adoc §10`, ADR 0005);
+* *O5 mechanisation* — O5 is PROPOSED pending acceptance of ADR 0005 (`spec/calculus.adoc §10`, ADR 0005);
   mechanising O5-1 as a side condition on an `Oracle`-indexed verdict is OPEN.
 * *O6* — the ceiling verdict, stem:[\rho \sqsubseteq g_{\mathrm{ceiling}}], for
   the privacy direction (`spec/calculus.adoc §5` note on T-Sub, `§10`).

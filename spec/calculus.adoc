@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: CC-BY-SA-4.0
 // SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
 = The Trope-Particularity Calculus — a normative core
-:revnumber: 0.2 (consolidated; ratified carrier R-2026-07-07, ADR 0004; O5 adopted per ADR 0005)
+:revnumber: 0.2 (consolidated; ratified carrier R-2026-07-07, ADR 0004; O5 proposed pending ADR 0005 acceptance)
 :revdate: 2026-10-13
 :toc: macro
 :sectnums:
@@ -240,10 +240,12 @@ The unit grade is
 The vocabulary (`trope-particularity-workbench`) names *nine* effects. The
 calculus realises them as follows. An *atom* is a grade that differs from
 stem:[\varepsilon] in exactly one slot; atoms come in nine families, one per
-non-unit coordinate value kind, and *every grade factors as a ▷-product of its
-single-slot projections* (`EffectAtoms.lean`: `atom_factorization`,
-`nine_families`, `family_realized`, `families_disjoint` — this is O1's
-carrier-relative half, §10).
+non-unit coordinate value kind. *Every pre-ratification `Grade` factors as a
+▷-product of its single-slot projections* (`EffectAtoms.lean`, importing the
+historical `GradeBoundary` carrier: `Grade.atom_factorization`, `nine_families`,
+`family_realized`, `families_disjoint`). This proves O1's carrier-relative half
+for that historical carrier only; restating it on ratified `GradeR` remains
+open (§10).
 
 [cols="2,1,1,2,1",options="header"]
 |===
@@ -538,9 +540,14 @@ Given a closed program with final grade stem:[g] and a use-model stem:[U]:
 
 If the check fails, the verdict is `p-insufficient`, and the report MUST carry a
 *witness*: the operation (DAG edge, §9) whose composition first pushed the
-running grade below stem:[\mathrm{floor}(U)] in some slot. This witness is
-the trope-particularity analogue of the invariant-path argmin — it names the
-edge to repair, not merely that repair is needed.
+running grade below stem:[\mathrm{floor}(U)] in a failing slot during
+topological traversal and accumulation. Traverse the selected output's ancestor
+DAG in dependency order, breaking ties between ready edges by edge ID. Select
+the first edge whose accumulated output grade violates the floor in a failing
+slot. JSON document order MUST NOT affect this selection: reordering the edge
+array leaves the witness unchanged. This witness is the trope-particularity
+analogue of the invariant-path argmin — it names the edge to repair, not merely
+that repair is needed.
 
 [NOTE]
 ====
@@ -673,9 +680,16 @@ fusion labels may retain composition order (L6).
 
 The tropechecker is a *pure function from Trope IR to a verdict object*:
 `p-sufficient` / `p-insufficient`, plus the witness edge (§6.2). It performs
-normalization (A3), validation (HC-4 coherence; the prevent profile's rejection
-of deceptive values), grade composition over the DAG, and the final
-floor-subsumption. *It MUST NOT parse, execute, or otherwise depend on source.*
+normalization (A3) and validation (HC-4 coherence; the prevent profile's
+rejection of deceptive values). Before grade accumulation, it MUST validate the
+graph structure, rejecting unknown node references, duplicate producers for a
+node, and cycles as validation faults; these inputs MUST NOT produce a verdict.
+Only a valid DAG proceeds to grade composition and final floor-subsumption.
+*It MUST NOT parse, execute, or otherwise depend on source.*
+
+Structural validation and the order-independent witness selection of §6.2 are
+conformance requirements still to be implemented in the reference and fast cores;
+their current accumulation and witness routines do not establish these guarantees.
 
 [cols="1,3",options="header"]
 |===
@@ -729,7 +743,7 @@ conformance suite for the taxonomy; the machine suite is its formal sibling.
 | *O2 (lowering correctness)* | Per front end: a proof that each source construct it lowers to an effect edge *is* that effect. Separate from grade soundness (§8, firewall 2). Not dischargeable by the core. | OPEN per producer; no producer has discharged it.
 | *O3 (the produce/demand adjunction)* | Whether the producing graded monad and the demanding graded comonad form an adjunction with produce/demand as unit/counit. Requires the triangle laws checked against the ratified carrier (now pinned, so no longer gated by O1-carrier). Until then, the verdict is a subsumption, *not* an adjunction cancellation. | OPEN (conjecture).
 | *O4 (fidelity carrier)* | Whether stem:[\mathbb{N}\cup\{\infty,\top\}] suffices for ordering iterated attenuation. | RESOLVED (ADR 0004): it does — transfinite carriers would require transfinitely deep `fix` nesting, which finitary syntax cannot express. Whether the carrier should be a *parameter* (any resource algebra with two adjoined tops) rather than this one instance is a separate design question recorded in ADR 0005.
-| *O5 (the veridicality oracle)* | *Remark O5-a (IR-relative undecidability).* A valid Trope IR is a set of claims. For any IR document stem:[D] and any slot, there exist two worlds — one in which the claimed value is the value the trope in fact had, one in which it is not — inducing the same stem:[D]; since the checker is a pure function of stem:[D], no checker can decide veridicality. What is guaranteed instead is L3/L5. *Interface.* An implementation MAY bind a *veridicality oracle*, an external judgement `Oracle ⊨ record r faithful-to trope t` (per slot), subject to: *O5-1 (soundness)* if the oracle affirms a slot, the honest grade claimed for it is true of the world, and the oracle MUST NOT affirm a `Falsified`, `Misbound` or `Conflated` situation; *O5-2 (attestation)* every oracle verdict MUST be carried as evidence — who checked, against what access to the world, when — and that attestation enters the `record` slot's provenance, not the quality's value; *O5-3 (no laundering)* an oracle verdict upgrades *confidence*, never *grade*: a checked `Attenuated(δ)` is still `Attenuated(δ)`. *Falsifier:* a deployment where an interface satisfying O5-1..3 lets a deceptive grade reach `p-sufficient` against an honest floor. *Upgrade path:* mechanise O5-1 as a side condition on an `Oracle`-indexed variant of the verdict judgement. Vocarium's warrants are O5-2 attestations; Hermeneia's *licensed* band is the verdict band O5-backed claims occupy. | DEFINED (adopted from the workbench proposal of 2026-07-17 by ADR 0005); mechanisation OPEN.
+| *O5 (the veridicality oracle)* | *Remark O5-a (IR-relative undecidability).* A valid Trope IR is a set of claims. For any IR document stem:[D] and any slot, there exist two worlds — one in which the claimed value is the value the trope in fact had, one in which it is not — inducing the same stem:[D]; since the checker is a pure function of stem:[D], no checker can decide veridicality. What is guaranteed instead is L3/L5. *Interface.* An implementation MAY bind a *veridicality oracle*, an external judgement `Oracle ⊨ record r faithful-to trope t` (per slot), subject to: *O5-1 (soundness)* if the oracle affirms a slot, the honest grade claimed for it is true of the world, and the oracle MUST NOT affirm a `Falsified`, `Misbound` or `Conflated` situation; *O5-2 (attestation)* every oracle verdict MUST be carried as evidence — who checked, against what access to the world, when — and that attestation enters the `record` slot's provenance, not the quality's value; *O5-3 (no laundering)* an oracle verdict upgrades *confidence*, never *grade*: a checked `Attenuated(δ)` is still `Attenuated(δ)`. *Falsifier:* a deployment where an interface satisfying O5-1..3 lets a deceptive grade reach `p-sufficient` against an honest floor. *Upgrade path:* mechanise O5-1 as a side condition on an `Oracle`-indexed variant of the verdict judgement. Vocarium's warrants are O5-2 attestations; Hermeneia's *licensed* band is the verdict band O5-backed claims occupy. | PROPOSED (from the workbench proposal of 2026-07-17; adoption pending acceptance of ADR 0005); mechanisation OPEN.
 | *O6 (the ceiling verdict)* | New at v0.2. The verdict certifies sufficiency only. A *ceiling* use-model — "no more than this may be retained" (the privacy direction: a `Withheld` bond is a recoverable, hence still-personal, record; `Severed` is not) — needs the dual theorem stem:[\rho \sqsubseteq g_{\mathrm{ceiling}}], which T-Sub's one-sidedness does not give for conservative lowering. *Deliverable:* either the dual verdict proved for the exact-lowering fragment and stated as unavailable for the conservative one, or a second, upper-bound grade on edges. | OPEN.
 | *CO-1 (the operational model)* | The calculus's reduction dynamics for `fix` and routing. The grade algebra is not at fault (the gfp endpoint is ▷-fixed and tier-stable). | DESIGNED (λ-trope, tagged values, T-Fix-Decl: `spec/notes/2026-07-07-co1-operational-model.adoc`); MECHANISATION OPEN (Agda, steps 1–5 of that note's §6; closes Theorem B Target 3 and conservative grade soundness).
 |===
@@ -768,5 +782,5 @@ calculus agree, which is the point.
 _CHANGELOG line:_ `docs(spec): consolidate the calculus at v0.2 — nine effects
 with the atom table, ratified carrier inline (A1–A3), L6 commutativity and the
 cancellation structure as laws, the tropical factorisation recorded as sighted,
-§7 restated as greatest post-fixed point with T-Fix-Decl, O5 defined and O6
+§7 restated as greatest post-fixed point with T-Fix-Decl, O5 proposed pending ADR acceptance and O6
 (ceiling verdict) opened, prover roles per ADR 0005._

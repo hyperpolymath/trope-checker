@@ -64,7 +64,7 @@ rejects them at validation, naming the offending coordinate. The alternative
 [cols="1,3",options="header"]
 |===
 | Path | What lives there
-| `spec/calculus.adoc`        | The normative calculus (source of truth, `:revnumber: 0.2` — consolidated 2026-10-13: ratified carrier, nine effects, O5 defined, O6 opened).
+| `spec/calculus.adoc`        | The normative calculus (source of truth, `:revnumber: 0.2` — consolidated 2026-10-13: ratified carrier, nine effects, O5 proposed pending ADR acceptance, O6 opened).
 | `spec/trope-ir.adoc`        | The normative IR spec: nodes, edges, grade algebra, verdict.
 | `schemas/trope-ir.schema.json` | The Trope IR JSON Schema — the trust boundary (prevent profile).
 | `src/idris2/`               | The executable checker (Idris2): JSON parser + IR decoder + checker, reusing the verified core; plus `Main` → the `tropecheck` binary.
@@ -150,8 +150,10 @@ and `Classical.choice` in three theorems). On the ratified carrier (ADR 0004, R-
 monoid with the three deceptive bottoms as two-sided zeros; L1–L6, conicality, the
 cancellation boundary (left-cancellative iff ε), the Honest Generation and
 Veridicality theorems, the atom factorisation (O1's carrier half — stated on the v0.1 `Grade`,
-not yet restated on `GradeR`) and a veridicality-sighted tropical factorisation are proved across Agda, Idris2 and
-Lean; Theorem B gives grade-exact substitution and β/let subject reduction. The
+not yet restated on `GradeR`) and the tropical factorisations — pre-ratification
+`GradeFactorisation.lean` veridicality-blind, ratified `GradeFactorisationR.lean`
+veridicality-sighted — are proved across Agda, Idris2 and Lean; Theorem B gives
+grade-exact substitution and β/let subject reduction. The
 named open problems are *CO-1* — the operational model for `fix` is designed
 (`spec/notes/2026-07-07-co1-operational-model.adoc`) and awaits mechanisation,
 which is what stands between the exact-lowering soundness already proved and

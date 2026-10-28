@@ -180,9 +180,9 @@ build-lean:
               || { echo "FAIL: re-elaborating $f for the axiom audit failed"; cat "$out"; exit 1; }
         done
         receipts="$(grep -cE "depends on axioms|does not depend on any axioms" "$out" || true)"
-        if grep -E "depends on axioms" "$out" | grep -vE "^[^:]+depends on axioms: (propext|Classical\.choice|Quot\.sound)(, (propext|Classical\.choice|Quot\.sound))*$" >/dev/null; then
+        if grep -E "depends on axioms" "$out" | grep -vE "^.*depends on axioms: \[(propext|Classical\.choice|Quot\.sound)(, (propext|Classical\.choice|Quot\.sound))*\]$" >/dev/null; then
             echo "FAIL: axiom outside the allowlist (propext / Classical.choice / Quot.sound):"
-            grep -E "depends on axioms" "$out" | grep -vE "^[^:]+depends on axioms: (propext|Classical\.choice|Quot\.sound)(, (propext|Classical\.choice|Quot\.sound))*$"
+            grep -E "depends on axioms" "$out" | grep -vE "^.*depends on axioms: \[(propext|Classical\.choice|Quot\.sound)(, (propext|Classical\.choice|Quot\.sound))*\]$"
             exit 1
         fi
         echo "axiom audit: ${receipts} receipts in ${pkg}, all within the allowlist"

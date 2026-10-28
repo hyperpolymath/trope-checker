@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 // SPDX-License-Identifier: CC-BY-SA-4.0
-= ADR 0005 — Spec v0.2 consolidation, O5 adopted, O6 opened, prover roles, template removal; the carrier-as-parameter question recorded
+= ADR 0005 — Spec v0.2 consolidation, O5 proposed, O6 opened, prover roles, template removal; the carrier-as-parameter question recorded
 :revdate: 2026-10-27
 
 == Status
@@ -8,7 +8,8 @@
 *Proposed — owner to accept.* Drafted in the Phase 0 pass ("make the status
 surfaces true"); the spec consolidation it ratifies landed as
 `docs(spec): consolidate the calculus at v0.2` (2026-10-13). Nothing here changes
-a semantics; D6 is recorded, not decided.
+a semantics; D6 is recorded, not decided. D2 and O5 remain PROPOSED until
+the owner accepts this ADR; the O5 text in §10 is a proposed interface.
 
 == Context
 
@@ -41,12 +42,13 @@ history and analysis, cited from the spec where they carry the argument, never
 the other way round. Where any older status surface disagrees with the spec, the
 spec wins.
 
-| *D2 (O5 adopted)* | §10 gains O5, the veridicality oracle, adopted from the
+| *D2 (O5 proposed)* | §10 gains O5, the veridicality oracle, proposed for adoption from the
 workbench proposal of 2026-07-17 unchanged in substance: Remark O5-a
 (IR-relative undecidability of veridicality), the oracle interface with O5-1
 soundness, O5-2 attestation and O5-3 no-laundering, the falsifier, and the
 upgrade path (mechanise O5-1 as a side condition on an `Oracle`-indexed verdict
-judgement). Status in §10: DEFINED; mechanisation OPEN. Vocarium's warrants are
+judgement). Status in §10: PROPOSED pending acceptance of this ADR; mechanisation
+OPEN. Vocarium's warrants are
 O5-2 attestations; Hermeneia's _licensed_ band is where O5-backed claims sit.
 
 | *D3 (O6 opened)* | §10 gains O6, the ceiling verdict: the dual theorem
@@ -86,7 +88,7 @@ decided by this ADR.
 
 * One place to read the calculus; "nine effects" throughout, reconciled with
   "seven" as nine atom families of which six are writable and three are faults.
-* The third firewall now cites a defined obligation. O5 is dischargeable in
+* The third firewall cites the proposed O5 obligation. O5 is dischargeable in
   principle (mechanise O5-1) and refutable (its falsifier is stated).
 * The privacy direction has a named obligation (O6) instead of an unstated gap;
   the verdict's one-sidedness is written down as a limitation, not hidden.

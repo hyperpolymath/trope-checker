@@ -14,7 +14,7 @@ https://semver.org/spec/v2.0.0.html[Semantic Versioning].
 at v0.2 — nine effects with the atom table, ratified carrier inline (A1–A3), L6
 commutativity and the cancellation structure as laws, the tropical factorisation
 recorded as sighted, §7 restated as greatest post-fixed point with T-Fix-Decl, O5
-defined and O6 (ceiling verdict) opened, prover roles per ADR 0005.
+proposed pending ADR acceptance and O6 (ceiling verdict) opened, prover roles per ADR 0005.
 `+spec/calculus-v0.2-draft.adoc+` folded in and removed; README and
 INTEGRATION-REPORT aligned.
 * *Phase 0 — status surfaces made true (2026-10-27).*
@@ -46,7 +46,7 @@ fault. New conformance fixtures prove `+Atten(0)+` ≡ `+Present+`
 ==== Added
 
 * *ADR 0005* (`+docs/decisions/0005-v0.2-consolidation-o5-and-prover-roles.adoc+`,
-Proposed): spec v0.2 normative; O5 adopted from the workbench proposal of
+Proposed): spec v0.2 normative; O5 proposed for adoption from the workbench proposal of
 2026-07-17; O6 opened; prover roles (Agda kernel, Idris2 reference, Lean
 provenance, Rust fast core); templates removed; the carrier-as-parameter question
 (D6) recorded, not decided.
@@ -63,9 +63,6 @@ calculus; grade-exact value substitution; subject reduction for β/let
 (`+fix+`/lfp open); Honest Generation (HC-3). Records the F2 result that
 symmetric cut is impossible and the F2×F4 result that tier-preservation
 is closure, not a homomorphism.
-* *Spec v0.2 draft addendum.* `+spec/calculus-v0.2-draft.adoc+`:
-obligations `+R-2026-06-23-01..04+` binding each proved fact to its
-governing Lean theorem; does not edit v0.1.
 * *Integration report.* `+verification/proofs/INTEGRATION-REPORT.adoc+`:
 the unified R-id ↔ Lean ↔ Agda ↔ status table, the convergence analysis
 (central open problem CO-1: no operational model for `+fix+`/routing,

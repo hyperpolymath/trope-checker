@@ -24,8 +24,11 @@ verification" and fails on. That was the `estate-audit` failure on PR #102.
 
 `main-estate-audit.yml` passes this file via the action's
 `trusted-gpg-keys` input so the classification is made against the key
-GitHub actually signs with. The root fix belongs in `cicd-suite` (refresh the
-vendored key; stop conflating `E` with a bad signature); until that lands,
-this file is the in-repo workaround. If GitHub rotates the web-flow key
+GitHub actually signs with. The workflow now runs `.github/affirmation-trusted/check.sh`, vendored from
+`cicd-suite@bf7dd95cf49733019343ff485c2f45c6b261839c` with a local repair:
+`E` accompanied by GnuPG's `NO_PUBKEY` is a notice; bad, revoked, and other failed
+verifications still fail. Document validation and the upstream trust material
+are preserved. The root fix belongs in `cicd-suite`; this file supplies the
+current GitHub key alongside the vendored historical key. If GitHub rotates the web-flow key
 again, re-fetch it the same way and update the fingerprint above in the same
 commit.
