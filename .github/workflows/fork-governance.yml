@@ -1,0 +1,107 @@
+# SPDX-License-Identifier: MPL-2.0
+# fork-governance.yml — the estate conformance lanes on every pull request,
+# adopted per hyperpolymath/standards 3-practice/fork-governance/ADOPTION.adoc
+# at the same standards commit every other reusable in this repo pins
+# (34cf03f…). One workflow, five jobs, one comment:
+#
+#   deed     DEED syntax          (standards deed-conformance)
+#   k9       K9-DEED conformance  (standards k9-conformance, L0–L2 grid)
+#   fleet    gitbot-fleet report-backs (producer; not a lane)
+#   hypatia  Hypatia verdict grid (standards hypatia-scan-reusable, folding
+#            the fleet envelopes in via its report-backs-artifact default)
+#   verdict  the single PR comment (standards fork-governance-reusable)
+#
+# Before this file existed the repo had only the template-era lookalikes in
+# dogfood-gate.yml (magic-header .githooks validators writing step
+# summaries), no fleet enrolment, and a pre-grid Hypatia caller that rendered
+# the grid into an artifact nobody downloaded — so no K9 grid, no DEED lane
+# and no fleet assessment could ever appear on a PR here.
+#
+# PR-time Hypatia lives HERE now; hypatia-scan.yml keeps only its push,
+# schedule and dispatch triggers (ADOPTION §3: a lane must not run twice per
+# PR). The lanes ask for no write permission; the verdict job is the single
+# place allowed to write to the pull request (pull-requests: write).
+
+name: Fork governance
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  deed:
+    name: DEED syntax
+    uses: hyperpolymath/standards/.github/workflows/deed-conformance.yml@34cf03f988b8ca95b91b45d9b3351f7d3babfb65
+    permissions:
+      contents: read
+    with:
+      require-files: true
+
+  k9:
+    name: K9-DEED conformance
+    uses: hyperpolymath/standards/.github/workflows/k9-conformance.yml@34cf03f988b8ca95b91b45d9b3351f7d3babfb65
+    permissions:
+      contents: read
+      pull-requests: read
+    with:
+      require-files: true
+      # Highest setting (MetaManifold-WebUI parity): an orange grid fails
+      # the lane too. Corpus debt, if the first runs find any, belongs in
+      # the shrink-only ledger (.machine_readable/k9-contract-debt.txt),
+      # not in a lower bar here.
+      fail-on-indeterminate: true
+
+  # Produces .gitbot-fleet/report-backs/*.json as the `fleet-report-backs`
+  # artifact; the Hypatia lane downloads it before rendering, one row per
+  # member enrolled in .gitbot-fleet/enrolment.json. Same owner as this
+  # repository, so the reusable is allowed by the Actions policy.
+  fleet:
+    name: Fleet report-backs
+    uses: hyperpolymath/gitbot-fleet/.github/workflows/fleet-report-back-reusable.yml@e44af8144789594fcce891ccc7b77fc9a464a520
+    permissions:
+      contents: read
+
+  hypatia:
+    name: Hypatia verdict grid
+    # After the fleet job whatever its result: a dead fleet job renders as
+    # orange fleet rows, never as a missing lane.
+    needs: [fleet]
+    if: ${{ always() }}
+    uses: hyperpolymath/standards/.github/workflows/hypatia-scan-reusable.yml@34cf03f988b8ca95b91b45d9b3351f7d3babfb65
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    secrets:
+      HYPATIA_SCAN_PAT: ${{ secrets.HYPATIA_SCAN_PAT }}
+    with:
+      # Preserved from hypatia-scan.yml's 🔴 posture: block on current
+      # high/critical findings after validated baseline filtering. The
+      # report-backs-artifact input keeps its default (fleet-report-backs).
+      block-on-high: true
+
+  verdict:
+    name: Post the fork governance summary
+    needs: [deed, k9, hypatia]
+    if: ${{ always() && github.event_name == 'pull_request' }}
+    uses: hyperpolymath/standards/.github/workflows/fork-governance-reusable.yml@34cf03f988b8ca95b91b45d9b3351f7d3babfb65
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: write
+    with:
+      pr-number: ${{ github.event.pull_request.number }}
+      deed-result: ${{ needs.deed.result }}
+      k9-result: ${{ needs.k9.result }}
+      k9-verdict: ${{ needs.k9.outputs.verdict }}
+      hypatia-result: ${{ needs.hypatia.result }}
+      hypatia-verdict: ${{ needs.hypatia.outputs.verdict }}
+      hypatia-advisory: ${{ needs.hypatia.outputs.advisory }}
+      canon-ref: 34cf03f988b8ca95b91b45d9b3351f7d3babfb65

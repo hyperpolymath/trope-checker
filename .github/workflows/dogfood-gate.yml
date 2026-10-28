@@ -63,9 +63,10 @@ jobs:
           EOF
           else
             {
-              echo "## Repo deed validation"
+              echo "## Repo deed validation (presence + header level)"
               echo ""
               echo "Scanned **${DEED_COUNT}** deed file(s). See step output for details."
+              echo "Canonical grammar conformance runs in the Fork governance workflow's DEED syntax lane (standards deed-conformance)."
             } >> "$GITHUB_STEP_SUMMARY"
           fi
 
@@ -118,9 +119,10 @@ jobs:
           EOF
           else
             {
-              echo "## K9 Contract Validation"
+              echo "## K9 Contract Validation (header level)"
               echo ""
-              echo "Validated **${K9_COUNT}** K9 contract(s) against **${CFG_COUNT}** config file(s)."
+              echo "Header-checked **${K9_COUNT}** K9 contract(s); found **${CFG_COUNT}** config file(s)."
+              echo "Canonical L0–L2 conformance and the grid run in the Fork governance workflow's K9-DEED conformance lane (standards k9-conformance)."
             } >> "$GITHUB_STEP_SUMMARY"
           fi
 

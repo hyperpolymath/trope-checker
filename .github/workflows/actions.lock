@@ -14,6 +14,7 @@ workflows:
         - 'actions/checkout@v7.0.1'
     '.github/workflows/estate-rules.yml':
         - 'actions/checkout@v7.0.1'
+    '.github/workflows/fork-governance.yml': []
     '.github/workflows/governance.yml': []
     '.github/workflows/hypatia-scan.yml': []
     '.github/workflows/instant-sync.yml':

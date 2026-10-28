@@ -7,8 +7,11 @@ name: "🔴 Gate: Hypatia baseline security scan"
 on:
   push:
     branches: [main, master, develop]
-  pull_request:
-    branches: [main, master]
+  # No pull_request trigger: PR-time Hypatia runs once, inside
+  # fork-governance.yml, where its verdict grid is folded with the
+  # gitbot-fleet report-backs and posted to the PR (standards
+  # 3-practice/fork-governance/ADOPTION.adoc §3 — running it here too
+  # would scan every PR twice and render two grids that can disagree).
   schedule:
     - cron: '0 0 * * 0'
   workflow_dispatch:

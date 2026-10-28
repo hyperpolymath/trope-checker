@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "reporters": {
+    "rhodibot": { "title": "rhodibot (RSR compliance)", "enrolled": true },
+    "panicbot": { "title": "panicbot (panic recovery, error handling)", "enrolled": true },
+    "echidnabot": { "title": "echidnabot (formal verification: Idris2/Lean/Agda proofs)", "enrolled": true },
+    "seambot": { "enrolled": false, "reason": "no seam register is declared (spec/seams/seam-register.json)" },
+    "finishingbot": { "title": "finishingbot (release readiness)", "enrolled": true },
+    "accessibilitybot": { "enrolled": false, "reason": "no served HTML surface; this is a checker library/CLI with AsciiDoc documentation" },
+    "glambot": { "title": "glambot (presentation quality)", "enrolled": true },
+    "cipherbot": { "title": "cipherbot (cryptographic hygiene)", "enrolled": true },
+    "sustainabot": { "enrolled": false, "reason": "reserved fleet slot; no adapter exists (gitbot-fleet README)" }
+  }
+}
