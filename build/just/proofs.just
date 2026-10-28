@@ -12,105 +12,88 @@
 proof-check-all: proof-check-idris2 proof-check-lean4 proof-check-agda proof-scan-dangerous
     @echo "=== All proof checks complete ==="
 
-# Check Idris2 proofs (ABI, types, dependent type proofs)
+# Check Idris2 proofs by PACKAGE (the verified core + the ABI seam)
+#
+# This recipe used to `find` every .idr under verification/ and run
+# `idris2 --check` on each from the repo root — where module names do not
+# resolve, template files that belong to no package fail spuriously, and a
+# missing toolchain reported SKIP/exit 0, i.e. success. It was red on main
+# for exactly those reasons (noted in PR #102). A package typecheck is the
+# check that means something: it is what CI runs, with %default total
+# enforced by the modules themselves. A missing toolchain is a FAIL here:
+# a gate that passes when it did not run is worse than no gate.
 proof-check-idris2:
     #!/usr/bin/env bash
     set -euo pipefail
-    echo "=== Checking Idris2 proofs ==="
+    echo "=== Checking Idris2 proofs (package typechecks) ==="
     if ! command -v idris2 &>/dev/null; then
-        echo "SKIP: idris2 not installed"
-        exit 0
-    fi
-    ERRORS=0
-    for f in $(find verification/proofs/idris2 -name '*.idr' 2>/dev/null); do
-        echo -n "  Checking $f ... "
-        if idris2 --check "$f" 2>/dev/null; then
-            echo "OK"
-        else
-            echo "FAIL"
-            ERRORS=$((ERRORS + 1))
-        fi
-    done
-    if [ "$ERRORS" -gt 0 ]; then
-        echo "FAIL: $ERRORS Idris2 proof(s) failed"
+        echo "FAIL: idris2 not installed (need 0.8.0, see .mise.toml) — refusing to report a skip as a pass"
         exit 1
     fi
-    echo "PASS: All Idris2 proofs verified"
+    ( cd verification/proofs/idris2 && idris2 --typecheck trope.ipkg )
+    idris2 --typecheck abi.ipkg
+    # Orphan guard: every .idr in the proof tree must be a module of
+    # trope.ipkg. A file no package builds is a status surface that lies.
+    orphans=""
+    for f in $(find verification/proofs/idris2 -name '*.idr' | sort); do
+        mod="${f#verification/proofs/idris2/}"; mod="${mod%.idr}"; mod="${mod//\//.}"
+        grep -qE "(^|[[:space:],])${mod}([[:space:],]|$)" verification/proofs/idris2/trope.ipkg \
+          || orphans="$orphans $f"
+    done
+    if [ -n "$orphans" ]; then
+        echo "FAIL: Idris2 files belonging to no package (never typechecked):$orphans"
+        exit 1
+    fi
+    echo "PASS: trope.ipkg + abi.ipkg typecheck; no orphan .idr files"
 
-# Check Lean4 proofs
+# Check Lean4 proofs by PACKAGE (lake build at CI strictness)
+#
+# Was: `lean <file>` per file from the root (imports unresolvable, so
+# permanently red) plus SKIP-on-missing-toolchain. Now the same build CI
+# runs: both lake packages with warnings as errors.
 proof-check-lean4:
     #!/usr/bin/env bash
     set -euo pipefail
-    echo "=== Checking Lean4 proofs ==="
-    if ! command -v lean &>/dev/null; then
-        echo "SKIP: lean not installed"
-        exit 0
-    fi
-    ERRORS=0
-    for f in $(find verification/proofs/lean4 -name '*.lean' 2>/dev/null); do
-        echo -n "  Checking $f ... "
-        if lean "$f" 2>/dev/null; then
-            echo "OK"
-        else
-            echo "FAIL"
-            ERRORS=$((ERRORS + 1))
-        fi
-    done
-    if [ "$ERRORS" -gt 0 ]; then
-        echo "FAIL: $ERRORS Lean4 proof(s) failed"
+    echo "=== Checking Lean4 proofs (lake build --wfail, both packages) ==="
+    if ! command -v lake &>/dev/null; then
+        echo "FAIL: lake not installed (Lean v4.16.0, see lean-toolchain files) — refusing to report a skip as a pass"
         exit 1
     fi
-    echo "PASS: All Lean4 proofs verified"
+    ( cd verification/proofs/lean4/grade-boundary && lake build --wfail )
+    ( cd verification/proofs/lean4/grade-factorisation && lake build --wfail )
+    # Orphan guard: every .lean in the tree must be a lean_lib of one of
+    # the two lakefiles (a file no package builds is never kernel-checked).
+    orphans=""
+    for f in $(find verification/proofs/lean4 -name '*.lean' -not -path '*/.lake/*' | sort); do
+        base="$(basename "$f" .lean)"
+        grep -qhE '^name = "'"$base"'"' verification/proofs/lean4/*/lakefile.toml \
+          || orphans="$orphans $f"
+    done
+    if [ -n "$orphans" ]; then
+        echo "FAIL: Lean files belonging to no lake package (never built):$orphans"
+        exit 1
+    fi
+    echo "PASS: both Lean packages build (--wfail); no orphan .lean files"
 
-# Check Agda proofs
+# Check Agda proofs (same entry point and flags as build-agda / CI)
 proof-check-agda:
     #!/usr/bin/env bash
     set -euo pipefail
-    echo "=== Checking Agda proofs ==="
+    echo "=== Checking Agda proofs (Theorem B, strictest flags) ==="
     if ! command -v agda &>/dev/null; then
-        echo "SKIP: agda not installed"
-        exit 0
-    fi
-    ERRORS=0
-    for f in $(find verification/proofs/agda -name '*.agda' 2>/dev/null); do
-        echo -n "  Checking $f ... "
-        if agda --safe "$f" 2>/dev/null; then
-            echo "OK"
-        else
-            echo "FAIL"
-            ERRORS=$((ERRORS + 1))
-        fi
-    done
-    if [ "$ERRORS" -gt 0 ]; then
-        echo "FAIL: $ERRORS Agda proof(s) failed"
+        echo "FAIL: agda not installed (need 2.7.0.1 + stdlib 2.0) — refusing to report a skip as a pass"
         exit 1
     fi
-    echo "PASS: All Agda proofs verified"
+    AGDA_FLAGS=(--safe --without-K --cubical-compatible --exact-split --warning=error)
+    ( cd verification/proofs/agda/theorem-b \
+        && agda "${AGDA_FLAGS[@]}" All.agda \
+        && agda "${AGDA_FLAGS[@]}" Smoke.agda )
+    echo "PASS: Theorem B typechecks (${AGDA_FLAGS[*]})"
 
-# Check Coq proofs
-proof-check-coq:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "=== Checking Coq proofs ==="
-    if ! command -v coqc &>/dev/null; then
-        echo "SKIP: coqc not installed"
-        exit 0
-    fi
-    ERRORS=0
-    for f in $(find verification/proofs/coq -name '*.v' 2>/dev/null); do
-        echo -n "  Checking $f ... "
-        if coqc "$f" 2>/dev/null; then
-            echo "OK"
-        else
-            echo "FAIL"
-            ERRORS=$((ERRORS + 1))
-        fi
-    done
-    if [ "$ERRORS" -gt 0 ]; then
-        echo "FAIL: $ERRORS Coq proof(s) failed"
-        exit 1
-    fi
-    echo "PASS: All Coq proofs verified"
+# (No proof-check-coq: the tree carries no Coq — T5 of PR #102 removed the
+# never-instantiated template, and a recipe whose find matches nothing and
+# whose missing toolchain exits 0 is, in ADR 0005's words, "a gate that
+# cannot fail". If Coq ever lands for real, add the recipe with the proof.)
 
 # Scan for dangerous patterns in proof files (believe_me, sorry, Admitted, etc.)
 # COMMENT-AWARE: strips line (-- //) and block ({- -}, /- -/, (* *)) comments before
@@ -168,33 +151,65 @@ proof-status:
 # per-file check.
 # ---------------------------------------------------------------------------
 
-# Build + axiom-audit the Lean grade-boundary harness (Lean 4 v4.16.0 + Mathlib, pinned).
+# Build BOTH Lean packages and axiom-audit every `#print axioms` receipt.
+#
+# The old "audit" re-ran `lake build | grep ... || true` on a warm tree:
+# lake re-emits nothing for up-to-date modules, grep found nothing, and the
+# step passed having audited zero theorems. Now each source is re-elaborated
+# with `lake env lean`, its #print axioms output is captured, and EVERY
+# reported axiom set is checked against the allowlist {propext,
+# Classical.choice, Quot.sound} — with a non-vacuity floor (the corpus
+# carries 70+ receipts today; the audit fails below 50 rather than passing
+# on an empty grep).
 build-lean:
     #!/usr/bin/env bash
     set -euo pipefail
     ROOT="$(pwd)"
-    echo "=== build-lean: grade-boundary (Lean 4 + Mathlib, pinned) ==="
-    ( cd "$ROOT/verification/proofs/lean4/grade-boundary" && lake build )
-    echo "--- axiom audit (expect propext / Quot.sound only; NO sorryAx) ---"
-    ( cd "$ROOT/verification/proofs/lean4/grade-boundary" && lake build 2>&1 | grep -E "depends on axioms|does not depend" || true )
-    echo "=== build-lean: grade-factorisation (tropical factorisation probe; imports grade-boundary) ==="
-    ( cd "$ROOT/verification/proofs/lean4/grade-factorisation" && lake build )
-    echo "--- axiom audit (expect propext / Quot.sound only; NO sorryAx) ---"
-    ( cd "$ROOT/verification/proofs/lean4/grade-factorisation" && lake build 2>&1 | grep -E "depends on axioms|does not depend" || true )
+    audit_pkg() {
+        local pkg="$1"
+        echo "=== build-lean: ${pkg} (Lean 4 + Mathlib, pinned) ==="
+        ( cd "$ROOT/verification/proofs/lean4/${pkg}" && lake build --wfail )
+        local out receipts f
+        out="$(mktemp)"
+        for f in "$ROOT/verification/proofs/lean4/${pkg}"/*.lean; do
+            ( cd "$ROOT/verification/proofs/lean4/${pkg}" && lake env lean "$f" ) >>"$out" 2>&1 \
+              || { echo "FAIL: re-elaborating $f for the axiom audit failed"; cat "$out"; exit 1; }
+        done
+        receipts="$(grep -cE "depends on axioms|does not depend on any axioms" "$out" || true)"
+        if grep -E "depends on axioms" "$out" | grep -vE "^[^:]+depends on axioms: (propext|Classical\.choice|Quot\.sound)(, (propext|Classical\.choice|Quot\.sound))*$" >/dev/null; then
+            echo "FAIL: axiom outside the allowlist (propext / Classical.choice / Quot.sound):"
+            grep -E "depends on axioms" "$out" | grep -vE "^[^:]+depends on axioms: (propext|Classical\.choice|Quot\.sound)(, (propext|Classical\.choice|Quot\.sound))*$"
+            exit 1
+        fi
+        echo "axiom audit: ${receipts} receipts in ${pkg}, all within the allowlist"
+        TOTAL_RECEIPTS=$((TOTAL_RECEIPTS + receipts))
+        rm -f "$out"
+    }
+    TOTAL_RECEIPTS=0
+    audit_pkg grade-boundary
+    audit_pkg grade-factorisation
+    if [ "$TOTAL_RECEIPTS" -lt 50 ]; then
+        echo "FAIL: only ${TOTAL_RECEIPTS} axiom receipts audited (floor 50) — audit went vacuous"
+        exit 1
+    fi
+    echo "PASS: build-lean — both packages build; ${TOTAL_RECEIPTS} axiom receipts audited, none outside the allowlist"
 
 # `--safe` already guarantees no postulate / trustMe / TERMINATING, so this IS the Agda honesty gate.
 #
-# Typecheck the Theorem-B Agda metatheory (whole dev + headline pins) under --safe --without-K.
+# Typecheck the Theorem-B Agda metatheory (whole dev + headline pins) at full strictness.
 build-agda:
     #!/usr/bin/env bash
     set -euo pipefail
-    echo "=== build-agda: Theorem B metatheory (--safe --without-K) ==="
-    # Needs Agda >= 2.6.4 and agda-stdlib >= 2.0 (Data.Product.Base); the CI job
-    # pins Agda 2.7.0.1 + stdlib 2.0 by checksum — see proofs.yml agda-theorem-b.
+    echo "=== build-agda: Theorem B metatheory (strictest flags) ==="
+    # Needs Agda >= 2.7.0 and agda-stdlib >= 2.0 (Data.Product.Base, and
+    # --cubical-compatible throughout stdlib); the CI job pins Agda 2.7.0.1 +
+    # stdlib 2.0 by checksum — see proofs.yml agda-theorem-b. The same set
+    # lives in theorem-b.agda-lib `flags:` and every module's OPTIONS pragma.
+    AGDA_FLAGS=(--safe --without-K --cubical-compatible --exact-split --warning=error)
     cd verification/proofs/agda/theorem-b
-    agda --safe --without-K All.agda
-    agda --safe --without-K Smoke.agda
-    echo "PASS: All.agda + Smoke.agda typecheck (--safe ⇒ postulate-free by construction)"
+    agda "${AGDA_FLAGS[@]}" All.agda
+    agda "${AGDA_FLAGS[@]}" Smoke.agda
+    echo "PASS: All.agda + Smoke.agda typecheck (${AGDA_FLAGS[*]}; --safe ⇒ postulate-free by construction)"
 
 # (Agda postulate-freedom is enforced by --safe in build-agda; a word-grep would
 # false-positive on the honest 'sorry-free' / 'No postulate' comments — do NOT use one.)
@@ -209,9 +224,9 @@ verify-all: build-lean build-agda
         echo "--- gating $f ---"
         # Comment-aware, token-based (mirrors proofs.yml; keep the two in step).
         stripped=$(awk -f tests/lib/strip-proof-comments.awk "$f")
-        if grep -nE '(^|[^[:alnum:]_.])(sorry|admit)([^[:alnum:]_]|$)|\bnative_decide\b' <<<"$stripped"; then
-            echo "FAIL: forbidden Lean tactic (sorry/admit/native_decide) in $f"; exit 1; fi
+        if grep -nE '(^|[^[:alnum:]_.])(sorry|admit|unsafe)([^[:alnum:]_]|$)|\bnative_decide\b|\bsorryAx\b|\bofReduceBool\b|\bextern\b|\bimplemented_by\b' <<<"$stripped"; then
+            echo "FAIL: forbidden Lean construct (sorry/admit/native_decide/sorryAx/ofReduceBool/unsafe/extern/implemented_by) in $f"; exit 1; fi
         if grep -nE '^[[:space:]]*axiom\b' <<<"$stripped"; then
             echo "FAIL: user axiom declared in $f"; exit 1; fi
     done
-    echo "PASS: verify-all — Lean green & axiom-clean (propext/Quot.sound only); Agda --safe --without-K green."
+    echo "PASS: verify-all — Lean green & axiom-clean; Agda strict-flags green."
