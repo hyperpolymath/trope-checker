@@ -83,6 +83,20 @@
       "witness": "e_attenuate",
       "witness_coordinate": "fate.record",
       "note": "back-compat: the same document under version 0.1 is accepted, normalized and graded identically (IR 0.2 accepts both versions; wire format unchanged)"
+    },
+    {
+      "ir": "witness-permutation-a.ir.json",
+      "expect": "p-insufficient",
+      "witness": "e_alpha",
+      "witness_coordinate": "fate.quality",
+      "note": "calculus §6.2 deterministic witness: the witness is the first violating edge in topological order over the output's ancestor DAG, ties broken by edge ID — e_alpha, not document-first e_stray (a violating non-ancestor) and not document-earlier e_zeta"
+    },
+    {
+      "ir": "witness-permutation-b.ir.json",
+      "expect": "p-insufficient",
+      "witness": "e_alpha",
+      "witness_coordinate": "fate.quality",
+      "note": "permutation twin of witness-permutation-a with the edges array reordered: JSON document order MUST NOT affect witness selection (calculus §6.2)"
     }
   ]
 }

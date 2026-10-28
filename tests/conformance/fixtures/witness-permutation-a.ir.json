@@ -1,0 +1,214 @@
+{
+  "$schema": "https://github.com/hyperpolymath/trope-checker/schemas/trope-ir.schema.json",
+  "$comment": "SPDX-FileCopyrightText: \u00a9 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>. SPDX-License-Identifier: MPL-2.0",
+  "version": "0.2",
+  "profile": "prevent",
+  "nodes": [
+    {
+      "id": "r1",
+      "type": "Trope",
+      "present": [
+        "quality",
+        "bearer",
+        "context",
+        "record"
+      ]
+    },
+    {
+      "id": "r2",
+      "type": "Trope",
+      "present": [
+        "quality",
+        "bearer",
+        "context",
+        "record"
+      ]
+    },
+    {
+      "id": "m1",
+      "type": "Trope",
+      "present": [
+        "quality",
+        "bearer",
+        "context",
+        "record"
+      ]
+    },
+    {
+      "id": "m2",
+      "type": "Trope",
+      "present": [
+        "quality",
+        "bearer",
+        "context",
+        "record"
+      ]
+    },
+    {
+      "id": "out",
+      "type": "Trope",
+      "present": [
+        "quality",
+        "bearer",
+        "context",
+        "record"
+      ]
+    },
+    {
+      "id": "stray_in",
+      "type": "Trope",
+      "present": [
+        "quality",
+        "bearer",
+        "context",
+        "record"
+      ]
+    },
+    {
+      "id": "stray_out",
+      "type": "Trope",
+      "present": [
+        "quality",
+        "bearer",
+        "context",
+        "record"
+      ]
+    }
+  ],
+  "use_model": {
+    "output": "out",
+    "floor": {
+      "fate": {
+        "quality": {
+          "k": "Attenuated",
+          "delta": 1
+        }
+      }
+    }
+  },
+  "edges": [
+    {
+      "id": "e_stray",
+      "effect": "project",
+      "inputs": [
+        "stray_in"
+      ],
+      "output": "stray_out",
+      "grade": {
+        "fate": {
+          "quality": {
+            "k": "Dropped"
+          },
+          "bearer": {
+            "k": "Present"
+          },
+          "context": {
+            "k": "Present"
+          },
+          "record": {
+            "k": "Present"
+          }
+        },
+        "bond": {
+          "k": "Intact"
+        },
+        "merge": {
+          "k": "Single"
+        }
+      },
+      "note": "violating edge that is NOT an ancestor of the output"
+    },
+    {
+      "id": "e_zeta",
+      "effect": "project",
+      "inputs": [
+        "r1"
+      ],
+      "output": "m1",
+      "grade": {
+        "fate": {
+          "quality": {
+            "k": "Dropped"
+          },
+          "bearer": {
+            "k": "Present"
+          },
+          "context": {
+            "k": "Present"
+          },
+          "record": {
+            "k": "Present"
+          }
+        },
+        "bond": {
+          "k": "Intact"
+        },
+        "merge": {
+          "k": "Single"
+        }
+      }
+    },
+    {
+      "id": "e_alpha",
+      "effect": "project",
+      "inputs": [
+        "r2"
+      ],
+      "output": "m2",
+      "grade": {
+        "fate": {
+          "quality": {
+            "k": "Dropped"
+          },
+          "bearer": {
+            "k": "Present"
+          },
+          "context": {
+            "k": "Present"
+          },
+          "record": {
+            "k": "Present"
+          }
+        },
+        "bond": {
+          "k": "Intact"
+        },
+        "merge": {
+          "k": "Single"
+        }
+      }
+    },
+    {
+      "id": "e_fuse",
+      "effect": "fuse",
+      "inputs": [
+        "m1",
+        "m2"
+      ],
+      "output": "out",
+      "grade": {
+        "fate": {
+          "quality": {
+            "k": "Present"
+          },
+          "bearer": {
+            "k": "Present"
+          },
+          "context": {
+            "k": "Present"
+          },
+          "record": {
+            "k": "Present"
+          }
+        },
+        "bond": {
+          "k": "Intact"
+        },
+        "merge": {
+          "k": "Fused",
+          "tau": "pair"
+        }
+      }
+    }
+  ]
+}

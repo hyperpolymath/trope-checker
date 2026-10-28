@@ -249,7 +249,13 @@ jobs:
       - name: actionlint diagnostics (annotations, on failure only)
         if: failure() && steps.actionlint.outcome == 'failure'
         run: |
-          actionlint -no-color > "$RUNNER_TEMP/actionlint.txt" 2>&1 || true
+          # Capture-and-report, never `|| true`: this step only runs because
+          # actionlint already failed, so the re-run is EXPECTED to exit
+          # non-zero — surface that code in a notice while the diagnostics
+          # are emitted, instead of masking it (Hypatia RE005).
+          rc=0
+          actionlint -no-color > "$RUNNER_TEMP/actionlint.txt" 2>&1 || rc=$?
+          echo "::notice::actionlint diagnostics re-run exited $rc (expected: this step runs on failure only)"
           head -9 "$RUNNER_TEMP/actionlint.txt" | while IFS= read -r line; do
             echo "::error::actionlint: $line"
           done

@@ -18,6 +18,14 @@ jobs:
     env:
       HAS_DISPATCH_TOKEN: ${{ secrets.FARM_DISPATCH_TOKEN != '' }}
     steps:
+      # This job holds FARM_DISPATCH_TOKEN; monitor its outbound egress
+      # (Hypatia RE001). Audit mode first: record every endpoint without
+      # risking the dispatch; tighten to block+allowlist once a main run
+      # shows the observed set.
+      - name: Harden runner (egress audit)
+        uses: step-security/harden-runner@v2.22.3
+        with:
+          egress-policy: audit
       - name: Trigger Propagation
         if: env.HAS_DISPATCH_TOKEN == 'true'
         uses: peter-evans/repository-dispatch@v4.0.1

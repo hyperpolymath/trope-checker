@@ -129,6 +129,11 @@ jobs:
           PANIC_ATTACK_REV: b689a74d2762a1c19839ae3fbd59b7fe5ef920ea
         run: |
           set -euo pipefail
+          # --features http is load-bearing: at this pin the whole `bridge`
+          # subcommand (and its CVE lookups) sits behind
+          # #[cfg(feature = "http")] with default features empty — without
+          # it the binary builds clean and then rejects `bridge` as an
+          # unknown command at triage time.
           cargo install --git https://github.com/hyperpolymath/panic-attack.git \
             --rev "$PANIC_ATTACK_REV" --locked --features http --bin panic-attack \
             --root "$RUNNER_TEMP/panic-attack"

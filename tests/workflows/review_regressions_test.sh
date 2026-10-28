@@ -302,8 +302,13 @@ axiom_ok() { # declared-json expected-ok report-json
 }
 
 axiom_ok '[]' true  '{"audited":5,"axiomsUsed":["Classical.choice","npowBinRec._at.Inst._spec_2"],"violations":[]}'
-axiom_ok '["_spec_1"]' false '{"audited":5,"axiomsUsed":["_spec_1"],"violations":[{"decl":"RealThm","axioms":["_spec_1"]}]}'
 axiom_ok '[]' false '{"audited":5,"axiomsUsed":["forged_spec"],"violations":[{"decl":"RealThm","axioms":["forged_spec"]}]}'
+# `_spec_1` DOES match the anchored internal-component shape, so these two
+# cases isolate the source_declared_axiom cross-check itself: undeclared it
+# is excused as a compiler placeholder; declared in a gated source it must
+# never be excused, however internal-looking the name is.
+axiom_ok '[]' true  '{"audited":5,"axiomsUsed":["_spec_1"],"violations":[{"decl":"RealThm","axioms":["_spec_1"]}]}'
+axiom_ok '["_spec_1"]' false '{"audited":5,"axiomsUsed":["_spec_1"],"violations":[{"decl":"RealThm","axioms":["_spec_1"]}]}'
 axiom_ok '[]' false '{"audited":5,"axiomsUsed":["sorryAx"],"violations":[{"decl":"match_1","axioms":["sorryAx"]}]}'
 axiom_ok '[]' true  '{"audited":5,"axiomsUsed":[],"violations":[{"decl":"foo._cstage1","axioms":["bar._at.X._spec_1"]}]}'
 axiom_ok '["_spec_1"]' false '{"audited":5,"axiomsUsed":["_private.Grade.0._spec_1"],"violations":[{"decl":"RealThm","axioms":["_private.Grade.0._spec_1"]}]}'

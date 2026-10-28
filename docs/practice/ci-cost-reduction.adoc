@@ -134,19 +134,27 @@ substitution is near-free:
 | Running both is belt-and-braces with ~90% coverage overlap. One is
   enough for prevention; both only for quarterly history-sweeps.
 
-| `static-analysis-gate.yml` + canonical scanner lane
-| Retired `static-analysis-gate.yml` (2026-10-28): its Hypatia and
-  panic-attack jobs are covered by `fork-governance.yml` (PRs) and
-  `hypatia-scan.yml` (push/schedule).
-| Unique Patch Bridge CVE triage remains in `patch-bridge.yml`.
-  See link:../decisions/0006-scanner-lane-sequencing.adoc[ADR 0006].
+| `rsr-antipattern.yml` + `scorecard-enforcer.yml` +
+  `static-analysis-gate.yml`
+| RESOLVED (2026-10-28): do not merge — retire and split.
+  `static-analysis-gate.yml` was retired outright; its Hypatia and
+  panic-attack jobs are covered once by the canonical standards lane
+  (`fork-governance.yml` on pull requests, `hypatia-scan.yml` on push),
+  and its only unique job, Patch Bridge CVE triage, lives in
+  `patch-bridge.yml`. Recreating a composite `rsr-gate.yml` would
+  re-duplicate the standards scanners at divergent pins — the exact
+  defect ADR 0006 records.
+| They no longer run in the same CI slot as duplicates: one canonical
+  lane per scanner, sequenced per ADR 0006 §"Decision".
 
 | `codeql.yml` + `hypatia-scan.yml`
-| Keep both. Hypatia runs on PRs through `fork-governance.yml`, then
-  on push/schedule through `hypatia-scan.yml`, using the same reusable
-  and scanner pins.
-| Preserve main-branch baseline/SARIF reconciliation in the sequence
-  defined by link:../decisions/0006-scanner-lane-sequencing.adoc[ADR 0006].
+| Keep both, on their current triggers (ADR 0006): Hypatia runs
+  PR-time inside `fork-governance.yml` and on push via
+  `hypatia-scan.yml`. Do NOT drop the push trigger to schedule-only —
+  the push lane is the one that grades what actually landed on main,
+  and PR-time scope is the change, not the tree.
+| The earlier schedule-only suggestion traded away landed-code
+  coverage for minutes; the ADR 0006 sequence supersedes it.
 
 | `codeql.yml` (on-push) + `codeql.yml` (scheduled)
 | Keep on-push, drop scheduled

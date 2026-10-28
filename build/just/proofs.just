@@ -228,9 +228,12 @@ verify-all: build-lean build-agda
         echo "--- gating $f ---"
         # Comment-aware, token-based (mirrors proofs.yml; keep the two in step).
         stripped=$(awk -f tests/lib/strip-proof-comments.awk "$f")
-        if grep -nE '(^|[^[:alnum:]_.])(sorry|admit|unsafe)([^[:alnum:]_]|$)|\bnative_decide\b|\bsorryAx\b|\bofReduceBool\b|\bextern\b|\bimplemented_by\b' <<<"$stripped"; then
-            echo "FAIL: forbidden Lean construct (sorry/admit/native_decide/sorryAx/ofReduceBool/unsafe/extern/implemented_by) in $f"; exit 1; fi
-        if grep -nE '^[[:space:]]*axiom\b' <<<"$stripped"; then
+        if grep -nE '(^|[^[:alnum:]_.])(sorry|admit|unsafe)([^[:alnum:]_]|$)|\bnative_decide\b|\bsorryAx\b|\bofReduceBool\b|\bextern\b|\bimplemented_by\b|\baddDecl\b|\baxiomDecl\b' <<<"$stripped"; then
+            echo "FAIL: forbidden Lean construct (sorry/admit/native_decide/sorryAx/ofReduceBool/unsafe/extern/implemented_by/addDecl/axiomDecl) in $f"; exit 1; fi
+        # Token-based, not line-initial (mirrors proofs.yml): `private axiom
+        # foo` is an axiom declaration too, and this local gate must not be
+        # weaker than the CI one it mirrors.
+        if grep -nE '(^|[^[:alnum:]_.])axiom([^[:alnum:]_]|$)' <<<"$stripped"; then
             echo "FAIL: user axiom declared in $f"; exit 1; fi
     done
     echo "PASS: verify-all — Lean green & axiom-clean; Agda strict-flags green."

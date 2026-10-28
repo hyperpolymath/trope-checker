@@ -10,7 +10,7 @@
 
 #![allow(dead_code)]
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 // ──────────────────────────── JSON (minimal, std-only) ────────────────────────────
 #[derive(Clone, Debug)]
@@ -651,11 +651,13 @@ pub fn dec_grade(epath: &str, value: &Json) -> Result<Grade, String> {
 /// Return an empty list if `v` is not an array.
 #[must_use]
 pub fn str_list(v: &Json) -> Vec<String> {
-    v.as_arr().map_or_default(|a| {
-        a.iter()
-            .filter_map(|x| x.as_str().map(String::from))
-            .collect()
-    })
+    v.as_arr()
+        .map(|a| {
+            a.iter()
+                .filter_map(|x| x.as_str().map(String::from))
+                .collect()
+        })
+        .unwrap_or_default()
 }
 /// Decode an IR node.
 ///
@@ -676,7 +678,7 @@ pub fn dec_node(v: &Json) -> Result<Node, String> {
         .and_then(|x| x.as_str())
         .ok_or_else(|| format!("nodes/{id}: missing type"))?
         .to_string();
-    let present = v.field("present").map_or_default(str_list);
+    let present = v.field("present").map(str_list).unwrap_or_default();
     if kind == "FloatingQuality" && present.iter().any(|p| p == "bearer") {
         return Err(format!(
             "nodes/{id}/present: FloatingQuality may not list a bearer"
@@ -700,7 +702,7 @@ pub fn dec_edge(v: &Json) -> Result<Edge, String> {
         .and_then(|x| x.as_str())
         .ok_or("edges: missing id")?
         .to_string();
-    let inputs = v.field("inputs").map_or_default(str_list);
+    let inputs = v.field("inputs").map(str_list).unwrap_or_default();
     let output = v
         .field("output")
         .and_then(|x| x.as_str())
@@ -863,6 +865,62 @@ pub fn violations(fl: &Floor, g: &Grade) -> Vec<String> {
     }
     v
 }
+/// The candidate witness edges in the order calculus §6.2 prescribes:
+/// topological order over the selected output's *ancestor* DAG, ties
+/// between ready edges broken by edge ID. JSON document order must not
+/// affect the result, and a violating edge that is not an ancestor of the
+/// output is never a candidate — document-order scanning got both wrong.
+///
+/// Documents reaching here are schema-valid DAGs. On a malformed cyclic
+/// graph the unemittable remainder is simply skipped (accumulation stays
+/// fuel-bounded in `acc`), never an infinite loop.
+fn topo_witness_order(doc: &Doc) -> Vec<&Edge> {
+    let producer: BTreeMap<&str, &Edge> = doc
+        .edges
+        .iter()
+        .map(|e| (e.output.as_str(), e))
+        .collect();
+    // Ancestors of the output: backwards closure through producer inputs.
+    let mut ancestors: BTreeSet<&str> = BTreeSet::new();
+    let mut stack: Vec<&str> = vec![doc.out.as_str()];
+    while let Some(n) = stack.pop() {
+        if ancestors.insert(n) {
+            if let Some(e) = producer.get(n) {
+                stack.extend(e.inputs.iter().map(String::as_str));
+            }
+        }
+    }
+    let mut remaining: Vec<&Edge> = ancestors
+        .iter()
+        .filter_map(|n| producer.get(n).copied())
+        .collect();
+    let mut emitted: BTreeSet<&str> = BTreeSet::new();
+    let mut order: Vec<&Edge> = Vec::new();
+    while !remaining.is_empty() {
+        // Ready = every produced input already emitted (producerless
+        // inputs are roots, grade ε). Pick the smallest edge ID.
+        let ready = remaining
+            .iter()
+            .enumerate()
+            .filter(|(_, e)| {
+                e.inputs.iter().all(|i| {
+                    !producer.contains_key(i.as_str()) || emitted.contains(i.as_str())
+                })
+            })
+            .min_by(|(_, a), (_, b)| a.id.cmp(&b.id))
+            .map(|(idx, _)| idx);
+        match ready {
+            Some(idx) => {
+                let e = remaining.remove(idx);
+                emitted.insert(e.output.as_str());
+                order.push(e);
+            }
+            None => break,
+        }
+    }
+    order
+}
+
 #[must_use]
 pub fn check(doc: &Doc) -> (String, Option<(String, String)>) {
     let fuel = doc.edges.len() + 1;
@@ -872,8 +930,10 @@ pub fn check(doc: &Doc) -> (String, Option<(String, String)>) {
     if bad.is_empty() {
         return ("p-sufficient".into(), None);
     }
-    // witness: first edge (document order) whose output grade violates a failing coord
-    for e in &doc.edges {
+    // Witness (calculus §6.2): the first edge in topological order over
+    // the output's ancestor DAG (edge-ID tie-break) whose accumulated
+    // output grade violates the floor in a failing coordinate.
+    for e in topo_witness_order(doc) {
         let mut m2 = BTreeMap::new();
         let g = acc(&doc.edges, &e.output, fuel, &mut m2);
         let hit: Vec<String> = violations(&doc.floor, &g)

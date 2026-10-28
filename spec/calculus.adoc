@@ -389,8 +389,10 @@ to *which honest* absorber acted but not to *whether the absorber was honest*
 (`GradeFactorisationR.lean`: `piR_hom`, `piR_nontrivial`, `piR_surjective`,
 `piR_sighted`). The naive hom that reads the attenuation payload off verbatim is
 *not* a homomorphism on the ratified carrier (`phiId_not_hom`); the repair,
-`GradeFactorisationR.squash`, maps `Unknown` (`Delta.unknown`) to `Total`
-(`Delta.total`, or `∞`). On the v0.1 carrier every such hom was
+`GradeFactorisationR.squash`, maps the tier-deceptive payload `Unknown`
+(`Delta.unknown`, `⊤`) to `Total` (`Delta.total`, or `∞`) inside attenuation
+(`sighted_forces_squash` proves every veridicality-sighted hom must give up
+that separation). On the v0.1 carrier every such hom was
 forced to collapse `Dropped` with `Falsified` (`GradeFactorisation.lean`,
 `forced_collapse_general`) — a theorem about the pre-ratification carrier only.
 This factorisation is a *precondition*, not a recursion result: whether a

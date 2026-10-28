@@ -14,6 +14,8 @@ on:
     paths:
       - 'schemas/**'
       - 'src/idris2/**'
+      - 'src/interface/**'
+      - 'abi.ipkg'
       - 'tests/conformance/**'
       - 'verification/proofs/idris2/**'
       - 'spec/**'

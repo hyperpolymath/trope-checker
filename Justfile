@@ -140,8 +140,11 @@ test-smoke:
     @echo "Smoke test..."
     # TODO: Add basic sanity checks
 
-# Run end-to-end conformance tests (build first with `just trope-build`).
-e2e:
+# Run end-to-end conformance tests. Depends on trope-build so the corpus
+# always runs against a checker built from the current tree — never a stale
+# binary left in src/idris2/build, and never an early exit when none exists
+# (test-all includes e2e and then pronounces the tree safe to merge).
+e2e: trope-build
     bash tests/e2e.sh
 
 # Run aspect tests (cross-cutting concern validation)
