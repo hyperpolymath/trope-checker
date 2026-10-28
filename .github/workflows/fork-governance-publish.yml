@@ -1,0 +1,149 @@
+# SPDX-License-Identifier: MPL-2.0
+# Only trusted default-branch code publishes the untrusted PR scan's evidence.
+# Never check out the PR or execute anything downloaded from its run.
+name: Publish fork governance
+
+on:
+  # Source identity/current head are checked below; artifacts are data only.
+  workflow_run: # zizmor: ignore[dangerous-triggers]
+    workflows: [Fork governance]
+    types: [completed]
+
+permissions: {}
+
+concurrency:
+  group: fork-governance-publish-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    if: github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: write
+    steps:
+      - name: Verify the source run and current pull request
+        id: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          run_id=$(jq -r '.workflow_run.id' "$GITHUB_EVENT_PATH")
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id" > "$RUNNER_TEMP/source-run.json"
+          workflow_id=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/fork-governance.yml" --jq .id)
+          jq -e --argjson workflow "$workflow_id" --slurpfile event "$GITHUB_EVENT_PATH" '
+            .workflow_id == $workflow and .event == "pull_request" and .status == "completed"
+            and .repository.full_name == $event[0].repository.full_name
+            and .head_sha == $event[0].workflow_run.head_sha
+            and .run_attempt == $event[0].workflow_run.run_attempt
+          ' "$RUNNER_TEMP/source-run.json" >/dev/null
+          sha=$(jq -r '.head_sha' "$RUNNER_TEMP/source-run.json")
+          # workflow_run.pull_requests can be empty for forks. Resolve the
+          # association through GitHub, never through a PR-supplied artifact.
+          gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/commits/$sha/pulls" \
+            > "$RUNNER_TEMP/source-prs.json"
+          pr=$(jq -r --arg sha "$sha" --arg repo "$GITHUB_REPOSITORY" '
+            [.[][] | select(.state == "open" and .head.sha == $sha and .base.repo.full_name == $repo)]
+            | if length == 1 then .[0].number else empty end
+          ' "$RUNNER_TEMP/source-prs.json")
+          [ -n "$pr" ] || { echo "No unique current open PR for this run; skipping publication."; exit 0; }
+          echo "pr=$pr" >> "$GITHUB_OUTPUT"
+          echo "run=$run_id" >> "$GITHUB_OUTPUT"
+
+      - name: Download lane results from the verified run
+        if: steps.source.outputs.pr != ''
+        uses: actions/download-artifact@v8.0.2
+        with:
+          name: fork-governance-result
+          path: evidence
+          github-token: ${{ github.token }}
+          run-id: ${{ steps.source.outputs.run }}
+
+      - name: Validate lane result data
+        if: steps.source.outputs.pr != ''
+        run: |
+          set -euo pipefail
+          jq -e --slurpfile run "$RUNNER_TEMP/source-run.json" '
+            def result: . == "success" or . == "failure" or . == "cancelled" or . == "skipped";
+            def verdict: . == "" or . == "green" or . == "yellow" or . == "orange"
+              or . == "red" or . == "purple" or . == "blue" or . == "grey";
+            .sha == $run[0].head_sha and .run == ($run[0].id | tostring)
+            and .attempt == ($run[0].run_attempt | tostring)
+            and (.lanes.deed.result | result)
+            and (.lanes.k9.result | result) and (.lanes.hypatia.result | result)
+            and ((.lanes.k9.outputs.verdict // "") | verdict)
+            and ((.lanes.hypatia.outputs.verdict // "") | verdict)
+            and ((.lanes.hypatia.outputs.advisory // "")
+              | test("^(|none|(green|yellow|orange|red|purple|blue|grey):[0-9]+:[0-9]+)$"))
+          ' evidence/result.json >/dev/null
+
+      - name: Download the K9 grid from the verified run
+        if: steps.source.outputs.pr != ''
+        continue-on-error: true
+        uses: actions/download-artifact@v8.0.2
+        with:
+          name: k9-grid
+          path: k9-grid
+          github-token: ${{ github.token }}
+          run-id: ${{ steps.source.outputs.run }}
+
+      - name: Download the Hypatia grid from the verified run
+        if: steps.source.outputs.pr != ''
+        continue-on-error: true
+        uses: actions/download-artifact@v8.0.2
+        with:
+          name: verdict-grid
+          path: verdict-grid
+          github-token: ${{ github.token }}
+          run-id: ${{ steps.source.outputs.run }}
+
+      - name: Checkout the pinned trusted renderer
+        if: steps.source.outputs.pr != ''
+        uses: actions/checkout@v7.0.1
+        with:
+          repository: metadatastician/standards
+          ref: 34cf03f988b8ca95b91b45d9b3351f7d3babfb65
+          path: canon
+          sparse-checkout: scripts/fork-governance-render.sh
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      - name: Render and publish the verified run's summary
+        if: steps.source.outputs.pr != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ steps.source.outputs.pr }}
+        run: |
+          set -euo pipefail
+          sha=$(jq -r '.sha' evidence/result.json)
+          # Check again after artifact downloads so a superseded PR head
+          # does not receive an obsolete verdict.
+          gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" \
+            | jq -e --arg sha "$sha" '.state == "open" and .head.sha == $sha' >/dev/null
+          args=(--out "$RUNNER_TEMP/fork-governance"
+                --deed-result "$(jq -r '.lanes.deed.result' evidence/result.json)"
+                --k9-result "$(jq -r '.lanes.k9.result' evidence/result.json)"
+                --k9-verdict "$(jq -r '.lanes.k9.outputs.verdict // ""' evidence/result.json)"
+                --hypatia-result "$(jq -r '.lanes.hypatia.result' evidence/result.json)"
+                --hypatia-verdict "$(jq -r '.lanes.hypatia.outputs.verdict // ""' evidence/result.json)"
+                --hypatia-advisory "$(jq -r '.lanes.hypatia.outputs.advisory // ""' evidence/result.json)"
+                --sha "$sha" --run "$(jq -r '.run' evidence/result.json)" --repo "$GITHUB_REPOSITORY")
+          [ ! -s k9-grid/report.md ] || args+=(--k9-report k9-grid/report.md)
+          [ ! -s verdict-grid/report.md ] || args+=(--hypatia-report verdict-grid/report.md)
+          bash canon/scripts/fork-governance-render.sh "${args[@]}" >/dev/null
+          cat "$RUNNER_TEMP/fork-governance/body.md" >> "$GITHUB_STEP_SUMMARY"
+          comment_id=$(gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" \
+            | jq -r '[.[][] | select(.user.login == "github-actions[bot]"
+                and ((.body // "") | contains("<!-- fork-governance-verdict:")))] | last | .id // ""')
+          jq -n --rawfile body "$RUNNER_TEMP/fork-governance/body.md" '{body: $body}' \
+            > "$RUNNER_TEMP/fork-governance/comment.json"
+          if [ -n "$comment_id" ]; then
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$comment_id" \
+              --input "$RUNNER_TEMP/fork-governance/comment.json" >/dev/null
+          else
+            gh api -X POST "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" \
+              --input "$RUNNER_TEMP/fork-governance/comment.json" >/dev/null
+          fi

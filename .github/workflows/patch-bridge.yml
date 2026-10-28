@@ -81,7 +81,7 @@ jobs:
               */mix.lock|mix.lock)
                 count=$(grep -c '{:hex,' "$lockfile" || true) ;;
               */package-lock.json|package-lock.json)
-                count=$(jq -r '(.packages // {}) | keys | map(select(. != "")) | length' "$lockfile") ;;
+                count=$(jq -r 'if has("packages") then .packages | keys | map(select(. != "")) | length else (.dependencies // {}) | length end' "$lockfile") ;;
               */requirements.txt|requirements.txt)
                 count=$(grep -cvE '^[[:space:]]*(#|$)' "$lockfile" || true) ;;
               *) count=0 ;;
@@ -130,7 +130,7 @@ jobs:
         run: |
           set -euo pipefail
           cargo install --git https://github.com/hyperpolymath/panic-attack.git \
-            --rev "$PANIC_ATTACK_REV" --locked --bin panic-attack \
+            --rev "$PANIC_ATTACK_REV" --locked --features http --bin panic-attack \
             --root "$RUNNER_TEMP/panic-attack"
           "$RUNNER_TEMP/panic-attack/bin/panic-attack" --version
           echo "$RUNNER_TEMP/panic-attack/bin" >> "$GITHUB_PATH"
@@ -142,8 +142,7 @@ jobs:
           set -euo pipefail
           mkdir -p bridge-reports
           unmitigable_total=0
-          while IFS="$(printf '\t')" read -r dir lockfile count; do
-            [ "$count" -gt 0 ] || continue
+          while IFS= read -r dir; do
             slug=$(printf '%s' "$dir" | tr '/.' '__')
             report="bridge-reports/${slug}.json"
             # Correct contract (panic-attack src/main.rs, BridgeAction::Triage):
@@ -161,19 +160,20 @@ jobs:
               and ([.mitigated, .unmitigable, .informational] | all(type == "number"))
               and ((.mitigated + .unmitigable + .informational) == (.cves | length))
             ' "$report" > /dev/null || {
-              echo "::error file=$lockfile::Patch Bridge report for $dir is malformed or its counts do not recount its CVE list"
+              echo "::error::Patch Bridge report for $dir is malformed or its counts do not recount its CVE list"
               exit 1
             }
             unmitigable_total=$((unmitigable_total + $(jq '.unmitigable' "$report")))
             {
-              echo "## Patch Bridge — $lockfile"
+              echo "## Patch Bridge — $dir"
               echo ""
               echo "| Classification | Count |"
               echo "|----------------|-------|"
               jq -r '"| Unmitigable | \(.unmitigable) |", "| Mitigated | \(.mitigated) |", "| Informational | \(.informational) |", "| Dependencies scanned | \(.total_dependencies) |"' "$report"
               echo ""
             } >> "$GITHUB_STEP_SUMMARY"
-          done < "$RUNNER_TEMP/patch-bridge-surface.tsv"
+          # Each triage invocation discovers all supported lockfiles in DIR.
+          done < <(awk -F '\t' '$3 > 0 {print $1}' "$RUNNER_TEMP/patch-bridge-surface.tsv" | sort -u)
           jq -n --arg sha "$GITHUB_SHA" --arg run "$GITHUB_RUN_ID" \
             --argjson unmitigable "$unmitigable_total" \
             '{status: "ran", tool: "panic-attack bridge triage",

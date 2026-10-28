@@ -2,7 +2,7 @@
 # fork-governance.yml — the estate conformance lanes on every pull request,
 # adopted per metadatastician/standards 3-practice/fork-governance/ADOPTION.adoc
 # at the same standards commit every other reusable in this repo pins
-# (34cf03f…). One workflow, five jobs, one comment:
+# (34cf03f…). Scans here; fork-governance-publish.yml posts one comment:
 #
 # CANONICAL COORDINATES (2026-10-28 repair). `standards` was transferred from
 # the `hyperpolymath` user account to the `metadatastician` organisation on
@@ -22,7 +22,7 @@
 #   fleet    gitbot-fleet report-backs (producer; not a lane)
 #   hypatia  Hypatia verdict grid (standards hypatia-scan-reusable, folding
 #            the fleet envelopes in via its report-backs-artifact default)
-#   verdict  the single PR comment (standards fork-governance-reusable)
+#   verdict  lane results artifact for the trusted workflow_run publisher
 #
 # Before this file existed the repo had only the template-era lookalikes in
 # dogfood-gate.yml (magic-header .githooks validators writing step
@@ -32,8 +32,9 @@
 #
 # PR-time Hypatia lives HERE now; hypatia-scan.yml keeps only its push,
 # schedule and dispatch triggers (ADOPTION §3: a lane must not run twice per
-# PR). The lanes ask for no write permission; the verdict job is the single
-# place allowed to write to the pull request (pull-requests: write).
+# PR). No job here can write PR comments. The pinned Hypatia reusable still
+# requires security-events: write for SARIF; its contract cannot be reduced
+# by the caller. Publication runs separately without executing PR code.
 
 name: Fork governance
 
@@ -110,20 +111,24 @@ jobs:
       scope-excludes: ""
 
   verdict:
-    name: Post the fork governance summary
+    name: Save the fork governance results
     needs: [deed, k9, hypatia]
     if: ${{ always() && github.event_name == 'pull_request' }}
-    uses: metadatastician/standards/.github/workflows/fork-governance-reusable.yml@34cf03f988b8ca95b91b45d9b3351f7d3babfb65
-    permissions:
-      contents: read
-      actions: read
-      pull-requests: write
-    with:
-      pr-number: ${{ github.event.pull_request.number }}
-      deed-result: ${{ needs.deed.result }}
-      k9-result: ${{ needs.k9.result }}
-      k9-verdict: ${{ needs.k9.outputs.verdict }}
-      hypatia-result: ${{ needs.hypatia.result }}
-      hypatia-verdict: ${{ needs.hypatia.outputs.verdict }}
-      hypatia-advisory: ${{ needs.hypatia.outputs.advisory }}
-      canon-ref: 34cf03f988b8ca95b91b45d9b3351f7d3babfb65
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Record lane results for the trusted publisher
+        env:
+          LANE_RESULTS: ${{ toJSON(needs) }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          jq -n --arg sha "$PR_HEAD_SHA" --arg run "$GITHUB_RUN_ID" \
+            --arg attempt "$GITHUB_RUN_ATTEMPT" --argjson lanes "$LANE_RESULTS" \
+            '{sha: $sha, run: $run, attempt: $attempt, lanes: $lanes}' > result.json
+      - name: Upload lane results
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: fork-governance-result
+          path: result.json
+          if-no-files-found: error

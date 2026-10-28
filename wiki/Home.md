@@ -11,10 +11,11 @@ Agda.
 - **Verified core** (Idris2) — `verification/proofs/idris2/`: the grade algebra reused by
   the executable checker; the thing that runs is the thing that is proved.
 - **Grade-algebra ground truth** (Lean 4 + Mathlib) — `verification/proofs/lean4/grade-boundary/`:
-  the non-commutative product monoid, full-carrier conicality, and the three-tier strict
-  honest/deceptive cancellation boundary. Sorry-free; axioms `propext`/`Quot.sound` only.
+  the ratified commutative `GradeR` monoid (the historical carrier is non-commutative),
+  full-carrier conicality, and the three-tier strict honest/deceptive cancellation
+  boundary. Sorry-free; axioms `propext`/`Classical.choice`/`Quot.sound` only.
 - **Tropical factorisation probe** (Lean 4 + Mathlib) — `verification/proofs/lean4/grade-factorisation/`:
-  see [Tropical Factorisation Probe](Tropical-Factorisation-Probe). Ratified-carrier verdict
+  see [Tropical Factorisation Probe](Tropical-Factorisation-Probe.md). Ratified-carrier verdict
   *(B′) FACTORS AND VERIDICALITY-SIGHTED*; historical (B) applies to the
   pre-ratification carrier. A precondition only.
 - **Calculus metatheory — Theorem B** (Agda `--safe --without-K`) — `verification/proofs/agda/theorem-b/`:

@@ -134,21 +134,19 @@ substitution is near-free:
 | Running both is belt-and-braces with ~90% coverage overlap. One is
   enough for prevention; both only for quarterly history-sweeps.
 
-| `rsr-antipattern.yml` + `scorecard-enforcer.yml` +
-  `static-analysis-gate.yml`
-| Merge into a single composite `rsr-gate.yml` with three steps
-| They already run in the same CI slot; merging deduplicates
-  setup/checkout/clone. RESOLVED DIFFERENTLY (2026-10-28):
-  `static-analysis-gate.yml` was retired outright — its Hypatia and
-  panic-attack jobs duplicated the canonical standards lane
-  (fork-governance.yml / hypatia-scan.yml) at divergent pins — leaving
-  only its unique Patch Bridge CVE triage, now `patch-bridge.yml`.
+| `static-analysis-gate.yml` + canonical scanner lane
+| Retired `static-analysis-gate.yml` (2026-10-28): its Hypatia and
+  panic-attack jobs are covered by `fork-governance.yml` (PRs) and
+  `hypatia-scan.yml` (push/schedule).
+| Unique Patch Bridge CVE triage remains in `patch-bridge.yml`.
+  See link:../decisions/0006-scanner-lane-sequencing.adoc[ADR 0006].
 
 | `codeql.yml` + `hypatia-scan.yml`
-| Keep both, but drop Hypatia from on-push; let it run only on
-  schedule
-| Hypatia is the slower of the two, and its neurosymbolic analysis
-  doesn't need sub-minute latency on every commit.
+| Keep both. Hypatia runs on PRs through `fork-governance.yml`, then
+  on push/schedule through `hypatia-scan.yml`, using the same reusable
+  and scanner pins.
+| Preserve main-branch baseline/SARIF reconciliation in the sequence
+  defined by link:../decisions/0006-scanner-lane-sequencing.adoc[ADR 0006].
 
 | `codeql.yml` (on-push) + `codeql.yml` (scheduled)
 | Keep on-push, drop scheduled

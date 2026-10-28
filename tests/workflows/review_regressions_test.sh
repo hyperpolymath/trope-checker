@@ -273,9 +273,9 @@ pass 'uses-ref scanner rejects a moved repository coordinate'
 # Axiom-audit filter soundness (proofs.yml): extractor takes the jq program
 # verbatim from between the axiom-filter-jq markers. A compiler-placeholder
 # excuse keyed on name substrings alone could hide a source axiom given an
-# internal-looking name (`private axiom forged_spec`); the filter must catch
-# it declared AND undeclared, must not drop a real axiom behind an
-# internal-looking declaration, and must still excuse genuine compiler IR.
+# internal-looking name (`private axiom _spec_1`); the filter must catch
+# declared internal-looking axioms and undeclared ordinary names, must not
+# drop a real axiom behind an internal-looking declaration, and must still excuse genuine compiler IR.
 axiomfilter="$scratch/axiom-filter"
 mkdir -p "$axiomfilter"
 python3 - "$ROOT/.github/workflows/proofs.yml" >"$axiomfilter/filter.jq" <<'PY'
@@ -302,11 +302,11 @@ axiom_ok() { # declared-json expected-ok report-json
 }
 
 axiom_ok '[]' true  '{"audited":5,"axiomsUsed":["Classical.choice","npowBinRec._at.Inst._spec_2"],"violations":[]}'
-axiom_ok '["forged_spec"]' false '{"audited":5,"axiomsUsed":["forged_spec"],"violations":[{"decl":"RealThm","axioms":["forged_spec"]}]}'
+axiom_ok '["_spec_1"]' false '{"audited":5,"axiomsUsed":["_spec_1"],"violations":[{"decl":"RealThm","axioms":["_spec_1"]}]}'
 axiom_ok '[]' false '{"audited":5,"axiomsUsed":["forged_spec"],"violations":[{"decl":"RealThm","axioms":["forged_spec"]}]}'
 axiom_ok '[]' false '{"audited":5,"axiomsUsed":["sorryAx"],"violations":[{"decl":"match_1","axioms":["sorryAx"]}]}'
 axiom_ok '[]' true  '{"audited":5,"axiomsUsed":[],"violations":[{"decl":"foo._cstage1","axioms":["bar._at.X._spec_1"]}]}'
-axiom_ok '["forged_spec"]' false '{"audited":5,"axiomsUsed":["_private.Grade.0.forged_spec"],"violations":[{"decl":"RealThm","axioms":["_private.Grade.0.forged_spec"]}]}'
+axiom_ok '["_spec_1"]' false '{"audited":5,"axiomsUsed":["_private.Grade.0._spec_1"],"violations":[{"decl":"RealThm","axioms":["_private.Grade.0._spec_1"]}]}'
 axiom_ok '[]' false '{"audited":0,"axiomsUsed":[],"violations":[]}'
 pass 'axiom-audit filter cannot hide a source axiom behind a compiler-internal name'
 
