@@ -73,7 +73,7 @@ jobs:
           for f in $(git ls-files 'verification/proofs/idris2/*.idr' 'verification/proofs/idris2/*/*.idr' \
                                   'src/idris2/*.idr' 'src/idris2/*/*.idr' 'src/interface/*/*.idr'); do
             stripped=$(awk -f tests/lib/strip-proof-comments.awk "$f")
-            if grep -nE '\b(believe_me|really_believe_me|assert_total|assert_smaller|assert_equal)\b|%default[[:space:]]+partial' <<<"$stripped"; then
+            if grep -nE '\b(believe_me|really_believe_me|assert_total|assert_smaller|assert_equal|postulate)\b|%default[[:space:]]+partial' <<<"$stripped"; then
               echo "::error file=$f::unsound Idris2 construct"; fail=1
             fi
           done
