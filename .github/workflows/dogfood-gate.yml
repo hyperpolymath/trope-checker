@@ -6,7 +6,11 @@
 #
 # dogfood-gate.yml — Hyperpolymath Dogfooding Quality Gate
 # Validates that the repo uses hyperpolymath's own formats and tools.
-# Companion to static-analysis-gate.yml (security) — this is for format compliance.
+# Format-compliance PREFLIGHT only: the DEED/K9 checks below are header-level
+# and fast; the authoritative conformance lanes (canonical validators, grids,
+# the PR comment) run in fork-governance.yml. If the two ever disagree on
+# semantics, fork-governance governs; a header-level failure here still
+# blocks, because malformed syntax is wrong under either reading.
 name: "🟡 Check: RSR self-use (dogfooding)"
 
 on:

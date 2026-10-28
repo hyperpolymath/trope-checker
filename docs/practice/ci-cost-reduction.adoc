@@ -138,7 +138,11 @@ substitution is near-free:
   `static-analysis-gate.yml`
 | Merge into a single composite `rsr-gate.yml` with three steps
 | They already run in the same CI slot; merging deduplicates
-  setup/checkout/clone.
+  setup/checkout/clone. RESOLVED DIFFERENTLY (2026-10-28):
+  `static-analysis-gate.yml` was retired outright — its Hypatia and
+  panic-attack jobs duplicated the canonical standards lane
+  (fork-governance.yml / hypatia-scan.yml) at divergent pins — leaving
+  only its unique Patch Bridge CVE triage, now `patch-bridge.yml`.
 
 | `codeql.yml` + `hypatia-scan.yml`
 | Keep both, but drop Hypatia from on-push; let it run only on

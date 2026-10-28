@@ -1,8 +1,21 @@
 # SPDX-License-Identifier: MPL-2.0
 # fork-governance.yml — the estate conformance lanes on every pull request,
-# adopted per hyperpolymath/standards 3-practice/fork-governance/ADOPTION.adoc
+# adopted per metadatastician/standards 3-practice/fork-governance/ADOPTION.adoc
 # at the same standards commit every other reusable in this repo pins
 # (34cf03f…). One workflow, five jobs, one comment:
+#
+# CANONICAL COORDINATES (2026-10-28 repair). `standards` was transferred from
+# the `hyperpolymath` user account to the `metadatastician` organisation on
+# 2026-10-25. GitHub redirects git clones and REST calls for the old name but
+# does NOT follow the redirect for a reusable workflow's `uses:` — every call
+# below therefore died at startup ("workflow was not found", zero jobs, no
+# check run, no comment) from adoption until this repair. Hypatia-current
+# detects the class as WF028; workflow-linter.yml now blocks it locally by
+# asserting each external coordinate's canonical `full_name`. The calls are
+# cross-owner now, so this repository's Actions policy must allow
+# `metadatastician/standards/.github/workflows/*@*` (Settings → Actions →
+# General → selected actions/reusables); hyperpolymath/hypatia's runs of
+# 2026-10-27 show the refusal text when it does not.
 #
 #   deed     DEED syntax          (standards deed-conformance)
 #   k9       K9-DEED conformance  (standards k9-conformance, L0–L2 grid)
@@ -38,7 +51,7 @@ permissions:
 jobs:
   deed:
     name: DEED syntax
-    uses: hyperpolymath/standards/.github/workflows/deed-conformance.yml@34cf03f988b8ca95b91b45d9b3351f7d3babfb65
+    uses: metadatastician/standards/.github/workflows/deed-conformance.yml@34cf03f988b8ca95b91b45d9b3351f7d3babfb65
     permissions:
       contents: read
     with:
@@ -46,7 +59,7 @@ jobs:
 
   k9:
     name: K9-DEED conformance
-    uses: hyperpolymath/standards/.github/workflows/k9-conformance.yml@34cf03f988b8ca95b91b45d9b3351f7d3babfb65
+    uses: metadatastician/standards/.github/workflows/k9-conformance.yml@34cf03f988b8ca95b91b45d9b3351f7d3babfb65
     permissions:
       contents: read
       pull-requests: read
@@ -74,7 +87,7 @@ jobs:
     # orange fleet rows, never as a missing lane.
     needs: [fleet]
     if: ${{ always() }}
-    uses: hyperpolymath/standards/.github/workflows/hypatia-scan-reusable.yml@34cf03f988b8ca95b91b45d9b3351f7d3babfb65
+    uses: metadatastician/standards/.github/workflows/hypatia-scan-reusable.yml@34cf03f988b8ca95b91b45d9b3351f7d3babfb65
     permissions:
       actions: read
       contents: read
@@ -86,12 +99,21 @@ jobs:
       # high/critical findings after validated baseline filtering. The
       # report-backs-artifact input keeps its default (fleet-report-backs).
       block-on-high: true
+      # Scanner currency is part of the repair, not an afterthought: the
+      # reusable's vetted default (aa34a4c…) predates WF028 and the
+      # standards-transfer registry by 135 commits, i.e. the default scanner
+      # cannot see the failure class that silenced this lane. Pin the exact
+      # Hypatia commit instead; bump deliberately, never to HEAD.
+      hypatia-ref: adb2f41db34156cf81b2508f6596a10c7f076098
+      # This repo has no frozen-history tree (no 9-archive/), so grade
+      # everything rather than inheriting an ungraded prefix by default.
+      scope-excludes: ""
 
   verdict:
     name: Post the fork governance summary
     needs: [deed, k9, hypatia]
     if: ${{ always() && github.event_name == 'pull_request' }}
-    uses: hyperpolymath/standards/.github/workflows/fork-governance-reusable.yml@34cf03f988b8ca95b91b45d9b3351f7d3babfb65
+    uses: metadatastician/standards/.github/workflows/fork-governance-reusable.yml@34cf03f988b8ca95b91b45d9b3351f7d3babfb65
     permissions:
       contents: read
       actions: read

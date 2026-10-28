@@ -128,11 +128,28 @@ jobs:
           # the only check that sees it, so resolve: hash pins must be
           # fetchable commits in their repo, everything else must be an
           # existing version tag. Branch refs (@main) fail by construction.
+          #
+          # Resolution alone is NOT enough — measured 2026-10-28: after
+          # `standards` moved hyperpolymath → metadatastician, every commit
+          # and contents lookup under the OLD name still succeeded (REST and
+          # git follow the redirect), while every reusable `uses:` under it
+          # died at startup ("workflow was not found", zero jobs). The
+          # redirect that makes the API forgiving is exactly what makes the
+          # failure invisible, so each coordinate's owner/repo is ALSO
+          # asserted canonical: the API's returned `full_name` must equal
+          # the coordinate as written. A mismatch names the current owner
+          # to re-point at (the pinned revision survives a transfer).
           python3 - <<'PY'
           import glob, re, subprocess, sys
           uses_re = re.compile(r'^[ \t]*(?:-[ \t]*)?uses:[ \t]*([^ \t#]+/[^\s#@]+)@([^\s#]+)')
           version_re = re.compile(r'^v?\d+(\.\d+)*([-.+][0-9A-Za-z.-]+)?$')
-          seen, failed = {}, []
+          seen, failed, canonical = {}, [], {}
+          def canonical_name(repo):
+              if repo not in canonical:
+                  r = subprocess.run(['gh', 'api', f'repos/{repo}', '--jq', '.full_name'],
+                                     capture_output=True, text=True)
+                  canonical[repo] = r.stdout.strip() if r.returncode == 0 else None
+              return canonical[repo]
           for path in sorted(glob.glob('.github/workflows/*.yml') + glob.glob('.github/workflows/*.yaml')):
               for n, line in enumerate(open(path, encoding='utf-8'), 1):
                   m = uses_re.match(line)
@@ -146,6 +163,23 @@ jobs:
                   if key in seen:
                       continue
                   seen[key] = (path, n)
+                  canon = canonical_name(repo)
+                  if canon is None:
+                      print(f"::error file={path},line={n}::repository {repo} does not resolve at all (deleted, renamed without redirect, or private)")
+                      failed.append(key)
+                      continue
+                  if canon.lower() != repo.lower():
+                      print(f"::error file={path},line={n}::{coord}@{ref} names a MOVED repository: {repo} now lives at {canon}. REST/git follow the redirect but a reusable `uses:` does not — calls under the old name fail at startup with zero jobs. Re-point to {canon} (same pin) and confirm this repo's Actions allow-list admits the new owner.")
+                      failed.append(key)
+                      continue
+                  if '/.github/workflows/' in coord:
+                      wf_path = coord.split('/', 2)[2]
+                      r = subprocess.run(['gh', 'api', f'repos/{repo}/contents/{wf_path}?ref={ref}', '--jq', '.path'],
+                                         capture_output=True, text=True)
+                      if r.returncode != 0:
+                          print(f"::error file={path},line={n}::reusable workflow {wf_path} does not exist in {repo} at {ref} (renamed or removed upstream: runs using it fail at startup, invisibly)")
+                          failed.append(key)
+                          continue
                   if re.fullmatch(r'[0-9a-f]{40}', ref):
                       r = subprocess.run(['gh', 'api', f'repos/{repo}/commits/{ref}', '--jq', '.sha'],
                                          capture_output=True, text=True)

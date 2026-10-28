@@ -82,10 +82,15 @@ jobs:
         if: ${{ !cancelled() }}
         uses: hyperpolymath/cicd-suite/actions/prat-check@bf7dd95cf49733019343ff485c2f45c6b261839c
         
-      - name: Panic Attack & Pons Gate
-        if: ${{ !cancelled() }}
-        uses: hyperpolymath/cicd-suite/actions/custom-tools-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-        
+      # No "Panic Attack & Pons" step here (removed 2026-10-28): the
+      # cicd-suite custom-tools-check composite prints "validation passed"
+      # when neither tool is on PATH — which is always — so it certified
+      # scans that never ran. panic-attack and pons-asinorum evidence is
+      # produced exactly once per trigger by the standards Hypatia lane
+      # (fork-governance.yml on PRs, hypatia-scan.yml on push/schedule)
+      # as verdict-grid rows with status envelopes; a presence proxy in
+      # this audit would only be a second, weaker claim to reconcile.
+
       - name: WWW & Well-Known Compliance Gate
         if: ${{ !cancelled() }}
         uses: hyperpolymath/cicd-suite/actions/www-compliance-check@bf7dd95cf49733019343ff485c2f45c6b261839c

@@ -25,17 +25,28 @@ jobs:
   scan:
     # Explicit on the calling job (a job-level block replaces, never merges
     # with, the workflow-level one). The previous pin (cc58c0c…) no longer
-    # exists in hyperpolymath/standards, so this gate failed at startup with
-    # zero jobs — invisible in `gh pr checks`. Re-pinned 2026-10-28 to a
-    # verified-existing commit; workflow-linter.yml now re-resolves pins.
+    # exists in standards, so this gate failed at startup with zero jobs —
+    # invisible in `gh pr checks`. Re-pinned 2026-10-28 and re-pointed at
+    # the canonical owner (standards: hyperpolymath → metadatastician,
+    # 2026-10-25; reusable `uses:` ignores the redirect).
+    # workflow-linter.yml re-resolves pins and asserts canonical names.
     permissions:
       actions: read
       contents: read
       security-events: write
-    uses: hyperpolymath/standards/.github/workflows/hypatia-scan-reusable.yml@34cf03f988b8ca95b91b45d9b3351f7d3babfb65
+    uses: metadatastician/standards/.github/workflows/hypatia-scan-reusable.yml@34cf03f988b8ca95b91b45d9b3351f7d3babfb65
+    secrets:
+      # Same declared-secret shape as the PR lane: without it the alert
+      # meta-rules fall back to the built-in token, which cannot read
+      # Dependabot alerts, so push and PR runs would grade different scopes.
+      HYPATIA_SCAN_PAT: ${{ secrets.HYPATIA_SCAN_PAT }}
     with:
       # Highest of the reusable's two modes: block merges on current
       # high/critical findings (after validated baseline filtering), rather
       # than reporting them and passing. This workflow is named a 🔴 Gate;
       # report-only would not be one.
       block-on-high: true
+      # One scanner version across every lane in this repo (see
+      # fork-governance.yml): the reusable default predates WF028.
+      hypatia-ref: adb2f41db34156cf81b2508f6596a10c7f076098
+      scope-excludes: ""

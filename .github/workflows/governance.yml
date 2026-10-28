@@ -19,16 +19,25 @@ jobs:
   governance:
     # Explicit on the calling job (a job-level block replaces, never merges
     # with, the workflow-level one). The previous pin (8f31a5a…) no longer
-    # exists in hyperpolymath/standards, so this workflow failed at startup
-    # with zero jobs — invisible in `gh pr checks`. Re-pinned 2026-10-28 to
-    # a verified-existing commit; workflow-linter.yml now re-resolves pins.
+    # exists in standards, so this workflow failed at startup with zero
+    # jobs — invisible in `gh pr checks`. Re-pinned 2026-10-28 to a
+    # verified-existing commit and re-pointed at the canonical owner:
+    # standards moved hyperpolymath → metadatastician on 2026-10-25, and
+    # reusable `uses:` does not follow the redirect (see
+    # fork-governance.yml). workflow-linter.yml re-resolves pins AND
+    # asserts canonical repository names.
     permissions:
       actions: read
       contents: read
-    uses: hyperpolymath/standards/.github/workflows/governance-reusable.yml@34cf03f988b8ca95b91b45d9b3351f7d3babfb65
+    uses: metadatastician/standards/.github/workflows/governance-reusable.yml@34cf03f988b8ca95b91b45d9b3351f7d3babfb65
     with:
       # Strictest baseline mode: if a .hypatia-baseline.json acknowledgement
       # ever lands here it must carry an expires_at, or this fails. (The repo
       # has no baseline file today, so this is vacuous until one appears —
       # which is exactly when it should start biting.)
       baseline-strict: true
+      # Baseline validation (when a baseline exists) must use the same
+      # scanner commit as the Hypatia lanes, not the reusable's older
+      # default — two scanner versions grading one repo is a clash, not
+      # defence in depth.
+      hypatia-ref: adb2f41db34156cf81b2508f6596a10c7f076098

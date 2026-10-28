@@ -1,0 +1,413 @@
+// SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= 0006 — Scanner-lane sequencing: one canonical lane, explicit clash resolution
+:revdate: 2026-10-28
+:toc: macro
+
+toc::[]
+
+== Status
+
+Accepted; implemented in this repository on 2026-10-28 (PR #107).
+Upstream items are recorded as ready-to-paste prompts at the end.
+
+== Context — how the governance lane vanished silently
+
+This repo adopted the estate fork-governance lane (DEED syntax, K9-DEED
+conformance grid, gitbot-fleet report-backs, Hypatia verdict grid, one PR
+comment) on 2026-10-28, yet no grid or assessment ever appeared on PR #107.
+Root cause, in two layers:
+
+. *The repository had never opted in.* Before `fork-governance.yml` existed
+  here there was no fleet enrolment and the Hypatia caller rendered its grid
+  into an artifact nobody downloaded.
+. *Then the lane's coordinates died.* `standards` was transferred from the
+  `hyperpolymath` user account to the `metadatastician` organisation on
+  2026-10-25 (repository id 1116521501, history preserved). GitHub redirects
+  git clones, web links and REST API calls for the old name — but *not* a
+  reusable workflow's `uses:`. Every standards reusable called from this
+  repo (fork-governance ×4, governance, hypatia-scan, secret-scanner,
+  scorecard, mirror) therefore failed at startup with "workflow was not
+  found", created *zero jobs*, emitted *no check run*, and posted *no
+  comment*. `gh pr checks` showed a clean-looking list in which three
+  workflows were simply absent.
+
+Two defences nearly caught this and didn't:
+
+* This repo's `workflow-linter.yml` re-resolves every external pin — via the
+  redirect-following REST API, which cheerfully resolves commits under a
+  moved name. Resolution ≠ canonicality.
+* Hypatia-current detects the exact class (rule WF028,
+  `reusable_call_to_moved_repository`), but the estate's pinned scanner
+  (standards default `aa34a4c…`) predates WF028 by 135 commits, and WF028 is
+  advisory/low severity, below the scanner's default reporting threshold.
+
+A second, independent defect compounded the first: the local
+`static-analysis-gate.yml` ran duplicate Hypatia and panic-attack jobs at
+*divergent pins* with incompatible semantics (header said "advisory, cannot
+fail"; two jobs could in fact fail on criticals; `ci/CI-CRITICALITY.toml`
+listed it as a merge gate). Its Patch Bridge job had never once executed the
+tool: it passed a non-existent `--format json` flag against a directory
+with no supported lockfile and then *replaced the error output with a
+fabricated all-zero report*. A green check asserted CVE evidence that did
+not exist.
+
+== Decision — the canonical sequence
+
+Per pull request, evidence flows in one acyclic sequence. Each stage has
+exactly one owner; nothing downstream re-derives what an upstream stage
+owns.
+
+[cols="1,3,3",options="header"]
+|===
+| Stage | What runs | Contract
+
+| 0. Coordinate preflight
+| `workflow-linter.yml` resolver
+| Deterministic and blocking: every external `uses:` pin resolves, the
+  repository's canonical `full_name` equals the coordinate as written
+  (moved-repo detector), and every reusable workflow path exists at its
+  pin. This is the gate WF028 cannot be: Hypatia reports it advisedly,
+  the linter refuses it.
+
+| 1. Producers (parallel, read-only, comment-free)
+| DEED syntax · K9-DEED conformance · gitbot-fleet report-backs
+| Each emits artifacts/envelopes only. Fleet executes enrolled adapters in
+  manifest order, so `.gitbot-fleet/enrolment.json` is written in Kin
+  Arbiter priority order (echidnabot > rhodibot > panicbot > sustainabot >
+  glambot > seambot > finishingbot > cipherbot > accessibilitybot).
+
+| 2. Findings lane (needs: fleet)
+| standards `hypatia-scan-reusable.yml`
+| Hypatia (the lane's only gating row) + panic-attack assail +
+  pons-asinorum (advisory status envelopes) → verdict grid → SARIF upload
+  (alert-derived meta-findings excluded at SARIF render, so the upload can
+  never echo back as next run's "findings") → blocking decision taken from
+  the baseline-filtered SARIF, not from raw JSON.
+
+| 3. Publication
+| standards `fork-governance-reusable.yml`
+| Exactly one PR comment, marker-identified, updated in place: summary
+  table, K9 grid, Hypatia grid. Lanes never post themselves; a lane that
+  produced nothing renders orange ("indeterminate"), never absence.
+
+| 4. Disjoint CVE surface
+| `patch-bridge.yml` (panic-attack Patch Bridge)
+| Lockfile CVE triage only. Applicability is computed and recorded as an
+  envelope: with zero supported external dependencies the result is
+  `not_applicable` — a statement about the tool's surface, never a clean
+  bill. Tool failure or malformed output fails the check; findings are
+  advisory.
+
+| 5. Push / schedule
+| `hypatia-scan.yml`, `secret-scanner.yml`, `scorecard.yml`
+| The same reusable and the same scanner pins as stage 2 (baseline/SARIF
+  reconciliation on main). `secret-scanner` carries this repo's one
+  ruleset-required status context, `scan / gitleaks` (ruleset
+  Secret-Scan-Floor; the only other active branch rule is
+  Require-Signed-Commits) — its caller job key must not be renamed.
+|===
+
+== Clash-resolution rules
+
+. *One scanner, one version, per trigger class.* Hypatia `adb2f41…` in
+  every caller (the standards default predates WF028); panic-attack at the
+  standards pin `b689a74…`; pons at the standards pin. Divergent local
+  builds are not defence in depth; they are two truths.
+. *One producer per finding family.* Fleet enrolment declines, with
+  reasons: `panicbot` (panic-attack already has a direct grid row —
+  enrolling it double-counts), `echidnabot` (proofs are gated by their own
+  toolchains in `proofs.yml`; no ECHIDNA engine is configured, so the
+  adapter could only report `not_run` forever), `cipherbot` (no
+  cryptography is implemented here; the hashes present are integrity pins),
+  plus the pre-existing `seambot`/`accessibilitybot`/`sustainabot`
+  declines. Grey rows with reasons beat orange rows without evidence.
+  Active reporters — rhodibot, glambot, finishingbot — carry explicit
+  `"gating": false`.
+. *Gating precedence is singular.* Of the grid rows only Hypatia gates;
+  the lane state is its worst gating row under
+  purple > red > orange > yellow > blue > green, with grey reserved for
+  declared non-applicability. Missing or malformed evidence is orange,
+  never green and never an empty findings file.
+. *No presence proxies.* A step that cannot run its tool must say
+  `not_run`; it must never print a pass. (The cicd-suite
+  `custom-tools-check` composite did exactly that for panic-attack/pons in
+  `main-estate-audit.yml`; the step is removed — see upstream prompt.)
+. *Neural/heuristic layers advise; they do not adjudicate.* Hypatia's
+  neural apparatus may demote or route findings (novelty forces
+  `report_only`) but never creates, promotes or blocks on its own output.
+  Deterministic direct evidence outranks external-alert-derived evidence,
+  which outranks heuristic/neural confidence.
+. *Preflight headers are not conformance.* `dogfood-gate.yml`'s DEED/K9
+  jobs are fast header-level preflights; fork-governance is authoritative
+  on semantics. The scheduled `rhodibot.yml` shell audit is a drift
+  reminder, not Rhodibot evidence — the fleet adapter's report-back is.
+
+== Consequences
+
+* PRs get the K9-DEED grid, the Hypatia verdict grid (Hypatia, panic-attack,
+  pons, three fleet rows, five reasoned grey rows) and the single
+  fork-governance comment — provided this repo's Actions allow-list admits
+  the new cross-owner coordinate (see prompt S1; `hyperpolymath/hypatia`'s
+  2026-10-27 runs show the refusal where it does not).
+* `static-analysis-gate.yml` is retired; `patch-bridge.yml` keeps its one
+  honest job. `ci/CI-CRITICALITY.toml` no longer calls the retired
+  workflow a merge gate.
+* Cross-owner reusable calls are now a *sequenced* dependency: allow-list
+  first, canary second, propagation third. Any future repository transfer
+  must land in the workflow-linter's canonical-name assertion as a failing
+  check with the new owner named, not as a silent zero-job run.
+
+== Upstream prompts (paste into the named repository)
+
+=== S — `metadatastician/standards`
+
+----
+CONTEXT. The standards transfer (hyperpolymath -> metadatastician,
+2026-10-25) broke every reusable `uses:` estate-wide: REST/git follow the
+redirect, reusable resolution does not. trope-checker PR #107 has repaired
+the caller side (canonical coordinates, a blocking canonical-full_name
+assertion in its workflow-linter, Hypatia pinned to adb2f41 because your
+default aa34a4c predates WF028 by 135 commits). The following belong here:
+
+S1 ALLOW-LIST BEFORE PROPAGATION. hyperpolymath/hypatia run 40451601571
+(and siblings) prove direct canonical calls are REFUSED under the live
+92-pattern selected-actions lists ("not allowed ... must be from a
+repository owned by hyperpolymath or match one of the patterns"), while
+config/settings/actions-allowlist.json already carries 95 patterns incl.
+metadatastician/*. Apply the canon payload estate-wide (prefer the narrow
+metadatastician/standards/.github/workflows/*@* for reusables), canary one
+selected-actions repo, then propagate coordinates. Record the sequencing
+rule in the transfer playbook: allow-list -> canary -> fan-out. Acceptance:
+a hyperpolymath-owned selected-actions repo starts JOBS (not
+startup_failure) calling governance-reusable at the canonical coordinate.
+
+S2 MIGRATE INTERNAL EXECUTABLE REFERENCES. Rewrite remaining in-workflow
+`repository: hyperpolymath/standards` checkouts and any internal `uses:` to
+metadatastician/standards (hypatia-scan-reusable SARIF-filter and grid
+checkouts, fork-governance-reusable canon checkout, governance-reusable
+helper checkouts). Add a CI assertion: no `uses:`/`repository:` under a
+former owner anywhere in .github/workflows. Prose/history may keep the old
+name; executable coordinates may not.
+
+S3 REPIN WITH CANARY + OVERRIDE INPUTS. hypatia-scan-reusable defaults:
+Hypatia aa34a4c -> current vetted (WF028 + StandardsRepo registry);
+panic-attack b689a74 -> 410a8f8 (deterministic assail reports, canonical
+rule-ID table); pons 32e5567 -> bca1ea2 (evidence/report-contract
+hardening). Add panic-ref/pons-ref inputs mirroring hypatia-ref so callers
+can canary. Emit JSON and SARIF from ONE scan run (today the scanner runs
+twice; alert state can drift between projections).
+
+S4 GRID TRUTH-IN-LABELLING. (a) verdict-grid.jq currently grades the
+Hypatia row from raw JSON (incl. code-scanning/dependabot meta-findings)
+while block-on-high grades the filtered SARIF: the grid can say purple
+while the gate passes. Grade the row from the same SARIF-projected,
+baseline-filtered finding set; show meta/alert-derived counts separately.
+(b) Sort report-back rows by the shared canonical priority (Hypatia Kin
+Arbiter order), not artifact/assembly order. (c) fork-governance-render.sh
+labels blue as "high findings" (blue is minor/low; red is high) and ranks
+blue == orange; fix the label and use the explicit precedence
+purple/red > orange > yellow > blue > green > grey across families.
+(d) Add cross-reporter de-duplication: a semantic fingerprint
+(normalised path + line + class/CWE) with `corroborated_by`, preserving
+per-row counts but publishing a unique graded total, so Hypatia/panic/pons
+overlaps are not summed as distinct defects.
+
+S5 SURFACE ADVISORY FINDINGS OPT-IN. WF028 is advisory/low and invisible
+at the scanner's default severity threshold, so even current Hypatia would
+not have shown this outage in the reusable's JSON. Add a
+`hypatia-advisory: true` input (sets HYPATIA_ADVISORY for the JSON
+projection only; SARIF gating unchanged).
+
+S6 ADOPTION DOCS. In 3-practice/fork-governance/ADOPTION.adoc: state the
+Actions allow-list prerequisite for cross-owner callers and document the
+fork-local fallback (MetaManifold-WebUI pattern) as a first-class option;
+show the enrolment example in Arbiter priority order with explicit
+"gating": false on fleet reporters and the panicbot double-count warning.
+----
+
+=== H — `hyperpolymath/hypatia`
+
+----
+CONTEXT. trope-checker now pins Hypatia adb2f41 in every lane (WF028 was
+decisive). Audit of lib/rules, lib/neural, lib/kin at that commit found
+sound funnels (single suppression pass, single verdict pass, SARIF
+self-echo exclusion) but no cross-rule sequencing contract. Requests:
+
+H1 RULE SEQUENCING REGISTRY. Give every rule module a declared phase and
+provenance in one machine-readable registry: (0) inventory/context,
+(1) deterministic direct source/workflow rules, (2) structural/governance,
+(3) external-alert meta-rules, (4) reconciliation, (5) neural advisory.
+Reconciliation de-duplicates on a conflict key (normalised repo-relative
+path + line span + semantic class/CWE), preserves losers under
+also_reported_by, and counts once. Severity conflicts are never averaged:
+direct-source severity governs source flaws; the authoritative alert's
+severity governs its own domain; irreconcilable same-key disagreements
+keep max severity AND a `conflict: severity_disagreement` marker routed
+to review.
+
+H2 META-RULE PROVENANCE. Alert-derived findings (dependabot,
+code_scanning, secret_scanning) must carry origin, instance commit/ref
+and scope (`repository_alert_state` vs `pr_delta`). An alert whose most
+recent instance is not at the scanned head is stale context, not
+delta-graded evidence. Extend the SARIF self-echo exclusion: code-scanning
+meta-findings should be quarantined from ALL graded outputs (JSON grid
+included), not only from the SARIF renderer. Unavailable alert APIs are
+`not_run`, never zero findings.
+
+H3 WF028 GENERIC REGISTRY. Promote the standards-only move table into a
+versioned moved-repository registry (former, current, numeric repo id,
+moved date, evidence/run link). Keep the finding advisory in Hypatia, but
+add certainty/impact/gate_effect fields (deterministic; startup_failure;
+caller workflow-linter blocks) so consumers can sequence it as preflight
+rather than as a low-severity afterthought.
+
+H4 NEURAL (e-r) HARDENING. Per-phase timeouts with explicit not_run trace
+entries — a dead organ must degrade the trace, never crash the
+coordinator call or lose its state. Missing organs contribute NO
+confidence (remove 0.5 defaults in derive_confidence); below quorum
+(RBF + MoE mandatory) emit no neural confidence and force report_only.
+Mark the weighted score as uncalibrated wherever it is displayed. Neural
+output is belief/epi-grade: it may demote or route, never raise severity,
+never satisfy a gate, never override Verdict.level. Reconcile the stale
+docs (5-network hub-and-spoke, fixed weights) with the implemented
+8-organ/6-phase blackboard, and make config (runtime.exs) name the phase
+order it actually starts.
+
+H5 ARBITER: WIRE IT OR STOP CLAIMING IT. Kin.Arbiter is supervised but
+has no production callers, and check_conflicts+register_active (cast) is
+a race. Provide one atomic claim/3 (repo + semantic finding + file set)
+used by FleetDispatcher/TriangleRouter before any MUTATING dispatch,
+completed/released on outcome. Read-only/report-back actions never
+arbitrate — they corroborate. Priority should derive from action risk
+and evidence class (sound/deterministic > authoritative alert >
+heuristic), with bot identity as tie-break only; same-file edits always
+serialise regardless of priority.
+----
+
+=== F — `hyperpolymath/gitbot-fleet`
+
+----
+CONTEXT. The report-back driver executes enrolled members in raw manifest
+order (jq to_entries), so estate behaviour silently depends on each
+repo's JSON key order; standards' renderer then displays rows in assembly
+order. trope-checker has ordered its manifest by Hypatia's Kin Arbiter
+priority and added explicit gating:false, but that is per-repo discipline
+for a fleet-level constant.
+
+F1 ONE CANONICAL PRIORITY. Publish the member priority order as data in
+this repo (single source consumed by the driver, Hypatia's Arbiter and
+standards' verdict-grid renderer — or generated copies with a drift
+test). The driver sorts enrolled members by it regardless of manifest
+order; fix-fleet-enrolment.sh writes manifests in that order.
+
+F2 ENROLMENT LINT. fix-fleet-enrolment.sh (or a new check) should warn on:
+panicbot enrolled where the lane already has a direct panic-attack row
+(double counting); echidnabot/sustainabot enrolled with no engine/adapter
+(permanent not_run presented as enrolment); cipherbot enrolled where no
+cryptographic code exists (checksum pins become findings). Declines with
+reasons are the honest state and should be the suggested fix.
+
+F3 ENVELOPE PROVENANCE. Include adapter + tool version pins and a
+per-finding evidence class + semantic fingerprint (path/line/class) in
+report-back envelopes, so the standards grid can de-duplicate fleet
+findings against Hypatia/panic/pons instead of summing overlaps.
+----
+
+=== Q — `hyperpolymath/cicd-squabbler`
+
+----
+CONTEXT. The standards transfer produced a new estate-wide failure class
+your taxonomy nearly covers: zero-job startup_failure from (a) a reusable
+coordinate under a moved owner ("workflow was not found") and (b) a
+canonical coordinate refused by the caller's selected-actions allow-list
+(hypatia run 40451601571). Both are invisible in PR check lists.
+
+Q1 Classify both as first-class startup failures with distinct moves:
+repoint-to-canonical (same pin) vs allow-list-admission-required.
+`squabble chains` should resolve canonical full_name for every upstream
+coordinate (REST follows redirects — compare names, do not just resolve
+pins) and flag moved/dead upstreams and pin skew BEFORE a run proves it.
+Report attribution per zero-job run: repo, workflow, coordinate as
+written, canonical target, required allow-list pattern. Preserve
+squabble != bypass: diagnosis and sequencing advice only, never a green.
+----
+
+=== P — `hyperpolymath/panic-attack`
+
+----
+CONTEXT. trope-checker's Patch Bridge job never ran: wrong flag
+(--format), wrong directory, error output stubbed to zero. The consumer
+is fixed (patch-bridge.yml: --quiet bridge triage <dir> --output, recount
+validation, fail-closed). Two tool-side gaps remain:
+
+P1 A lockfile that exists but declares zero external dependencies makes
+triage() bail with "No supported lockfile found" (deps.is_empty conflates
+the two states). Return BridgeReport::empty for that case so
+dependency-free projects (trope-checker's src/rust) get a valid report
+instead of an error consumers must special-case.
+
+P2 Discover nested lockfiles (recursive, .git/target excluded) or accept
+repeatable --lockfile paths; the current root-only discovery silently
+misses workspace layouts. Document the bridge CLI contract (global flags
+precede the subcommand; --output writes the JSON; --offline returns NO
+vulnerability data) in README/man — `--offline` in particular must be
+labelled as producing an empty result, never a clean one.
+
+P3 Publish the canonical rule-ID table (410a8f8) with CWE/semantic-class
+mapping as data, for verdict-grid de-duplication against Hypatia/pons.
+----
+
+=== N — `hyperpolymath/pons-asinorum`
+
+----
+CONTEXT. standards pins pons 32e5567; bca1ea2 (8 commits ahead) hardened
+evidence honesty and report contracts. For the repin (standards prompt
+S3), consumers need from pons: the JSON 0.4.0 report contract frozen and
+versioned; the severity/evidence mapping the verdict grid consumes
+(ERROR/WARN/INFO x HEURISTIC/DATAFLOW/PROTOCOL/SPECULATIVE) published as
+data; and a per-finding semantic fingerprint (path/line/class) so the
+grid can mark pons findings corroborated by panic-attack/Hypatia instead
+of double-counting overlaps. SPECULATIVE findings must stay visually
+and numerically demoted in any aggregated count.
+----
+
+=== C — `hyperpolymath/cicd-suite`
+
+----
+CONTEXT. actions/custom-tools-check ("Panic Attack & Pons Gate") prints
+"Custom tools validation passed" when neither binary is on PATH — the
+normal case on GitHub runners — so every consumer of main-estate-audit
+estate-wide has been certifying scans that never ran. trope-checker has
+removed the step (evidence comes from the standards Hypatia lane's
+envelopes). Fix at source: absent tool => explicit not_run status and a
+non-zero exit (or rename the action to an advisory presence check that
+cannot be mistaken for a gate). Audit the sibling *-check composites for
+the same pass-on-absence pattern.
+----
+
+=== G — `hyperpolymath/.git-private-farm` (private; inventory first)
+
+----
+CONTEXT. Public references show the farm as the estate's token-bearing
+propagation actuator (repository_dispatch `propagate`, label/config
+generation, merge actuation design). Apply the transfer sequencing
+lessons inside the farm; do not mass-propagate until each step verifies:
+
+G1 Inventory every template, generator and dispatch payload that stamps a
+standards coordinate or an Actions allow-list; migrate sources to
+metadatastician/standards. Receivers must re-verify before applying:
+target repo + head SHA, canonical full_name of every reusable coordinate,
+workflow path exists at the pinned SHA, and the target repo's Actions
+policy admits the owner — fail closed on any mismatch.
+
+G2 Idempotency and order: key every actuation by (event id, repo, target
+SHA, template version); dedupe repository_dispatch retries; one writer
+per repo at a time; canary batch (one selected-actions repo proves jobs
+start) before estate fan-out. Split read/verify credentials from
+write/actuate credentials, least-scope fine-grained tokens, no farm token
+visible to scanner/build jobs. Log skipped/not_run distinctly from
+applied — a skipped propagation must never read as success. Include the
+caller's full repo name (owner/name) in new payloads; repo-name-only is
+ambiguous across owners.
+----

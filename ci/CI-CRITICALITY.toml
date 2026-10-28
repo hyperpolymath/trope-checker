@@ -35,6 +35,7 @@ note = "Pilot in the three trope repos; promote to standards + rsr-template once
 "governance" = "Governance metadata — governance docs present"
 "hypatia-scan" = "Hypatia baseline security scan — baseline scan (deep neurosymbolic = advisory, in standards)"
 "openssf-compliance" = "OpenSSF best-practices — should pass; waivable on review"
+"patch-bridge" = "Patch Bridge CVE triage — advisory findings, fail-closed tool contract; not_applicable while the only supported lockfile is dependency-free"
 "rust-ci" = "Rust CI (build/test) — Rust build + test"
 "workflow-linter" = "Workflow security lint — workflow hygiene"
 
