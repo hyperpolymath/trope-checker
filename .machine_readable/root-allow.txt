@@ -50,6 +50,7 @@ abi.ipkg                   # Idris2 package for the ABI seam; sourcedir=src/inte
 .well-known/
 build/                     # guix.scm, .guix-channel, Containerfile
 ci/                        # .gitlab-ci.yml, .pre-commit-config.yaml (root shims if tools require)
+wiki/                      # GitHub wiki SOURCE pages (AsciiDoc), mirrored in-repo; lives outside docs/ because estate policy reserves docs/wiki* for published .md wiki content
 docs/                      # onboarding/, status/, governance/, ...
 docs-template/             # template-only: scaffolding docs copied into new repos
 session/                   # dispatch.sh, custom-checks.k9, local-hooks.sh

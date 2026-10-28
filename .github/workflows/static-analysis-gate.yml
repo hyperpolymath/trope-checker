@@ -54,6 +54,7 @@ jobs:
         id: assail
         if: steps.install.outputs.installed == 'true'
         run: |
+          # shellcheck disable=SC2129 # step-summary prose: one echo per line, kept reviewable on purpose
           set +e
           panic-attack assail --format json . > panic-attack-findings.json
           PA_EXIT=$?
@@ -132,6 +133,7 @@ jobs:
       - name: Create stub findings (when panic-attack unavailable)
         if: steps.install.outputs.installed != 'true'
         run: |
+          # shellcheck disable=SC2129 # step-summary prose: one echo per line, kept reviewable on purpose
           echo "[]" > panic-attack-findings.json
           echo "## panic-attack assail" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
@@ -194,6 +196,7 @@ jobs:
         id: scan
         if: steps.build.outputs.ready == 'true'
         run: |
+          # shellcheck disable=SC2129 # step-summary prose: one echo per line, kept reviewable on purpose
           set +e
           HYPATIA_FORMAT=json "$HOME/hypatia/hypatia-cli.sh" scan . --exit-zero > hypatia-findings.json
           HYP_EXIT=$?
@@ -271,6 +274,7 @@ jobs:
       - name: Create stub findings (when Hypatia unavailable)
         if: steps.build.outputs.ready != 'true'
         run: |
+          # shellcheck disable=SC2129 # step-summary prose: one echo per line, kept reviewable on purpose
           echo "[]" > hypatia-findings.json
           echo "## Hypatia Scan" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
@@ -317,6 +321,7 @@ jobs:
         id: triage
         if: steps.install.outputs.installed == 'true'
         run: |
+          # shellcheck disable=SC2129 # step-summary prose: one echo per line, kept reviewable on purpose
           set +e
           panic-attack bridge triage --format json . > bridge-report.json 2>&1
           PB_EXIT=$?
@@ -364,6 +369,7 @@ jobs:
       - name: Create stub report (when unavailable)
         if: steps.install.outputs.installed != 'true'
         run: |
+          # shellcheck disable=SC2129 # step-summary prose: one echo per line, kept reviewable on purpose
           echo '{"cves":[],"mitigated":0,"unmitigable":0,"concatenative":0,"informational":0}' > bridge-report.json
           echo "## Patch Bridge CVE Triage" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
@@ -415,6 +421,7 @@ jobs:
           GITHUB_REF: ${{ github.ref }}
           GITHUB_RUN_ID: ${{ github.run_id }}
         run: |
+          # shellcheck disable=SC2129 # step-summary prose: one echo per line, kept reviewable on purpose
           PA_FILE="findings/panic-attack-findings.json"
           HYP_FILE="findings/hypatia-findings.json"
 

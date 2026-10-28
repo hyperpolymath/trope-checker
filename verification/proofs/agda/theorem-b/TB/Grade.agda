@@ -36,12 +36,12 @@
 
 module TB.Grade where
 
-open import Data.Empty using (⊥-elim)
+open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Nat.Base using (ℕ; zero; suc; _+_)
 open import Data.Nat.Properties using (+-assoc; +-comm; +-identityʳ; +-cancelʳ-≡)
 open import Data.Product.Base using (_×_; _,_)
 open import Relation.Binary.PropositionalEquality
-  using (_≡_; _≢_; refl; cong; sym; trans)
+  using (_≡_; _≢_; refl; cong; sym; trans; subst)
 
 --------------------------------------------------------------------------------
 -- Fidelity carrier  Δ = WithTop (WithTop ℕ)  (Fidelity.idr / GradeBoundary.lean)
@@ -67,8 +67,18 @@ Q _     ⊕d total   = total
 Q a     ⊕d Q b     = Q (a + b)
 
 -- Q is injective: distinct finite losses are distinct fidelities.
+-- Proved by encode-decode (transport along a discriminating family), NOT by
+-- matching on `refl`: under --cubical-compatible the refl-match relies on
+-- constructor injectivity that does not compute through transports
+-- (UnsupportedIndexedMatch), whereas this proof is transport-clean.
+private
+  Qcode : ℕ → Δ → Set
+  Qcode n (Q m)   = n ≡ m
+  Qcode n total   = ⊥
+  Qcode n unknown = ⊥
+
 Q-inj : ∀ {a b} → Q a ≡ Q b → a ≡ b
-Q-inj refl = refl
+Q-inj {a} eq = subst (Qcode a) eq refl
 
 -- dplus is associative (15-clause case split; only Q/Q/Q is non-refl).
 ⊕d-assoc : ∀ a b c → a ⊕d (b ⊕d c) ≡ (a ⊕d b) ⊕d c

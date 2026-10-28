@@ -16,7 +16,7 @@ manual bootstrap:
 [source,sh]
 ----
 git clone git@github.com:hyperpolymath/trope-checker.wiki.git /tmp/tc-wiki
-cp docs/wiki/Home.adoc docs/wiki/Tropical-Factorisation-Probe.adoc /tmp/tc-wiki/
+cp wiki/Home.adoc wiki/Tropical-Factorisation-Probe.adoc /tmp/tc-wiki/
 ( cd /tmp/tc-wiki && git add -A && git commit -m "wiki: Home + Tropical Factorisation Probe" && git push )
 ----
 

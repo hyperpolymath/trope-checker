@@ -169,10 +169,19 @@ jobs:
         working-directory: src/rust
         run: |
           set -uo pipefail
+          out="$RUNNER_TEMP/clippy-lints.txt"
           cargo clippy --locked --all-targets --message-format=json -- -D warnings -D clippy::pedantic 2>/dev/null \
             | jq -r 'select(.reason=="compiler-message") | .message
                      | select(.level=="error" or .level=="warning")
                      | "\(.code.code // "rustc") \(.spans[0].file_name):\(.spans[0].line_start):\(.spans[0].column_start) \(.message|gsub("[\r\n]+";" "))"' \
-            | sort -u | head -95 \
-            | while IFS= read -r line; do echo "::error::clippy $line"; done
+            | sort -u > "$out" || true
+          # GitHub caps same-type annotations per step (~10): emit the first
+          # lines as annotations AND the complete list into the step summary.
+          head -9 "$out" | while IFS= read -r line; do echo "::error::clippy $line"; done
+          {
+            echo "## Clippy pedantic diagnostics ($(wc -l < "$out") lints)"
+            echo '```'
+            cat "$out"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
           cargo fmt --all -- --check 2>&1 | head -40 || true
