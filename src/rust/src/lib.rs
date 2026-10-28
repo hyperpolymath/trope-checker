@@ -885,11 +885,8 @@ pub fn violations(fl: &Floor, g: &Grade) -> Vec<String> {
 /// graph the unemittable remainder is simply skipped (accumulation stays
 /// fuel-bounded in `acc`), never an infinite loop.
 fn topo_witness_order(doc: &Doc) -> Vec<&Edge> {
-    let producer: BTreeMap<&str, &Edge> = doc
-        .edges
-        .iter()
-        .map(|e| (e.output.as_str(), e))
-        .collect();
+    let producer: BTreeMap<&str, &Edge> =
+        doc.edges.iter().map(|e| (e.output.as_str(), e)).collect();
     // Ancestors of the output: backwards closure through producer inputs.
     let mut ancestors: BTreeSet<&str> = BTreeSet::new();
     let mut stack: Vec<&str> = vec![doc.out.as_str()];
