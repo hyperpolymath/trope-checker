@@ -284,9 +284,9 @@ jobs:
           # they were source declarations. Ignore those generated declaration
           # candidates, after first unmangling `_private...` so a private
           # theorem remains audited. Every source declaration still fails on
-          # any axiom outside the allowlist; only the compiler's own
-          # `lcProof`/`lcUnreachable`/`_cstage*` placeholders are removed from
-          # an otherwise-source declaration's dependency list.
+          # any axiom outside the allowlist; only compiler-generated names
+          # (`lcProof`, `_cstage*`, `_spec`/`_at` specialisations, …) are
+          # removed from an otherwise-source declaration's dependency list.
           jq -s '
             def user_name:
               (split(".") as $parts
@@ -301,8 +301,14 @@ jobs:
                 or . == "lcUnreachable"
                 or test("^(match|eq)_[0-9]+")
                 or test("(_cstage|_spec|_unfold)")));
-            def compiler_placeholder:
-              (split(".") | any(. == "lcProof" or . == "lcUnreachable" or test("^_cstage[0-9]*$")));
+            # The same internal-name predicate, applied to the *axiom* side:
+            # axiom-audit also misclassifies compiler specialisation
+            # constants (npowBinRec._at.<inst>._spec_2, Nat.binaryRec._at.…,
+            # _hyg-mangled decEq specialisations) as axioms used. No real
+            # axiom — sorryAx, Lean.ofReduceBool, Classical.choice, a user
+            # `axiom` — has an internal-mangled name (after _private
+            # unmangling), so filtering these cannot hide one.
+            def compiler_placeholder: internal_decl;
             def filtered_axioms: ((.axiomsUsed // []) | map(select(compiler_placeholder | not)));
             def filtered_violations:
               [(.violations[]? | select(.decl | internal_decl | not)

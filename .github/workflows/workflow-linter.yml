@@ -201,7 +201,16 @@ jobs:
       - name: actionlint diagnostics (annotations, on failure only)
         if: failure() && steps.actionlint.outcome == 'failure'
         run: |
-          actionlint -no-color -format '{{range $err := .}}::error file={{$err.Filepath}},line={{$err.Line}},col={{$err.Column}}::{{$err.Kind}}: {{$err.Message}}{{printf "\n"}}{{end}}' || true
+          actionlint -no-color > "$RUNNER_TEMP/actionlint.txt" 2>&1 || true
+          head -9 "$RUNNER_TEMP/actionlint.txt" | while IFS= read -r line; do
+            echo "::error::actionlint: $line"
+          done
+          {
+            echo "## actionlint diagnostics ($(wc -l < "$RUNNER_TEMP/actionlint.txt") lines)"
+            echo '```'
+            cat "$RUNNER_TEMP/actionlint.txt"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Install pinned zizmor
         run: |
