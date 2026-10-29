@@ -1,6 +1,18 @@
 # SPDX-License-Identifier: MPL-2.0
 # Only trusted default-branch code publishes the untrusted PR scan's evidence.
 # Never check out the PR or execute anything downloaded from its run.
+#
+# Trust model: a fork PR controls the PR-side Fork governance workflow, so
+# its artifacts can lie. Lane pass/fail is therefore derived from GitHub's
+# own run metadata (job conclusions), the run must have actually called the
+# pinned reusable workflows named by the DEFAULT branch's
+# fork-governance.yml (referenced_workflows), and the artifact's lane
+# claims must agree or publication is refused. What remains
+# artifact-sourced is display shading only (K9/Hypatia verdict colors,
+# advisory counts, grid Markdown) — produced by the real reusables the
+# run is proven to have called. A PR that bumps the reusable pins gets no
+# comment until it merges (the trusted pin set is the default branch's);
+# that fail-closed gap is deliberate.
 name: Publish fork governance
 
 on:
@@ -12,11 +24,12 @@ on:
 permissions: {}
 
 concurrency:
-  # Keyed on the completed run's head SHA, not its (fork-controlled)
-  # branch name: the publish step re-checks the PR head against this
-  # SHA before posting, so a stale publisher for an older SHA fails
-  # closed instead of racing the newer one.
-  group: fork-governance-publish-${{ github.event.workflow_run.head_sha }}
+  # Keyed on fork identity + head SHA, not the (fork-controlled, and
+  # colliding across forks) branch name: two forks with a `main` branch
+  # must not cancel each other's publisher. The publish step also
+  # re-checks the PR head against this SHA before posting, so a stale
+  # publisher for an older SHA fails closed instead of racing.
+  group: fork-governance-publish-${{ github.event.workflow_run.head_repository.full_name }}-${{ github.event.workflow_run.head_sha }}
   cancel-in-progress: true
 
 jobs:
@@ -56,6 +69,45 @@ jobs:
           [ -n "$pr" ] || { echo "No unique current open PR for this run; skipping publication."; exit 0; }
           echo "pr=$pr" >> "$GITHUB_OUTPUT"
           echo "run=$run_id" >> "$GITHUB_OUTPUT"
+          # Authenticate the run itself (see trust model above): it must
+          # have called exactly the reusable workflows the default branch's
+          # fork-governance.yml names, at the same pins — a PR-edited
+          # workflow that fakes or swaps a lane does not satisfy this.
+          gh api "repos/$GITHUB_REPOSITORY/contents/.github/workflows/fork-governance.yml" \
+            --jq .content | base64 -d > "$RUNNER_TEMP/trusted-fork-governance.yml"
+          grep -oE 'uses: [^[:space:]#]+' "$RUNNER_TEMP/trusted-fork-governance.yml" \
+            | awk '{print $2}' | grep '/\.github/workflows/' | sort -u \
+            > "$RUNNER_TEMP/expected-reusables.txt"
+          jq -r '.referenced_workflows[]?.path' "$RUNNER_TEMP/source-run.json" | sort -u \
+            > "$RUNNER_TEMP/actual-reusables.txt"
+          if [ ! -s "$RUNNER_TEMP/expected-reusables.txt" ]; then
+            echo "::error::Could not read the trusted reusable set from the default branch; refusing to publish." >&2
+            exit 1
+          fi
+          missing=$(comm -23 "$RUNNER_TEMP/expected-reusables.txt" "$RUNNER_TEMP/actual-reusables.txt")
+          if [ -n "$missing" ]; then
+            echo "::error::Source run did not call the trusted reusables; refusing to publish. Missing:" >&2
+            echo "$missing" >&2
+            exit 1
+          fi
+          # Lane pass/fail comes from GitHub's job conclusions for the run,
+          # never from the artifact. Job names are the reusables' own.
+          gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/jobs?per_page=100" \
+            > "$RUNNER_TEMP/source-jobs.json"
+          jq -e '
+            [.[].jobs[]] as $jobs
+            | def lane($name):
+                [$jobs[] | select(.name == $name)]
+                | if length == 1 then .[0].conclusion
+                  else error("lane job missing or ambiguous: \($name)") end;
+            {
+              deed: lane("DEED syntax / lint"),
+              k9: lane("K9-DEED conformance / validate"),
+              hypatia: lane("Hypatia verdict grid / Hypatia Neurosymbolic Analysis")
+            }
+            | if all(.[]; . == "success" or . == "failure" or . == "cancelled" or . == "skipped")
+              then . else error("unexpected lane conclusion") end
+          ' "$RUNNER_TEMP/source-jobs.json" > "$RUNNER_TEMP/lanes.json"
 
       - name: Download lane results from the verified run
         if: steps.source.outputs.pr != ''
@@ -82,6 +134,13 @@ jobs:
             and ((.lanes.hypatia.outputs.verdict // "") | verdict)
             and ((.lanes.hypatia.outputs.advisory // "")
               | test("^(|none|(green|yellow|orange|red|purple|blue|grey):[0-9]+:[0-9]+)$"))
+          ' evidence/result.json >/dev/null
+          # The artifact's lane claims must agree with GitHub's own job
+          # conclusions, or the PR-side workflow is lying: refuse to publish.
+          jq -e --slurpfile lanes "$RUNNER_TEMP/lanes.json" '
+            .lanes.deed.result == $lanes[0].deed
+            and .lanes.k9.result == $lanes[0].k9
+            and .lanes.hypatia.result == $lanes[0].hypatia
           ' evidence/result.json >/dev/null
 
       - name: Download the K9 grid from the verified run
@@ -128,10 +187,10 @@ jobs:
           gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" \
             | jq -e --arg sha "$sha" '.state == "open" and .head.sha == $sha' >/dev/null
           args=(--out "$RUNNER_TEMP/fork-governance"
-                --deed-result "$(jq -r '.lanes.deed.result' evidence/result.json)"
-                --k9-result "$(jq -r '.lanes.k9.result' evidence/result.json)"
+                --deed-result "$(jq -r '.deed' "$RUNNER_TEMP/lanes.json")"
+                --k9-result "$(jq -r '.k9' "$RUNNER_TEMP/lanes.json")"
                 --k9-verdict "$(jq -r '.lanes.k9.outputs.verdict // ""' evidence/result.json)"
-                --hypatia-result "$(jq -r '.lanes.hypatia.result' evidence/result.json)"
+                --hypatia-result "$(jq -r '.hypatia' "$RUNNER_TEMP/lanes.json")"
                 --hypatia-verdict "$(jq -r '.lanes.hypatia.outputs.verdict // ""' evidence/result.json)"
                 --hypatia-advisory "$(jq -r '.lanes.hypatia.outputs.advisory // ""' evidence/result.json)"
                 --sha "$sha" --run "$(jq -r '.run' evidence/result.json)" --repo "$GITHUB_REPOSITORY")
