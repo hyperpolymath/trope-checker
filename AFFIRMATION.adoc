@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: CC-BY-SA-4.0
 // SPDX-License-Identifier: CC-BY-SA-4.0
 = AFFIRMATION — trope-checker
-:revdate: 2026-06-24
+:revdate: 2026-10-27
 
 A dated, ground-truthed honesty snapshot (the README/EXPLAINME/AFFIRMATION trio).
 This is the brief's "STATUS" deliverable: what is proved, what is stubbed-and-named,
@@ -78,3 +78,64 @@ Documentation gaps OPEN-B/B′ (`Falsified`/`Misbound` absent from v0.1 §3.1/§
 proved-vs-missing picture: `verification/proofs/INTEGRATION-REPORT.adoc`.
 
 — Authored by the build agent under owner direction; signed in git history.
+
+== As of 2026-10-27 — Phase 0 re-run on the ratified world
+
+*Anchor.* Branch `claude/new-session-snuoro` at `444e4cf` (`main` 216f23b + the v0.2
+consolidation + the `proofs.yml` pin), 2026-10-27T07:56Z, in an Ubuntu 24.04 cloud
+container. Toolchain: Agda 2.7.0.1 + agda-stdlib 2.0 (tag `v2.0`, commit `2b8fff1`);
+Idris2 0.8.0 (built from tag `v0.8.0` on Chez Scheme 9.5.8); rustc 1.97.0; just 1.40.0.
+
+*Ground truth (commands run here):*
+
+* `idris2 --typecheck verification/proofs/idris2/trope.ipkg` → exit 0; 8 modules, all
+  `%default total`; no `believe_me` / `assert_total` / `postulate` in
+  `verification/proofs/idris2` or `src/idris2`.
+* `just trope-build && bash tests/conformance/run.sh` → the reference `tropecheck`
+  builds; *13* verdict cases pass with the expected witness edge and coordinate; *9*
+  schema-invalid documents are rejected at the named slot; "conformance: all pass".
+* `just trope-rust` → `tropecheck-rs` builds; the same 13 + 9 pass — the Rust fast core
+  and the Idris2 reference agree over the whole corpus.
+* `just build-agda` → `agda --safe --without-K All.agda` and `Smoke.agda` exit 0
+  (77 s and 5 s cold; 12 s together with cached interfaces).
+* `just build-lean` → *NOT RUN here*: `lake` is not installed and the Lean toolchain
+  and Mathlib cache hosts were unreachable from this container. The
+  `lean-source-honesty` regexes of `proofs.yml` were run by hand over all 8 tracked
+  `.lean` files: no `sorry` / `admit` / `native_decide`, no user `axiom`. On this
+  branch the `proofs.yml` `lean-build` job (run 40472568287, 2026-10-27T08:18Z) built
+  both packages — `lake build` "Build completed successfully", one axiom line per
+  theorem — and then failed in lean-action's optional `nanoda` step (its lean4export
+  does not compile under the v4.16.0 toolchain), exactly as on `main`; that step, not
+  the build, is why the job is red.
+
+*Proved* (machine-checked; names in `docs/status/PROOF-STATUS.adoc`): L1–L6 on the
+ratified carrier, L4 in full (`fateL4MonoR/L`, `bondComposeMono`, `mergeComposeMono`);
+the decidable retention preorder; the Veridicality Derivation and Honest Generation;
+C1–C3 (`GradeR.conical`, `gradeR_leftCancel_iff`, `TierTwoComplete`,
+`fate-tier-meet-hom-fails`); O1-carrier (`atom_factorization`, stated on the v0.1 `Grade` — finding 4); the sighted tropical
+factorisation (`piR_sighted`); Theorem B Targets 1, 2, 4 and the β/let case of 3
+(`cut-preserves-grade`, `β-app`, `β-let`); grade soundness for exact lowering,
+T-Sub and verdict soundness (`soundFromExact`, `subSound`, `verdictSound`). *Open*
+(`spec/calculus.adoc §10`): CO-1 mechanisation (the `fix` case; designed, not
+mechanised), O1-coord, O2, O3, O5 mechanisation, O6.
+
+*Four findings.* (1) Ubuntu 24.04's apt pair (Agda 2.6.3, agda-stdlib 1.7.3) cannot
+typecheck Theorem B: `agda --safe --without-K All.agda` exits 42, `Data.Product.Base`
+not found — stdlib ≥ 2.0 is required, which is why `proofs.yml` now pins Agda 2.7.0.1
++ stdlib 2.0 by checksum (reproduced here, 58 s). (2) The 2026-06-22 entry's "10/10"
+and "8 schema-invalid" were stale: the corpus is 13 + 9. Also observed: `just
+proof-check-all` is red for reasons that predate this pass (per-file `idris2 --check`
+and `agda --safe` from the repo root cannot resolve module names; the ABI/Types Idris2
+mint templates do not typecheck) — recorded as an issue, not fixed here; the gates
+that mean something are `just check`, `just build-agda`, `just trope-rust` and
+`verify-all`. (3) The CI axiom audit shows `Trope.nine_families` (`EffectAtoms.lean`),
+`FateA.Q_add_left_cancel` and `FateA.atten_cancel_on_normalForms` (`GradeRatified.lean`)
+depend on `Classical.choice` as well as `propext`/`Quot.sound`; the "`propext`/`Quot.sound`
+only" wording in spec §9.3, PROOF-STATUS and the proofs README overclaimed and now reads
+"no `sorryAx`, no user axiom". `GradeBoundary.lean`'s own footer had said so all along. (4) `EffectAtoms.lean` imports
+`GradeBoundary`, so the atom factorisation cited for O1-carrier is a theorem about the
+v0.1 `Grade`; no `GradeR` restatement exists. The factorisation is componentwise and
+should transfer, but that is an argument, not a proof — recorded in PROOF-STATUS (Open)
+and left for the owner where `spec/calculus.adoc §6/§10` cite it as ratified-carrier.
+
+— Run by the Phase 0 agent; the owner signs on landing.

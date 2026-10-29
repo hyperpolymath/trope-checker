@@ -41,6 +41,10 @@ jobs:
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
+          # Widest bundled suite (superset of security-extended), not the
+          # default: for the `actions` extractor this adds the workflow
+          # security/quality queries that the default set omits.
+          queries: security-and-quality
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4.39.1
         with:

@@ -40,6 +40,7 @@ abi.ipkg                   # Idris2 package for the ABI seam; sourcedir=src/inte
 # ─── Directories ─────────────────────────────────────────────────────────────
 .devcontainer/             # VS Code dev container spec; tool-required at root
 .git/
+.gitbot-fleet/             # fleet enrolment and report-backs; paths declared in trope-checker_chora.deed
 .githooks/                 # validate-a2ml.sh, validate-k9.sh — LOAD-BEARING: run
                            # directly by .github/workflows/dogfood-gate.yml (the
                            # "Validate A2ML manifests" and "Validate K9 contracts"
@@ -50,6 +51,7 @@ abi.ipkg                   # Idris2 package for the ABI seam; sourcedir=src/inte
 .well-known/
 build/                     # guix.scm, .guix-channel, Containerfile
 ci/                        # .gitlab-ci.yml, .pre-commit-config.yaml (root shims if tools require)
+wiki/                      # GitHub wiki SOURCE pages (AsciiDoc), mirrored in-repo; lives outside docs/ because estate policy reserves docs/wiki* for published .md wiki content
 docs/                      # onboarding/, status/, governance/, ...
 docs-template/             # template-only: scaffolding docs copied into new repos
 session/                   # dispatch.sh, custom-checks.k9, local-hooks.sh

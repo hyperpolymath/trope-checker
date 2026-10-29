@@ -1,0 +1,39 @@
+# SPDX-License-Identifier: MPL-2.0
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+
+# .machine_readable/k9-contract-debt.txt — SHRINK-ONLY ledger of grandfathered
+# K9 files.
+#
+# 1-formats/k9/spec/K9-CONTRACT-SPEC.adoc v1.0.0 (standards) landed AFTER
+# these 8 files did: they are rsr-template boilerplate and pre-contract
+# drafts (missing pedigree.schema_version / pedigree.component_type,
+# unfilled TODO placeholders, a Hunt-leash example with no signature block,
+# two .k9 files that do not parse as Nickel at all). The fork-governance
+# K9 lane could not execute in this repository until 2026-10-28 (the
+# standards repository transfer plus a selected-Actions allow-list gap
+# killed every run at startup), so this debt was never gated before.
+# Turning the whole lane red at first execution is the exact failure the
+# estate has already paid for; the designed alternative is this ledger.
+#
+# The ratchet is one-directional (enforced by standards'
+# k9-conformance renderer):
+#   * a path here that now CONFORMS is a stale entry and fails — fixing a
+#     file must shrink this ledger in the same change;
+#   * a path NOT here that does not conform fails, so new debt cannot
+#     appear;
+#   * a path here that the PR TOUCHES loses its exemption, so this ledger
+#     can never carry a violation through an edit to the file that has it.
+#
+# One repo-relative path per line. '#' comments and blanks ignored.
+# Baseline 2026-10-28, produced by the first executing K9 run
+# (fork-governance run 40782505930, L0–L2 strict, standards@34cf03f9)
+# cross-checked locally at L1 with the canonical k9-validate.sh:
+# 8 fail / 2 pass of the 10 committed K9 files.
+.machine_readable/self-validating/examples/setup-repo.k9.ncl
+.machine_readable/self-validating/methodology-guard.k9.ncl
+.machine_readable/self-validating/template-hunt.k9.ncl
+.machine_readable/self-validating/template-kennel.k9.ncl
+.machine_readable/self-validating/template-yard.k9.ncl
+container/deploy.k9.ncl
+coordination.k9
+session/custom-checks.k9
