@@ -711,13 +711,8 @@ pub fn dec_edge(v: &Json) -> Result<Edge, String> {
         .to_string();
     match v.field("effect").and_then(Json::as_str) {
         Some("preserve" | "project" | "collapse" | "detach" | "attenuate" | "fuse") => {}
-        Some(effect) => {
-            return Err(format!(
-                "edges/{}/effect: unknown effect \"{}\"",
-                id, effect
-            ))
-        }
-        None => return Err(format!("edges/{}/effect: missing or non-string effect", id)),
+        Some(effect) => return Err(format!("edges/{id}/effect: unknown effect \"{effect}\"")),
+        None => return Err(format!("edges/{id}/effect: missing or non-string effect")),
     }
     let inputs = match v.field("inputs") {
         Some(i) => str_list(i),
@@ -775,8 +770,8 @@ pub fn dec_floor(v: &Json) -> Result<Floor, String> {
     })
 }
 /// Validate the graph structure the calculus requires before grading: node
-/// IDs are unique, every referenced node (edge inputs, edge outputs, and
-/// `use_model.output`) is declared, each node has at most one producing
+/// and edge IDs are unique, every referenced node (edge inputs, edge outputs,
+/// and `use_model.output`) is declared, each node has at most one producing
 /// edge, and the producer graph is acyclic.
 ///
 /// Structural faults are validation faults and MUST NOT produce a verdict:
@@ -793,7 +788,11 @@ fn validate_graph(nodes: &[Node], edges: &[Edge], out: &str) -> Result<(), Strin
         return Err(format!("use_model/output: undeclared node \"{out}\""));
     }
     let mut producer: BTreeMap<&str, &str> = BTreeMap::new();
+    let mut edge_ids = BTreeSet::new();
     for e in edges {
+        if !edge_ids.insert(e.id.as_str()) {
+            return Err(format!("edges/{}: duplicate edge id", e.id));
+        }
         if !declared.contains(e.output.as_str()) {
             return Err(format!(
                 "edges/{}/output: undeclared node \"{}\"",
@@ -841,8 +840,8 @@ fn validate_graph(nodes: &[Node], edges: &[Edge], out: &str) -> Result<(), Strin
 /// # Errors
 /// Returns an error for unsupported versions, missing document fields,
 /// invalid nodes, edges, or floors, or a structurally invalid graph
-/// (duplicate node IDs, undeclared node references, duplicate producers,
-/// or cycles) — see `validate_graph`.
+/// (duplicate node or edge IDs, undeclared node references, duplicate
+/// producers, or cycles) — see `validate_graph`.
 pub fn dec_doc(v: &Json) -> Result<Doc, String> {
     // Accepted document versions (IR 0.2, R-2026-07-07). "0.1" stays accepted:
     // the wire format is identical, and 0.1 documents are normalized and graded
@@ -856,8 +855,7 @@ pub fn dec_doc(v: &Json) -> Result<Doc, String> {
         Some("prevent") => {}
         Some(profile) => {
             return Err(format!(
-                "profile: unsupported \"{}\" (expected prevent)",
-                profile
+                "profile: unsupported \"{profile}\" (expected prevent)"
             ))
         }
         None => return Err("profile: missing or non-string profile".into()),
@@ -1164,7 +1162,7 @@ mod decoder_profile_effect_tests {
         for value in [None, Some(Json::Null), Some(Json::Str("detect".into()))] {
             let mut doc = fixture();
             set_field(&mut doc, "profile", value);
-            assert!(dec_doc(&doc).err().unwrap().contains("profile"));
+            assert!(matches!(dec_doc(&doc), Err(e) if e.contains("profile")));
         }
     }
 
@@ -1200,7 +1198,7 @@ mod decoder_profile_effect_tests {
                 panic!("expected edges");
             };
             set_field(&mut edges[0], "effect", value);
-            assert!(dec_doc(&doc).err().unwrap().contains("effect"));
+            assert!(matches!(dec_doc(&doc), Err(e) if e.contains("effect")));
         }
     }
 }

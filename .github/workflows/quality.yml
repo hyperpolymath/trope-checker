@@ -75,7 +75,10 @@ jobs:
       - name: Gate falsifiability canaries (R10)
         run: bash scripts/test-gate-falsifiability.sh
       - name: Workflow and gate regression tests
-        run: bash tests/workflows/review_regressions_test.sh
+        run: |
+          bash tests/workflows/review_regressions_test.sh
+          bash tests/workflows/audit_report_test.sh
+          bash tests/workflows/publisher_trust_test.sh
   docs-present:
     runs-on: ubuntu-latest
     timeout-minutes: 15

@@ -27,6 +27,7 @@ on:
     paths:
       - 'verification/proofs/lean4/**'
       - 'verification/proofs/agda/**'
+      - 'tests/lib/strip-proof-comments.awk'
       - '.github/workflows/proofs.yml'
   pull_request:
   workflow_dispatch:
@@ -279,6 +280,14 @@ jobs:
             if [ "$audit_status" -gt 1 ]; then
               cat "$work/report-$m.json"
               echo "::error::axiom-audit failed to run for $m (exit $audit_status)"
+              exit 1
+            fi
+            # jq -s silently skips empty files. Require exactly one report per
+            # module even when the tool exits 1 (a reported violation).
+            if ! jq -e -s 'length == 1 and (.[0] | type == "object" and (.audited | type == "number"))' \
+                 "$work/report-$m.json" >/dev/null 2>&1; then
+              cat "$work/report-$m.json" || true
+              echo "::error::axiom-audit produced no valid JSON report for $m (exit $audit_status)"
               exit 1
             fi
           done

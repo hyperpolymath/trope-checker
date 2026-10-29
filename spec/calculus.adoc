@@ -720,15 +720,16 @@ The tropechecker is a *pure function from Trope IR to a verdict object*:
 `p-sufficient` / `p-insufficient`, plus the witness edge (§6.2). It performs
 normalization (A3) and validation (HC-4 coherence; the prevent profile's
 rejection of deceptive values). Before grade accumulation, it MUST validate the
-graph structure, rejecting unknown node references, duplicate producers for a
-node, and cycles as validation faults; these inputs MUST NOT produce a verdict.
+graph structure, rejecting duplicate node or edge IDs, unknown node references,
+duplicate producers for a node, and cycles as validation faults; these inputs
+MUST NOT produce a verdict.
 Only a valid DAG proceeds to grade composition and final floor-subsumption.
 *It MUST NOT parse, execute, or otherwise depend on source.*
 
 Structural validation and the order-independent witness selection of §6.2 are
 implemented in both the reference (Idris2) and fast (Rust) cores and are
 conformance requirements: the `graph-invalid` corpus pins rejection of
-duplicate node IDs, undeclared references, duplicate producers and cycles,
+duplicate node and edge IDs, undeclared references, duplicate producers and cycles,
 and the `witness-permutation` cases pin that permuting the edge array cannot
 change the named witness.
 
