@@ -792,10 +792,7 @@ fn validate_graph(nodes: &[Node], edges: &[Edge], out: &str) -> Result<(), Strin
         }
         for i in &e.inputs {
             if !declared.contains(i.as_str()) {
-                return Err(format!(
-                    "edges/{}/inputs: undeclared node \"{}\"",
-                    e.id, i
-                ));
+                return Err(format!("edges/{}/inputs: undeclared node \"{}\"", e.id, i));
             }
         }
         if let Some(prev) = producer.insert(e.output.as_str(), e.id.as_str()) {
