@@ -3,7 +3,10 @@
 # Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 #
 # The machine conformance suite: every IR fixture -> expected verdict (+ witness),
-# and every schema-invalid fixture -> validation-fault at a named coordinate.
+# every schema-invalid fixture -> validation-fault at a named coordinate, and
+# every graph-invalid fixture (schema-valid, structurally broken: duplicate
+# node IDs, undeclared references, duplicate producers, cycles) ->
+# validation-fault with no verdict (calculus structural-validation MUST).
 # Drives the compiled Idris2 reference checker (src/idris2/build/exec/tropecheck).
 # Pure bash + jq; no Python.
 set -uo pipefail
@@ -15,14 +18,15 @@ BIN="${TROPECHECK_BIN:-$ROOT/src/idris2/build/exec/tropecheck}"
 CASES="$ROOT/tests/conformance/cases.json"
 FIX="$ROOT/tests/conformance/fixtures"
 INV="$ROOT/tests/conformance/schema-invalid"
+GINV="$ROOT/tests/conformance/graph-invalid"
 G="\033[32m"; R="\033[31m"; O="\033[0m"
 fail=0
 
 command -v jq >/dev/null || { echo "jq is required"; exit 2; }
-[ -x "$BIN" ] || { echo "checker not built: run 'just trope-build' first ($BIN)"; exit 2; }
+[[ -x "$BIN" ]] || { echo "checker not built: run 'just trope-build' first ($BIN)"; exit 2; }
 
 # 0. every fixture (and the schema) is well-formed JSON.
-for f in "$FIX"/*.ir.json "$INV"/*.json "$ROOT/schemas/trope-ir.schema.json"; do
+for f in "$FIX"/*.ir.json "$INV"/*.json "$GINV"/*.json "$ROOT/schemas/trope-ir.schema.json"; do
   jq -e . "$f" >/dev/null 2>&1 || { echo -e "${R}FAIL${O} malformed JSON: $f"; fail=1; }
 done
 
@@ -35,22 +39,32 @@ while read -r c; do
   out=$("$BIN" "$FIX/$ir")
   verdict=$(awk '{print $1}' <<<"$out")
   ok=1
-  [ "$verdict" = "$exp" ] || ok=0
-  if [ -n "$wexp" ]; then
+  [[ "$verdict" = "$exp" ]] || ok=0
+  if [[ -n "$wexp" ]]; then
     gw=$(grep -o 'witness=[^[:space:]]*' <<<"$out" | cut -d= -f2)
     gc=$(grep -o 'coord=[^[:space:]]*' <<<"$out" | cut -d= -f2)
-    { [ "$gw" = "$wexp" ] && [ "$gc" = "$cexp" ]; } || ok=0
+    { [[ "$gw" = "$wexp" ]] && [[ "$gc" = "$cexp" ]]; } || ok=0
   fi
-  if [ "$ok" = 1 ]; then echo -e "${G}ok${O}   $ir -> $verdict${wexp:+ (witness $wexp/$cexp)}"
+  if [[ "$ok" = 1 ]]; then echo -e "${G}ok${O}   $ir -> $verdict${wexp:+ (witness $wexp/$cexp)}"
   else echo -e "${R}FAIL${O} $ir: got '$out', expected $exp ${wexp:+$wexp/$cexp}"; fail=1; fi
 done < <(jq -c '.cases[]' "$CASES")
 
 # 2. negative: schema-invalid fixtures must be rejected at validation (exit 2).
 for f in "$INV"/*.json; do
   out=$("$BIN" "$f"); rc=$?
-  if [ "$rc" = 2 ]; then echo -e "${G}ok${O}   $(basename "$f") rejected: ${out#validation-fault$'\t'}"
+  if [[ "$rc" = 2 ]]; then echo -e "${G}ok${O}   $(basename "$f") rejected: ${out#validation-fault$'\t'}"
   else echo -e "${R}FAIL${O} $(basename "$f"): expected validation-fault, got rc=$rc '$out'"; fail=1; fi
 done
 
-if [ "$fail" = 0 ]; then echo -e "\n${G}conformance: all pass${O}"; else echo -e "\n${R}conformance: failures${O}"; fi
+# 3. negative: graph-invalid fixtures are schema-VALID JSON documents whose
+#    producer graph is structurally broken. They must be rejected as
+#    validation faults (exit 2) and must NOT receive a verdict — before this
+#    check existed, e.g. dangling-use-output returned p-sufficient (exit 0).
+for f in "$GINV"/*.json; do
+  out=$("$BIN" "$f"); rc=$?
+  if [[ "$rc" = 2 ]]; then echo -e "${G}ok${O}   $(basename "$f") rejected: ${out#validation-fault$'\t'}"
+  else echo -e "${R}FAIL${O} $(basename "$f"): expected validation-fault, got rc=$rc '$out'"; fail=1; fi
+done
+
+if [[ "$fail" = 0 ]]; then echo -e "\n${G}conformance: all pass${O}"; else echo -e "\n${R}conformance: failures${O}"; fi
 exit "$fail"

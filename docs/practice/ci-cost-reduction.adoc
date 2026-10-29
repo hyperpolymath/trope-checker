@@ -136,15 +136,25 @@ substitution is near-free:
 
 | `rsr-antipattern.yml` + `scorecard-enforcer.yml` +
   `static-analysis-gate.yml`
-| Merge into a single composite `rsr-gate.yml` with three steps
-| They already run in the same CI slot; merging deduplicates
-  setup/checkout/clone.
+| RESOLVED (2026-10-28): do not merge — retire and split.
+  `static-analysis-gate.yml` was retired outright; its Hypatia and
+  panic-attack jobs are covered once by the canonical standards lane
+  (`fork-governance.yml` on pull requests, `hypatia-scan.yml` on push),
+  and its only unique job, Patch Bridge CVE triage, lives in
+  `patch-bridge.yml`. Recreating a composite `rsr-gate.yml` would
+  re-duplicate the standards scanners at divergent pins — the exact
+  defect ADR 0006 records.
+| They no longer run in the same CI slot as duplicates: one canonical
+  lane per scanner, sequenced per ADR 0006 §"Decision".
 
 | `codeql.yml` + `hypatia-scan.yml`
-| Keep both, but drop Hypatia from on-push; let it run only on
-  schedule
-| Hypatia is the slower of the two, and its neurosymbolic analysis
-  doesn't need sub-minute latency on every commit.
+| Keep both, on their current triggers (ADR 0006): Hypatia runs
+  PR-time inside `fork-governance.yml` and on push via
+  `hypatia-scan.yml`. Do NOT drop the push trigger to schedule-only —
+  the push lane is the one that grades what actually landed on main,
+  and PR-time scope is the change, not the tree.
+| The earlier schedule-only suggestion traded away landed-code
+  coverage for minutes; the ADR 0006 sequence supersedes it.
 
 | `codeql.yml` (on-push) + `codeql.yml` (scheduled)
 | Keep on-push, drop scheduled

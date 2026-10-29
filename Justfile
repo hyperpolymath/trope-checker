@@ -140,15 +140,12 @@ test-smoke:
     @echo "Smoke test..."
     # TODO: Add basic sanity checks
 
-# Run end-to-end tests (full pipeline: build → run → verify)
-e2e:
-    @echo "Running E2E tests..."
-    # TODO: Replace with your E2E test command. Examples:
-    #   bash tests/e2e.sh                    # Shell-based E2E
-    #   npx playwright test                  # Browser E2E
-    #   mix test test/integration/e2e_test.exs  # Elixir E2E
-    #   cargo test --test end_to_end         # Rust E2E
-    @echo "E2E tests passed!"
+# Run end-to-end conformance tests. Depends on trope-build so the corpus
+# always runs against a checker built from the current tree — never a stale
+# binary left in src/idris2/build, and never an early exit when none exists
+# (test-all includes e2e and then pronounces the tree safe to merge).
+e2e: trope-build
+    bash tests/e2e.sh
 
 # Run aspect tests (cross-cutting concern validation)
 aspect:

@@ -91,13 +91,13 @@ fi
 # extensions only, comment lines stripped, and `sorry` must not be part of
 # `sorry-free`.
 DANGEROUS_PROOF=$(
-  for f in $(find src verification -type f \
-               \( -name '*.v' -o -name '*.lean' -o -name '*.agda' \
-                  -o -name '*.idr' -o -name '*.thy' -o -name '*.rs' -o -name '*.zig' \) 2>/dev/null); do
+  while IFS= read -r f; do
     awk -f tests/lib/strip-proof-comments.awk "$f" 2>/dev/null \
       | grep -nE '\bAdmitted\b|\bsorry\b|\bunsafeCoerce\b|\bObj\.magic\b' \
       | sed "s|^|$f:|"
-  done || true
+  done < <(find src verification -type f \
+               \( -name '*.v' -o -name '*.lean' -o -name '*.agda' \
+                  -o -name '*.idr' -o -name '*.thy' -o -name '*.rs' -o -name '*.zig' \) 2>/dev/null) || true
 )
 if [ -n "$DANGEROUS_PROOF" ]; then
     fail "Dangerous proof patterns found:"

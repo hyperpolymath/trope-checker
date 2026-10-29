@@ -263,7 +263,7 @@ theorem sighted_forces_squash (f : Fate → Delta)
 end FactorisationR
 end Trope
 
-/-! ## Axiom audit (sorry-free, axiom-clean check) -/
+/-! ## Axiom audit (sorryAx-free, axiom-clean check) -/
 section AxiomAudit
 open Trope.FactorisationR
 -- the sighted homomorphism and its bundled form

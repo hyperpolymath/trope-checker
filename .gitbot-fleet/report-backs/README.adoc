@@ -1,0 +1,24 @@
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell (hyperpolymath) <[REDACTED_EMAIL]>
+= gitbot-fleet report-backs
+
+One JSON envelope per enrolled fleet member (`.gitbot-fleet/enrolment.json`).
+The Hypatia verdict grid reads this directory when it renders, so a
+report-back here is the only way a member's row stops being orange. The
+envelope contract is `docs/VERDICT-GRID-SPEC.adoc` in hyperpolymath/standards;
+the producer is documented in gitbot-fleet's `docs/REPORT-BACK.adoc`.
+
+*How the files get here.* The `fleet` job of
+`.github/workflows/fork-governance.yml` (gitbot-fleet's
+`fleet-report-back-reusable.yml`) runs the enrolled adapters on the PR head
+and uploads the envelopes as the `fleet-report-backs` artifact; the Hypatia
+lane downloads that artifact into this directory just before rendering.
+Nothing is ever committed here: an envelope is evidence about one commit, and
+a committed one would read as current when it is stale. The directory exists
+because this repository's deed declares it
+(`trope-checker_chora.deed`, `:report-backs ".gitbot-fleet/report-backs/"`),
+and it is empty in git on purpose. An enrolled member with no report-back
+renders *orange* ("enrolled, but no report-back was received"), never green;
+do not add a placeholder envelope to turn a row green. Only a real run may.
+
+Only files matching `*.json` are read, so this README is inert.

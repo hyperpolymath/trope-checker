@@ -6,7 +6,11 @@
 #
 # dogfood-gate.yml — Hyperpolymath Dogfooding Quality Gate
 # Validates that the repo uses hyperpolymath's own formats and tools.
-# Companion to static-analysis-gate.yml (security) — this is for format compliance.
+# Format-compliance PREFLIGHT only: the DEED/K9 checks below are header-level
+# and fast; the authoritative conformance lanes (canonical validators, grids,
+# the PR comment) run in fork-governance.yml. If the two ever disagree on
+# semantics, fork-governance governs; a header-level failure here still
+# blocks, because malformed syntax is wrong under either reading.
 name: "🟡 Check: RSR self-use (dogfooding)"
 
 on:
@@ -30,6 +34,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Check for the repo deed
         id: detect
@@ -47,8 +53,10 @@ jobs:
           INPUT_STRICT: "true"
         run: bash .githooks/validate-a2ml.sh
       - name: Write summary
+        env:
+          STEPS_DETECT_OUTPUTS_COUNT: ${{ steps.detect.outputs.count }}
         run: |
-          DEED_COUNT="${{ steps.detect.outputs.count }}"
+          DEED_COUNT="$STEPS_DETECT_OUTPUTS_COUNT"
           if [ "$DEED_COUNT" -eq 0 ]; then
             cat <<'EOF' >> "$GITHUB_STEP_SUMMARY"
           ## Repo deed validation
@@ -58,9 +66,12 @@ jobs:
           Copy one from [rsr-template-repo](https://github.com/hyperpolymath/rsr-template-repo).
           EOF
           else
-            echo "## Repo deed validation" >> "$GITHUB_STEP_SUMMARY"
-            echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "Scanned **${DEED_COUNT}** deed file(s). See step output for details." >> "$GITHUB_STEP_SUMMARY"
+            {
+              echo "## Repo deed validation (presence + header level)"
+              echo ""
+              echo "Scanned **${DEED_COUNT}** deed file(s). See step output for details."
+              echo "Canonical grammar conformance runs in the Fork governance workflow's DEED syntax lane (standards deed-conformance)."
+            } >> "$GITHUB_STEP_SUMMARY"
           fi
 
   # ---------------------------------------------------------------------------
@@ -74,6 +85,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Check for K9 files
         id: detect
@@ -82,8 +95,10 @@ jobs:
           CONFIG_COUNT=$(find . \( -name '*.toml' -o -name '*.yaml' -o -name '*.yml' -o -name '*.json' \) \
             -not -path './.git/*' -not -path './node_modules/*' -not -path './.deno/*' \
             -not -name 'package-lock.json' -not -name 'Cargo.lock' -not -name 'deno.lock' | wc -l)
-          echo "k9_count=$COUNT" >> "$GITHUB_OUTPUT"
-          echo "config_count=$CONFIG_COUNT" >> "$GITHUB_OUTPUT"
+          {
+            echo "k9_count=$COUNT"
+            echo "config_count=$CONFIG_COUNT"
+          } >> "$GITHUB_OUTPUT"
           if [ "$COUNT" -eq 0 ] && [ "$CONFIG_COUNT" -gt 0 ]; then
             echo "::warning::Found $CONFIG_COUNT config files but no K9 contracts. Run k9iser to generate contracts."
           fi
@@ -92,9 +107,12 @@ jobs:
         if: steps.detect.outputs.k9_count > 0
         run: bash .githooks/validate-k9.sh
       - name: Write summary
+        env:
+          STEPS_DETECT_OUTPUTS_K9_COUNT: ${{ steps.detect.outputs.k9_count }}
+          STEPS_DETECT_OUTPUTS_CONFIG_COUNT: ${{ steps.detect.outputs.config_count }}
         run: |
-          K9_COUNT="${{ steps.detect.outputs.k9_count }}"
-          CFG_COUNT="${{ steps.detect.outputs.config_count }}"
+          K9_COUNT="$STEPS_DETECT_OUTPUTS_K9_COUNT"
+          CFG_COUNT="$STEPS_DETECT_OUTPUTS_CONFIG_COUNT"
           if [ "$K9_COUNT" -eq 0 ]; then
             cat <<'EOF' >> "$GITHUB_STEP_SUMMARY"
           ## K9 Contract Validation
@@ -104,9 +122,12 @@ jobs:
           Generate contracts with: `k9iser generate .`
           EOF
           else
-            echo "## K9 Contract Validation" >> "$GITHUB_STEP_SUMMARY"
-            echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "Validated **${K9_COUNT}** K9 contract(s) against **${CFG_COUNT}** config file(s)." >> "$GITHUB_STEP_SUMMARY"
+            {
+              echo "## K9 Contract Validation (header level)"
+              echo ""
+              echo "Header-checked **${K9_COUNT}** K9 contract(s); found **${CFG_COUNT}** config file(s)."
+              echo "Canonical L0–L2 conformance and the grid run in the Fork governance workflow's K9-DEED conformance lane (standards k9-conformance)."
+            } >> "$GITHUB_STEP_SUMMARY"
           fi
 
   # ---------------------------------------------------------------------------
@@ -120,6 +141,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Scan for invisible characters
         id: lint
@@ -144,34 +167,45 @@ jobs:
           set -e
 
           FINDINGS=$(wc -l < /tmp/empty-lint-results.txt 2>/dev/null || echo 0)
-          echo "findings=$FINDINGS" >> "$GITHUB_OUTPUT"
-          echo "exit_code=$EL_EXIT" >> "$GITHUB_OUTPUT"
-          echo "ready=true" >> "$GITHUB_OUTPUT"
+          {
+            echo "findings=$FINDINGS"
+            echo "exit_code=$EL_EXIT"
+            echo "ready=true"
+          } >> "$GITHUB_OUTPUT"
 
           # Emit annotations for each file with invisible chars
           while IFS= read -r filepath; do
             [ -z "$filepath" ] && continue
-            REL_PATH="${filepath#$GITHUB_WORKSPACE/}"
+            REL_PATH="${filepath#"$GITHUB_WORKSPACE"/}"
             echo "::warning file=${REL_PATH}::Invisible Unicode characters detected (zero-width space, BOM, NBSP, etc.)"
           done < /tmp/empty-lint-results.txt
 
       - name: Write summary
+        env:
+          STEPS_LINT_OUTPUTS_READY: ${{ steps.lint.outputs.ready }}
+          STEPS_LINT_OUTPUTS_FINDINGS: ${{ steps.lint.outputs.findings }}
         run: |
-          if [ "${{ steps.lint.outputs.ready }}" = "true" ]; then
-            FINDINGS="${{ steps.lint.outputs.findings }}"
+          if [ "$STEPS_LINT_OUTPUTS_READY" = "true" ]; then
+            FINDINGS="$STEPS_LINT_OUTPUTS_FINDINGS"
             if [ "$FINDINGS" -gt 0 ] 2>/dev/null; then
-              echo "## Empty-Linter Results" >> "$GITHUB_STEP_SUMMARY"
-              echo "" >> "$GITHUB_STEP_SUMMARY"
-              echo "Found **${FINDINGS}** invisible character issue(s). See annotations above." >> "$GITHUB_STEP_SUMMARY"
+              {
+                echo "## Empty-Linter Results"
+                echo ""
+                echo "Found **${FINDINGS}** invisible character issue(s). See annotations above."
+              } >> "$GITHUB_STEP_SUMMARY"
             else
-              echo "## Empty-Linter Results" >> "$GITHUB_STEP_SUMMARY"
-              echo "" >> "$GITHUB_STEP_SUMMARY"
-              echo ":white_check_mark: No invisible character issues found." >> "$GITHUB_STEP_SUMMARY"
+              {
+                echo "## Empty-Linter Results"
+                echo ""
+                echo ":white_check_mark: No invisible character issues found."
+              } >> "$GITHUB_STEP_SUMMARY"
             fi
           else
-            echo "## Empty-Linter" >> "$GITHUB_STEP_SUMMARY"
-            echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "Skipped: empty-linter not available." >> "$GITHUB_STEP_SUMMARY"
+            {
+              echo "## Empty-Linter"
+              echo ""
+              echo "Skipped: empty-linter not available."
+            } >> "$GITHUB_STEP_SUMMARY"
           fi
 
   # ---------------------------------------------------------------------------
@@ -185,6 +219,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Check for Groove manifest
         id: groove
@@ -215,23 +251,31 @@ jobs:
             HAS_SERVER="true"
           fi
 
-          echo "has_manifest=$HAS_MANIFEST" >> "$GITHUB_OUTPUT"
-          echo "has_groove_code=$HAS_GROOVE_CODE" >> "$GITHUB_OUTPUT"
-          echo "has_server=$HAS_SERVER" >> "$GITHUB_OUTPUT"
+          {
+            echo "has_manifest=$HAS_MANIFEST"
+            echo "has_groove_code=$HAS_GROOVE_CODE"
+            echo "has_server=$HAS_SERVER"
+          } >> "$GITHUB_OUTPUT"
 
           if [ "$HAS_SERVER" = "true" ] && [ "$HAS_MANIFEST" = "false" ] && [ "$HAS_GROOVE_CODE" = "false" ]; then
             echo "::warning::This repo has server code but no Groove endpoint. Add .well-known/groove/manifest.json for service discovery."
           fi
 
       - name: Write summary
+        env:
+          STEPS_GROOVE_OUTPUTS_HAS_MANIFEST: ${{ steps.groove.outputs.has_manifest }}
+          STEPS_GROOVE_OUTPUTS_HAS_GROOVE_CODE: ${{ steps.groove.outputs.has_groove_code }}
+          STEPS_GROOVE_OUTPUTS_HAS_SERVER: ${{ steps.groove.outputs.has_server }}
         run: |
-          echo "## Groove Protocol Check" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Check | Status |" >> "$GITHUB_STEP_SUMMARY"
-          echo "|-------|--------|" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Static manifest (.well-known/groove/manifest.json) | ${{ steps.groove.outputs.has_manifest }} |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Groove endpoint in code | ${{ steps.groove.outputs.has_groove_code }} |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Has HTTP server code | ${{ steps.groove.outputs.has_server }} |" >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "## Groove Protocol Check"
+            echo ""
+            echo "| Check | Status |"
+            echo "|-------|--------|"
+            echo "| Static manifest (.well-known/groove/manifest.json) | $STEPS_GROOVE_OUTPUTS_HAS_MANIFEST |"
+            echo "| Groove endpoint in code | $STEPS_GROOVE_OUTPUTS_HAS_GROOVE_CODE |"
+            echo "| Has HTTP server code | $STEPS_GROOVE_OUTPUTS_HAS_SERVER |"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   # ---------------------------------------------------------------------------
   # Job 5: eclexiaiser manifest validation
@@ -244,6 +288,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Check and validate eclexiaiser manifest
         id: eclex
@@ -271,15 +317,21 @@ jobs:
           if [ "$ok" = 1 ]; then echo "Valid: eclexiaiser.toml (${nfun:-0} function(s))"; else echo "::error file=eclexiaiser.toml::Invalid eclexiaiser.toml"; exit 1; fi
 
       - name: Write summary
+        env:
+          STEPS_ECLEX_OUTPUTS_HAS_MANIFEST: ${{ steps.eclex.outputs.has_manifest }}
         run: |
-          if [ "${{ steps.eclex.outputs.has_manifest }}" = "true" ]; then
-            echo "## Eclexiaiser Manifest" >> "$GITHUB_STEP_SUMMARY"
-            echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo ":white_check_mark: **eclexiaiser.toml** present and valid." >> "$GITHUB_STEP_SUMMARY"
+          if [ "$STEPS_ECLEX_OUTPUTS_HAS_MANIFEST" = "true" ]; then
+            {
+              echo "## Eclexiaiser Manifest"
+              echo ""
+              echo ":white_check_mark: **eclexiaiser.toml** present and valid."
+            } >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "## Eclexiaiser Manifest" >> "$GITHUB_STEP_SUMMARY"
-            echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo ":ballot_box_with_check: No eclexiaiser.toml. Add one with \`eclexiaiser init\` for energy/carbon tracking." >> "$GITHUB_STEP_SUMMARY"
+            {
+              echo "## Eclexiaiser Manifest"
+              echo ""
+              echo ":ballot_box_with_check: No eclexiaiser.toml. Add one with \`eclexiaiser init\` for energy/carbon tracking."
+            } >> "$GITHUB_STEP_SUMMARY"
           fi
 
   # ---------------------------------------------------------------------------
@@ -295,6 +347,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Generate dogfooding scorecard
         run: |
@@ -356,7 +410,7 @@ jobs:
 
           | Tool/Format | Status | Notes |
           |-------------|--------|-------|
-          | DEED repo deed (`<reponame>_chora.deed`) | ${DEED_STATUS} | Required for all RSR repos |
+          | DEED repo deed (\`<reponame>_chora.deed\`) | ${DEED_STATUS} | Required for all RSR repos |
           | K9 contracts | ${K9_STATUS} | Required for repos with config files |
           | .editorconfig | ${EC_STATUS} | Required for all repos |
           | Groove endpoint | ${GROOVE_STATUS} | Required for service repos |

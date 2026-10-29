@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "reporters": {
+    "echidnabot": { "enrolled": false, "reason": "proofs here are gated by their own toolchains (proofs.yml: Idris2, Lean, Agda); no ECHIDNA engine is configured, so this adapter could only ever report not_run" },
+    "rhodibot": { "title": "rhodibot (RSR compliance)", "enrolled": true, "gating": false },
+    "panicbot": { "enrolled": false, "reason": "panic-attack already reports directly as its own row in the Hypatia verdict grid; enrolling panicbot would count the same findings twice" },
+    "sustainabot": { "enrolled": false, "reason": "reserved fleet slot; no adapter exists (gitbot-fleet README)" },
+    "glambot": { "title": "glambot (presentation quality)", "enrolled": true, "gating": false },
+    "seambot": { "enrolled": false, "reason": "no seam register is declared (spec/seams/seam-register.json)" },
+    "finishingbot": { "title": "finishingbot (release readiness)", "enrolled": true, "gating": false },
+    "cipherbot": { "enrolled": false, "reason": "no cryptography is implemented in this repository; the hashes present are checksum/integrity pins, which cipherbot would report as cryptographic findings" },
+    "accessibilitybot": { "enrolled": false, "reason": "no served HTML surface; this is a checker library/CLI with AsciiDoc documentation" }
+  }
+}
