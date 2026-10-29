@@ -26,6 +26,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7.0.1
         with:
+          persist-credentials: false
           fetch-depth: 1
       - name: Rhodibot — AUDIT (detect + log; NO mutation, NO PR)
         run: |
@@ -59,7 +60,7 @@ jobs:
           if [ ! -f SECURITY.md ] && [ ! -f SECURITY.adoc ] && [ ! -f .github/SECURITY.md ]; then note "create missing \`SECURITY.adoc\`"; fi
           if [ ! -f CONTRIBUTING.md ] && [ ! -f CONTRIBUTING.adoc ] && [ ! -f .github/CONTRIBUTING.md ]; then note "create missing \`CONTRIBUTING.adoc\`"; fi
           # 7. Unfixable / report-only
-          deeds=$(ls -1 *_chora.deed 2>/dev/null | wc -l)
+          deeds=$(find . -maxdepth 1 -name '*_chora.deed' | wc -l)
           if [ "$deeds" -ne 1 ]; then issue "expected exactly one repo deed (<repo>_chora.deed) at the root, found $deeds"; fi
           if [ ! -f LICENSE ] && [ ! -f LICENSE.md ] && [ ! -f LICENSE.txt ]; then issue "missing LICENSE file"; fi
           if [ ! -f README.adoc ] && [ ! -f README.md ]; then issue "missing README"; fi

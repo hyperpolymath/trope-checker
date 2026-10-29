@@ -22,6 +22,17 @@ engine; `assail-classifications.a2ml` now audit-only). *Verify against panic-att
 own docs before acting* — the design holds regardless, but the migration step depends
 on the exact current mechanism.
 
+ADDENDUM (2026-10-28): the local premise has changed. `static-analysis-gate.yml`
+was retired; panic-attack now runs once per trigger inside the standards
+Hypatia lane (fork-governance.yml / hypatia-scan.yml) as an *advisory*
+verdict-grid row with a status envelope. Verified at the estate pin
+(b689a74, `src/assail/mod.rs`): the inline `panic-attack: accepted` marker
+is still the suppression mechanism upstream.
+The proposal's unforgeability requirements therefore now apply to however
+the estate ratifies suppressions for that advisory row and to any future
+promotion of panic-attack to gating — not to a local blocking step, which
+no longer exists.
+
 == Context — the problem, and a tempting-but-wrong fix
 
 `panic-attack assail` is a *blocking, estate-wide, heuristic* gate: in

@@ -26,6 +26,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
       - name: Root shape allowlist
         run: bash scripts/check-root-shape.sh .
       - name: AsciiDoc by default (no .md under docs/)

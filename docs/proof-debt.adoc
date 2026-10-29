@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: CC-BY-SA-4.0
 // Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 = Proof-Debt Ledger — trope-checker
-:revdate: 2026-06-29
+:revdate: 2026-10-28
 
 Seeded per the schema in
 `hyperpolymath/standards/docs/TRUSTED-BASE-REDUCTION-POLICY.adoc`, in response to
@@ -11,25 +11,22 @@ the Trusted-Base Reduction policy check (`check-trusted-base.sh`).
 
 *Net soundness-relevant escape hatches in this repository: 0.*
 
-`check-trusted-base.sh` flags two `lean-sorry-or-axiom` markers — the Lean
-axiom-audit doc-comment headings `## Axiom audit (sorry-free …)`, in which the
-substring `sorry` (of `sorry-free`) trips the scanner's `\bsorry\b` pass. That
-pass, *unlike* the scanner's Idris pass, applies *no comment exemption*, so an
-audit comment that asserts the *absence* of `sorry` is itself counted as a hit.
-Every flagged line is such an audit comment — a claim that the construct is *not*
-used — not a use of it. No proof in `verification/proofs/` uses `sorry`, a user
-`axiom`, `believe_me`, `assert_total`, a top-level `partial`, `unsafePerformIO`,
-or `unsafeCoerce`; the Lean and Agda developments are `sorry`-free /
-zero-`postulate`, audited separately (`verification/proofs/INTEGRATION-REPORT.adoc`).
-The matches are therefore *false positives* of a substring scanner that is not
-comment-aware for Lean — the same class of false positive recorded for the local
-`proof-scan-dangerous` recipe in the integration report. The six Idris2
-`believe_me` convention comments are listed below too for completeness, though the
-scanner's Idris pass already exempts them.
+*Current `lean-sorry-or-axiom` false positives: 0.* The documented Lean
+scan uses `\bsorry\b` without a comment exemption. The two audit headings
+formerly labelled `sorry-free` now read `sorryAx-free`, which does not match
+that pattern. They are excluded from the current count. The six Idris2
+convention-comment rows below refer to deleted template files and are also
+excluded. The ledger retains these historical entries as the record of the
+scanner mismatch, not as current hits.
 
-== Marker ledger
+No proof in `verification/proofs/` uses `sorry`, a user `axiom`, `believe_me`,
+`assert_total`, a top-level `partial`, `unsafePerformIO`, or `unsafeCoerce`;
+the Lean and Agda developments are audited separately
+(`verification/proofs/INTEGRATION-REPORT.adoc`).
 
-Each scanner hit below is classified per the policy as: *(a)* discharged by proof,
+== Historical marker ledger (excluded from current counts)
+
+Each historical scanner hit below is classified per the policy as: *(a)* discharged by proof,
 *(b)* covered by property-tests + refutation budget, *(c)* a known/necessary axiom,
 or *(FP)* a false positive (convention comment — construct forbidden, not used).
 
@@ -59,3 +56,15 @@ or *(FP)* a false positive (convention comment — construct forbidden, not used
   meantime.
 * Should a genuine escape hatch ever be introduced, it MUST be added here under
   class (a), (b), or (c) with its justification before the proof is accepted.
+
+== Addendum (2026-10-28)
+
+The six Idris2 rows above cite files (`verification/proofs/idris2/Types.idr`,
+`verification/proofs/idris2/ABI/*`) that no longer exist: they were
+uninstantiated template mint files, deleted for the same reason PR #102's T5
+deleted the Coq/TLA+/Agda templates (no package built them; PR #102 records
+they did not typecheck). Neither Lean audit heading currently matches
+`\bsorry\b`: both now use `sorryAx-free`. The current false-positive count is
+therefore 0. This ledger's summary claim is unchanged: net
+soundness-relevant escape hatches remain 0, now additionally enforced by the
+comment-aware banned-construct gate over all Idris2 trees in CI.

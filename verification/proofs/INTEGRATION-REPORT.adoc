@@ -9,6 +9,17 @@
 :sectnumlevels: 2
 :stem: latexmath
 
+[NOTE]
+====
+*Historical report (2026-06-29).* This reconciles the two proof streams against
+the *pre-ratification* carrier. It is kept unchanged as the record of that
+integration. Since then: ADR 0004 (R-2026-07-07) amended the carrier — the
+non-commutativity, the lax L4 and OPEN-B/B′/C below are all resolved on the
+ratified carrier — and the v0.2 addendum it cites (`spec/calculus-v0.2-draft.adoc`)
+was folded into `spec/calculus.adoc` v0.2 on 2026-10-13. Current status lives in
+`docs/status/PROOF-STATUS.adoc` and `AFFIRMATION.adoc`.
+====
+
 [abstract]
 This report integrates two independently-produced work-streams into one coherent
 contribution, each measured against the same authoritative algebra:

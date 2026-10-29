@@ -47,7 +47,7 @@
 
   (meta
         :version       "0.1.0"
-        :last-updated  "2026-10-06"
+        :last-updated  "2026-10-28"
         :type          library
         :languages     (idris2 rust)
         :license       MPL-2.0
@@ -117,4 +117,9 @@
                       :authority-allowlist  ".machine_readable/root-allow.txt"
                       :enforcement-workflow ".github/workflows/estate-rules.yml")
             (deployment) (incident-response) (release-process) (docs-format) (maintenance-operations))
+
+  (policies
+    (fleet
+      :enrolment    ".gitbot-fleet/enrolment.json"
+      :report-backs ".gitbot-fleet/report-backs/"))
 )

@@ -162,6 +162,63 @@ mapM' f (x :: xs) = do y <- f x; ys <- mapM' f xs; Right (y :: ys)
 acceptedVersions : List String
 acceptedVersions = ["0.1", "0.2"]
 
+-- Structural validation (calculus: "Before grade accumulation, it MUST
+-- validate the graph structure, rejecting unknown node references,
+-- duplicate producers for a node, and cycles as validation faults").
+-- Node IDs must also be unique. These faults MUST NOT produce a verdict:
+-- accumulation treats a missing producer as grade ε, so without this
+-- check an undeclared use_model.output silently returned p-sufficient.
+-- Mirrors the Rust fast core (lib.rs::validate_graph).
+
+dupOf : List String -> Maybe String
+dupOf []        = Nothing
+dupOf (x :: xs) = if elem x xs then Just x else dupOf xs
+
+checkEdges : List String -> List (String, String) -> List Edge -> Either String ()
+checkEdges _ _ [] = Right ()
+checkEdges declared seen (e :: es) =
+  if not (elem e.output declared)
+     then Left ("edges/" ++ e.eid ++ "/output: undeclared node \"" ++ e.output ++ "\"")
+     else case find (\i => not (elem i declared)) e.inputs of
+            Just i  => Left ("edges/" ++ e.eid ++ "/inputs: undeclared node \"" ++ i ++ "\"")
+            Nothing => case lookup e.output seen of
+                         Just prev => Left ("edges/" ++ e.eid ++ "/output: node \"" ++ e.output
+                                            ++ "\" already produced by edge \"" ++ prev ++ "\"")
+                         Nothing   => checkEdges declared ((e.output, e.eid) :: seen) es
+
+isProduced : List Edge -> String -> Bool
+isProduced es n = any (\e => e.output == n) es
+
+-- Kahn over every edge; True iff the producer graph is acyclic. Each round
+-- emits every currently-ready edge, so `length es` rounds always suffice.
+acyclic : Nat -> List Edge -> List Edge -> List String -> Bool
+acyclic _ _ [] _ = True
+acyclic Z _ _ _ = False
+acyclic (S fuel) allEdges remaining emitted =
+  case partition ready remaining of
+    ([], _)       => False
+    (rd, rest)    => acyclic fuel allEdges rest (map output rd ++ emitted)
+  where
+    ready : Edge -> Bool
+    ready e = all (\i => not (isProduced allEdges i) || elem i emitted) e.inputs
+
+validateGraph : List Node -> List Edge -> String -> Either String ()
+validateGraph ns es ou =
+  let declared = map nid ns in
+  case dupOf declared of
+    Just d  => Left ("nodes/" ++ d ++ ": duplicate node id")
+    Nothing =>
+      case dupOf (map eid es) of
+        Just d => Left ("edges/" ++ d ++ ": duplicate edge id")
+        Nothing =>
+          if not (elem ou declared)
+             then Left ("use_model/output: undeclared node \"" ++ ou ++ "\"")
+             else do
+               checkEdges declared [] es
+               if acyclic (length es) es es []
+                  then Right ()
+                  else Left "edges: cycle in the producer graph"
+
 export
 decodeDoc : JValue -> Either String Document
 decodeDoc v = do
@@ -174,4 +231,5 @@ decodeDoc v = do
   um <- maybe (Left "missing use_model") Right (field "use_model" v)
   ou <- maybe (Left "use_model: missing output") Right (field "output" um >>= asStr)
   fl <- maybe (Left "use_model: missing floor") Right (field "floor" um) >>= decodeFloor
+  validateGraph ns es ou
   Right (MkDocument ns es ou fl)

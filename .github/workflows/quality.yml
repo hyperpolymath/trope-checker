@@ -25,20 +25,61 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v7.0.1
-      - name: Check file permissions
+        with:
+          persist-credentials: false
+      # The three steps that used to sit here listed matching files and
+      # succeeded either way — in a workflow named "🔴 Gate". Each is now
+      # either a real assertion or explicitly labelled advisory.
+      - name: Every tracked shell script is executable
         run: |
-          find . -type f -perm /111 -name "*.sh" | head -10 || true
-      - name: Check TODO/FIXME
+          set -euo pipefail
+          bad=$(git ls-files -s '*.sh' | awk '$1 != "100755" {print $4}')
+          if [ -n "$bad" ]; then
+            echo "ERROR: tracked .sh files without the executable bit:"
+            echo "$bad"
+            exit 1
+          fi
+          echo "all tracked shell scripts are executable"
+      - name: ShellCheck (pinned, all default checks — severity style and up)
+        env:
+          SHELLCHECK_VERSION: 0.11.0
+          SHELLCHECK_SHA256: 8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198
         run: |
-          echo "=== TODOs ==="
+          set -euo pipefail
+          curl --fail --proto '=https' --proto-redir '=https' --tlsv1.2 -sSL -o "$RUNNER_TEMP/shellcheck.tar.xz" \
+            "https://github.com/koalaman/shellcheck/releases/download/v${SHELLCHECK_VERSION}/shellcheck-v${SHELLCHECK_VERSION}.linux.x86_64.tar.xz"
+          echo "${SHELLCHECK_SHA256}  $RUNNER_TEMP/shellcheck.tar.xz" | sha256sum -c -
+          tar -xJf "$RUNNER_TEMP/shellcheck.tar.xz" -C "$RUNNER_TEMP" --strip-components=1 "shellcheck-v${SHELLCHECK_VERSION}/shellcheck"
+          git ls-files '*.sh' | xargs "$RUNNER_TEMP/shellcheck" --severity=style
+          echo "shellcheck: clean at severity=style (every default check)"
+      - name: No tracked file over 1 MiB
+        run: |
+          set -euo pipefail
+          big=$(git ls-files | while IFS= read -r f; do
+            [ -f "$f" ] || continue
+            s=$(stat -c%s "$f")
+            if [ "$s" -gt 1048576 ]; then echo "$s $f"; fi
+          done; true)
+          if [ -n "$big" ]; then
+            echo "ERROR: tracked files over 1 MiB (bytes path):"
+            echo "$big"
+            exit 1
+          fi
+          echo "no tracked file exceeds 1 MiB"
+      - name: Report TODO/FIXME markers (advisory only — never fails)
+        run: |
+          echo "=== TODOs (advisory) ==="
           grep -rn "TODO\|FIXME\|HACK\|XXX" --include="*.rs" --include="*.res" --include="*.py" --include="*.ex" . | head -20 || echo "None found"
-      - name: Check for large files
-        run: |
-          find . -type f -size +1M -not -path "./.git/*" | head -10 || echo "No large files"
       - name: EditorConfig check
         uses: editorconfig-checker/action-editorconfig-checker@v3.0.0
       - name: Gate falsifiability canaries (R10)
         run: bash scripts/test-gate-falsifiability.sh
+      - name: Workflow and gate regression tests
+        run: |
+          bash tests/workflows/review_regressions_test.sh
+          bash tests/workflows/audit_report_test.sh
+          bash tests/workflows/publisher_trust_test.sh
+          bash tests/workflows/setup_test.sh
   docs-present:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -46,6 +87,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
       - name: Check documentation
         run: |
           MISSING=""
@@ -54,7 +97,10 @@ jobs:
           [ ! -f "CONTRIBUTING.md" ] && [ ! -f "CONTRIBUTING.adoc" ] && MISSING="$MISSING CONTRIBUTING"
 
           if [ -n "$MISSING" ]; then
-            echo "::warning::Missing docs:$MISSING"
+            # Was a ::warning:: in a workflow named Gate — i.e. it could not
+            # fail. README/LICENSE/CONTRIBUTING presence is binary; gate it.
+            echo "::error::Missing docs:$MISSING"
+            exit 1
           else
             echo "✅ Core documentation present"
           fi

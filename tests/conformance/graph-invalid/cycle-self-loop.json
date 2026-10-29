@@ -1,0 +1,72 @@
+{
+  "$schema": "https://github.com/hyperpolymath/trope-checker/schemas/trope-ir.schema.json",
+  "$comment": "SPDX-FileCopyrightText: \u00a9 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>. SPDX-License-Identifier: MPL-2.0 | graph-invalid: edge consumes its own output",
+  "version": "0.2",
+  "profile": "prevent",
+  "nodes": [
+    {
+      "id": "duck",
+      "type": "Trope",
+      "present": [
+        "quality",
+        "bearer",
+        "context",
+        "record"
+      ]
+    },
+    {
+      "id": "rec",
+      "type": "Trope",
+      "present": [
+        "quality",
+        "bearer",
+        "context",
+        "record"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_preserve",
+      "effect": "preserve",
+      "inputs": [
+        "duck"
+      ],
+      "output": "duck",
+      "grade": {
+        "fate": {
+          "quality": {
+            "k": "Present"
+          },
+          "bearer": {
+            "k": "Present"
+          },
+          "context": {
+            "k": "Present"
+          },
+          "record": {
+            "k": "Present"
+          }
+        },
+        "bond": {
+          "k": "Intact"
+        },
+        "merge": {
+          "k": "Single"
+        }
+      },
+      "note": "lossless audio + ring number, pond, date, weather"
+    }
+  ],
+  "use_model": {
+    "output": "duck",
+    "floor": {
+      "fate": {
+        "quality": {
+          "k": "Attenuated",
+          "delta": 3
+        }
+      }
+    }
+  }
+}

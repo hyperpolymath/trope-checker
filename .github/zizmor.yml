@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: MPL-2.0
+# zizmor configuration — run by .github/workflows/workflow-linter.yml.
+#
+# Pinning policy. This estate pins third-party actions by exact release tag
+# in the YAML plus a commit/owner/repo identity recorded in
+# .github/workflows/actions.lock (gh actions-lock; verified by the same
+# workflow-linter job), so `ref-pin` is the third-party floor — a *branch*
+# ref such as @main is NOT a ref pin in the tag sense and still fails.
+# First-party estate actions and reusable workflows are not covered by the
+# lockfile's provenance in the same way (jobs.<id>.uses is a documented
+# actions-lock limitation, and three estate reusable pins here were in fact
+# orphaned commits that failed every run at startup, invisibly), so they
+# must be hash-pinned in the YAML itself.
+rules:
+  unpinned-uses:
+    config:
+      policies:
+        "*": ref-pin
+        "hyperpolymath/*": hash-pin
+        "metadatastician/*": hash-pin

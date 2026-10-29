@@ -27,6 +27,7 @@ on:
     paths:
       - 'verification/proofs/lean4/**'
       - 'verification/proofs/agda/**'
+      - 'tests/lib/strip-proof-comments.awk'
       - '.github/workflows/proofs.yml'
   pull_request:
   workflow_dispatch:
@@ -48,83 +49,162 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
       - name: Gate the Lean sources
         shell: bash
         run: |
           set -euo pipefail
           fail=0
-          for f in verification/proofs/lean4/grade-boundary/GradeBoundary.lean \
-                   verification/proofs/lean4/grade-factorisation/GradeFactorisation.lean; do
+          # Every Lean source, not only the two v0.1 files: the ratified-carrier
+          # results (GradeRatified, L4Monotonicity, TierTwoComplete, EffectAtoms,
+          # GradeFactorisationR) are what the current spec cites.
+          for f in $(git ls-files 'verification/proofs/lean4/*.lean' 'verification/proofs/lean4/*/*.lean'); do
             if [ ! -f "$f" ]; then
               echo "::error::gated file is missing: $f"; fail=1; continue
             fi
             echo "--- gating $f ---"
-            if grep -nE '(:=|by|;|<;>|=>|\|)[[:space:]]*(sorry|admit)\b|\bnative_decide\b' "$f"; then
-              echo "::error file=$f::forbidden Lean tactic (sorry/admit/native_decide)"; fail=1
+            # Comment-aware and token-based: strip -- and /- -/ comments first
+            # (tests/lib/strip-proof-comments.awk; line numbers preserved), then match
+            # the bare tokens, so `:= by` with an indented `sorry` on the NEXT line is
+            # caught while the honest "sorry-free" prose in comments is not.
+            stripped=$(awk -f tests/lib/strip-proof-comments.awk "$f")
+            # The full source-level escape-hatch set, not only sorry: sorryAx /
+            # Lean.ofReduceBool named directly, `unsafe` (unsafeCast can forge
+            # proofs), and extern/implemented_by (swap a definition's compiled
+            # body for foreign code). The semantic gates below (kernel build,
+            # leanchecker, axiom allowlist) are the real enforcement; this is
+            # the cheap early tripwire that also covers files no package builds.
+            if grep -nE '(^|[^[:alnum:]_.])(sorry|admit|unsafe)([^[:alnum:]_]|$)|\bnative_decide\b|\bsorryAx\b|\bofReduceBool\b|\bextern\b|\bimplemented_by\b|\baddDecl\b|\baxiomDecl\b' <<<"$stripped"; then
+              echo "::error file=$f::forbidden Lean construct (sorry/admit/native_decide/sorryAx/ofReduceBool/unsafe/extern/implemented_by/addDecl/axiomDecl)"; fail=1
             fi
-            if grep -nE '^[[:space:]]*axiom\b' "$f"; then
+            # Token-based, not line-initial: `private axiom foo`, `protected
+            # axiom foo` and attribute-prefixed declarations are axioms too.
+            # `axiom` is a keyword, so a bare token in comment-stripped source
+            # is a declaration (#print axioms does not match: token `axioms`).
+            if grep -nE '(^|[^[:alnum:]_.])axiom([^[:alnum:]_]|$)' <<<"$stripped"; then
               echo "::error file=$f::user axiom declared"; fail=1
             fi
           done
           [ "$fail" -eq 0 ] || exit 1
-          echo "PASS: Lean sources are sorry/admit/native_decide-free and declare no user axioms"
+          echo "PASS: Lean sources use no sorry/admit/native_decide/unsafe/extern and declare no user axioms"
 
   # Theorem B, the calculus metatheory. --safe rejects postulates by construction,
   # so this is a real check of postulate-freedom and not a word-grep (a grep would
   # false-positive on the honest "postulate-free" prose in the comments).
   #
-  # NOTE ON THE VERSION PIN: theorem-b.agda-lib is developed against Agda 2.8.0
-  # (ADR 0003). The runner's packaged Agda is older. The version is printed, not
-  # asserted, because asserting a version the runner cannot supply produces a
-  # permanently-red gate rather than a signal — and the substantive guarantee here
-  # comes from --safe --without-K, which holds across versions. Verified locally
-  # under 2.6.4.3: All.agda and Smoke.agda both typecheck, exit 0.
+  # TOOLCHAIN: pinned release artefacts, not the runner's apt. ubuntu-latest is
+  # 24.04, whose agda-stdlib is 1.7.3; Theorem B imports Data.Product.Base, which
+  # exists from stdlib 2.0, so `apt-get install agda agda-stdlib` there fails at
+  # scope checking (exit 42) — reproduced 2026-10-13. The job now fetches the
+  # Agda 2.7.0.1 release binary and the stdlib v2.0 source archive, verifies
+  # both SHA-256 sums, and registers the stdlib under the name the .agda-lib
+  # depends on. Verified 2026-10-13 with exactly these artefacts: All.agda and
+  # Smoke.agda typecheck under --safe --without-K, exit 0 (~100 s). A checksum
+  # mismatch fails loudly rather than silently testing a different stdlib.
   agda-theorem-b:
     name: "Agda Theorem B (--safe --without-K)"
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7.0.1
-      - name: Install Agda and register the standard library
+        with:
+          persist-credentials: false
+      - name: Install Agda 2.7.0.1 and agda-stdlib 2.0 (pinned, checksummed)
         shell: bash
+        env:
+          AGDA_URL: https://github.com/agda/agda/releases/download/v2.7.0.1/Agda-v2.7.0.1-linux.tar.xz
+          AGDA_SHA256: 975b515a14877ab6bce5bfc641e16c4a3ee52ca5d7f846577dee80aa2145db8a
+          STDLIB_URL: https://github.com/agda/agda-stdlib/archive/refs/tags/v2.0.tar.gz
+          STDLIB_SHA256: 14eecb83d62495f701e1eb03ffba59a2f767491f728a8ab8c8bb9243331399d8
         run: |
           set -euo pipefail
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq --no-install-recommends agda agda-stdlib
-          echo "agda --version -> $(agda --version | head -1)"
-          echo "ratified pin (ADR 0003) is Agda 2.8.0; --safe --without-K is the substantive check"
-
-          # Installing the package is not enough: Agda only sees a library that is
-          # listed in its `libraries` file, and a fresh runner has none. WHICH path
-          # that file lives at is VERSION-DEPENDENT (~/.agda vs ~/.config/agda), so
-          # point AGDA_DIR at a directory we control rather than guessing, and
-          # resolve the .agda-lib from the package rather than hardcoding it.
-          lib="$(dpkg -L agda-stdlib | grep -m1 'standard-library\.agda-lib$' || true)"
-          if [ -z "$lib" ]; then
-            echo "::error::agda-stdlib is installed but standard-library.agda-lib was not found"
-            exit 1
-          fi
-          mkdir -p "${RUNNER_TEMP}/agda"
-          echo "$lib" > "${RUNNER_TEMP}/agda/libraries"
-          echo "AGDA_DIR=${RUNNER_TEMP}/agda" >> "$GITHUB_ENV"
-          echo "registered standard-library at: $lib"
+          mkdir -p "${RUNNER_TEMP}/agda-toolchain" && cd "${RUNNER_TEMP}/agda-toolchain"
+          curl --fail --proto '=https' --proto-redir '=https' --tlsv1.2 -sSL -o agda.tar.xz "$AGDA_URL"
+          echo "$AGDA_SHA256  agda.tar.xz" | sha256sum -c -
+          curl --fail --proto '=https' --proto-redir '=https' --tlsv1.2 -sSL -o stdlib.tar.gz "$STDLIB_URL"
+          echo "$STDLIB_SHA256  stdlib.tar.gz" | sha256sum -c -
+          tar -xJf agda.tar.xz && tar -xzf stdlib.tar.gz
+          # theorem-b.agda-lib depends on `standard-library`; the 2.0 archive names
+          # itself `standard-library-2.0`, so register a lib file under the depended-on name.
+          printf 'name: standard-library\ninclude: src\nflags:\n  --warning=noUnsupportedIndexedMatch\n' \
+            > agda-stdlib-2.0/standard-library.agda-lib
+          mkdir -p "${RUNNER_TEMP}/agda-dir"
+          {
+            echo "$PWD/agda-stdlib-2.0/standard-library.agda-lib"
+            echo "$GITHUB_WORKSPACE/verification/proofs/agda/theorem-b/theorem-b.agda-lib"
+          } > "${RUNNER_TEMP}/agda-dir/libraries"
+          {
+            echo "AGDA_DIR=${RUNNER_TEMP}/agda-dir"
+            echo "Agda_datadir=$PWD/Agda-v2.7.0.1/data"
+            echo "LC_ALL=C.UTF-8"
+          } >> "$GITHUB_ENV"
+          echo "$PWD/Agda-v2.7.0.1/bin" >> "$GITHUB_PATH"
+          "$PWD/Agda-v2.7.0.1/bin/agda" --version
       - name: Typecheck Theorem B
         shell: bash
         working-directory: verification/proofs/agda/theorem-b
         run: |
           set -euo pipefail
-          agda --safe --without-K All.agda
-          agda --safe --without-K Smoke.agda
-          echo "PASS: All.agda + Smoke.agda typecheck (--safe => postulate-free by construction)"
+          # The strictest soundness posture Agda offers, as one set:
+          #   --safe                no postulates, no unsafe pragmas/features
+          #   --without-K           no Streicher K (identity proofs stay homotopical)
+          #   --cubical-compatible  everything --without-K forbids, plus the
+          #                         restrictions Cubical needs; coinfective, so
+          #                         every TB module carries it in its OPTIONS
+          #                         pragma too (stdlib 2.0 already does)
+          #   --exact-split         every clause must hold definitionally
+          #                         unless explicitly marked CATCHALL
+          #   -W error              warnings are errors
+          # --exact-split and -W error are scoped to OUR modules (every
+          # theorem-b OPTIONS pragma and theorem-b.agda-lib's flags:), never
+          # the CLI: CLI flags leak into dependency compilation, and the
+          # stdlib's own Data.Maybe.Base.zipWith catch-all is (correctly, for
+          # it) not definitionally exact - a CLI --exact-split fails the
+          # build inside the stdlib (seen on the first run of this gate).
+          # The scan below is the belt to the pragmas' braces: any warning
+          # attributed to a theorem-b file fails the job.
+          AGDA_FLAGS=(--safe --without-K --cubical-compatible)
+          warn_log="${RUNNER_TEMP}/agda-output.log"
+          : > "$warn_log"
+          for f in All.agda Smoke.agda; do
+            echo "--- Checking $f ---"
+            agda "${AGDA_FLAGS[@]}" "$f" 2>&1 | tee -a "$warn_log"
+          done
+          if grep -B1 '^warning:' "$warn_log" | grep -q 'theorem-b'; then
+            echo "::error::Agda emitted warnings for theorem-b modules (warnings are errors here)"
+            grep -B1 '^warning:' "$warn_log" | grep -A1 'theorem-b' || true
+            exit 1
+          fi
+          echo "PASS: All.agda + Smoke.agda typecheck (${AGDA_FLAGS[*]}; --safe => postulate-free by construction)"
 
   # The Lean developments actually built. `lean-source-honesty` above is a cheap
   # syntactic guard that runs in seconds on every push; this is the semantic one,
   # and it is what makes ADR 0003's "grade-algebra ground truth" a measured claim
-  # rather than an asserted one.
+  # rather than an asserted one. Four layers, each catching what the previous
+  # cannot:
+  #   1. `lake build --wfail` — the Lean kernel checks every proof, and any
+  #      warning (a stray `sorry` warns; so do deprecations) fails the build.
+  #   2. leanchecker — a separate process re-checks the compiled .olean
+  #      environment from scratch, kernel-only, so an elaborator/macro-level
+  #      accident cannot smuggle a malformed proof term into the environment.
+  #   3. axiom-audit (allowlist = propext, Classical.choice, Quot.sound, and
+  #      nothing else) over EVERY module — catches sorryAx, Lean.ofReduceBool
+  #      (native_decide) and user axioms transitively, through imports.
+  #   4. The `#print axioms` blocks at the foot of each source are re-emitted
+  #      by the build and their output is the human-readable receipt.
   #
-  # nanoda-allow-sorry: false makes an EXTERNAL type checker reject sorryAx, so a
-  # proof cannot be admitted by a `sorry` that the grep above happens to miss
-  # (e.g. one introduced through an import rather than written inline).
+  # WHY NOT nanoda (removed). As configured it never once passed, for a
+  # structural reason: lean-action's run_nanoda.sh detects the module to export
+  # with `grep '^\[package\]' lakefile.toml`, but these lakefiles use bare
+  # top-level keys (no [package] table) and five sibling lean_libs with no
+  # single root module — so detection failed before nanoda ever ran. Two
+  # further defects disqualified it even had it started: it clones
+  # nanoda_lib's floating `debug` branch and lean4export HEAD at run time
+  # (unpinned code executed in the gate), and its generated config sets
+  # `unpermitted_axiom_hard_error: false`, so the "rejects sorryAx" claim
+  # this comment block used to make was false — unpermitted axioms were
+  # advisory. Layers 2+3 above are the pinned, hard-failing equivalents.
   lean-build:
     name: "Lean ${{ matrix.pkg }}: lake build + sorry-free environment"
     runs-on: ubuntu-latest
@@ -132,16 +212,173 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # grade-factorisation imports grade-boundary; both are built.
-        pkg: [grade-boundary, grade-factorisation]
+        include:
+          # grade-factorisation imports grade-boundary; both are built.
+          - pkg: grade-boundary
+            modules: "GradeBoundary TierTwoComplete L4Monotonicity EffectAtoms GradeRatified EffectAtomsRatified"
+          - pkg: grade-factorisation
+            modules: "GradeFactorisation GradeFactorisationR"
     steps:
       - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
       - name: Build ${{ matrix.pkg }} and check the environment
         uses: leanprover/lean-action@v1.6.2
+        env:
+          # leanchecker loads a full Mathlib-importing environment per module;
+          # uncapped parallelism OOMs the runner ("hosted runner lost
+          # communication"). Serial is slower and finishes.
+          LEAN_NUM_THREADS: "1"
         with:
           lake-package-directory: verification/proofs/lean4/${{ matrix.pkg }}
           build: true
+          build-args: "--wfail"
+          test: false
+          lint: false
           use-mathlib-cache: true
           use-github-cache: true
-          nanoda: true
-          nanoda-allow-sorry: false
+          leanchecker: true
+          leanchecker-args: "${{ matrix.modules }}"
+          # The next step runs the same pinned axiom-audit over EVERY module.
+          # lean-action's built-in form audits only its auto-detected first
+          # lean_lib and cannot separate Lean 4.16 compiler-generated
+          # declarations (`_cstage*`, `lcProof`, …) from source declarations.
+          axiom-audit: false
+          axiom-audit-allow: "propext,Classical.choice,Quot.sound"
+      - name: Axiom-audit EVERY module of ${{ matrix.pkg }} against the allowlist
+        shell: bash
+        working-directory: verification/proofs/lean4/${{ matrix.pkg }}
+        env:
+          LEAN_MODULES: "${{ matrix.modules }}"
+          # Same pin lean-action v1.6.2 uses internally (tag + verified commit);
+          # its built-in audit only auto-detects the FIRST lean_lib, which for
+          # these multi-lib packages would silently skip the other modules.
+          AXIOM_AUDIT_REF: v0.1.2
+          AXIOM_AUDIT_SHA: 46024e005996495c65ef609368e11ab39c4222e3
+        run: |
+          set -euo pipefail
+          work="$(mktemp -d "${RUNNER_TEMP}/axiom-audit.XXXXXX")"
+          git clone --quiet --depth 1 --branch "$AXIOM_AUDIT_REF"             https://github.com/leanprover-community/axiom-audit.git "$work/axiom-audit"
+          got="$(git -C "$work/axiom-audit" rev-parse HEAD)"
+          if [ "$got" != "$AXIOM_AUDIT_SHA" ]; then
+            echo "::error::axiom-audit ${AXIOM_AUDIT_REF} resolved to ${got}, expected ${AXIOM_AUDIT_SHA}"
+            exit 1
+          fi
+          cp lean-toolchain "$work/axiom-audit/"
+          ( cd "$work/axiom-audit" && lake build )
+          modules_csv="${LEAN_MODULES// /,}"
+          for m in $LEAN_MODULES; do
+            set +e
+            lake env "$work/axiom-audit/.lake/build/bin/axiom-audit" \
+              --root "$m" --modules "$modules_csv" \
+              --allow "propext,Classical.choice,Quot.sound" \
+              --json > "$work/report-$m.json"
+            audit_status=$?
+            set -e
+            # Exit 1 is the tool's machine-readable violation report; jq below
+            # decides it. Anything above 1 is a usage/IO failure, not an audit.
+            if [ "$audit_status" -gt 1 ]; then
+              cat "$work/report-$m.json"
+              echo "::error::axiom-audit failed to run for $m (exit $audit_status)"
+              exit 1
+            fi
+            # jq -s silently skips empty files. Require exactly one report per
+            # module even when the tool exits 1 (a reported violation).
+            if ! jq -e -s 'length == 1 and (.[0] | type == "object" and (.audited | type == "number"))' \
+                 "$work/report-$m.json" >/dev/null 2>&1; then
+              cat "$work/report-$m.json" || true
+              echo "::error::axiom-audit produced no valid JSON report for $m (exit $audit_status)"
+              exit 1
+            fi
+          done
+          report="$work/report.json"
+          # Lean 4.16 stores compiler IR (`_cstage*`, equation/match auxiliaries)
+          # as environment constants and axiom-audit v0.1.2 audits them as if
+          # they were source declarations, and likewise misclassifies compiler
+          # specialisation constants (npowBinRec._at.<inst>._spec_2,
+          # _hyg-mangled decEq specialisations, …) as axioms used. Those
+          # generated names must be excused — but name-shape alone cannot
+          # prove a name compiler-generated: a source axiom can be GIVEN an
+          # internal-looking name (`private axiom forged_spec`), so a
+          # substring filter could hide exactly what this gate exists to
+          # catch. The excuse below is therefore bounded three ways:
+          #   (1) component shapes are ANCHORED to names only the compiler
+          #       mints (_at, _spec_N, _cstage*, _unfold*, _eq_N, _hyg*,
+          #       match_N/eq_N, lcProof/lcUnreachable) — a component merely
+          #       CONTAINING _spec (forged_spec) does not qualify;
+          #   (2) any axiom name DECLARED in the gated sources (computed
+          #       next, comment-stripped) is never excused, whatever its
+          #       shape;
+          #   (3) a violation is dropped only when NOTHING non-allowlisted
+          #       remains in it after excusing — an internal-looking
+          #       DECLARATION depending on a real axiom (sorryAx, a user
+          #       axiom) still counts, whoever declares it.
+          declared_txt="$work/declared-axioms.txt"
+          : > "$declared_txt"
+          for f in $(git -C "$GITHUB_WORKSPACE" ls-files 'verification/proofs/lean4/*.lean' 'verification/proofs/lean4/*/*.lean'); do
+            awk -f "$GITHUB_WORKSPACE/tests/lib/strip-proof-comments.awk" "$GITHUB_WORKSPACE/$f" \
+              | grep -oE '(^|[^[:alnum:]_.])axiom[[:space:]]+[A-Za-z_][A-Za-z0-9_.]*' \
+              | sed -E 's/.*axiom[[:space:]]+//' >> "$declared_txt" || true
+          done
+          declared_json=$(jq -R -s 'split("\n") | map(select(length > 0)) | map(., (split(".") | last)) | unique' "$declared_txt")
+          # axiom-filter-jq:begin (extracted verbatim by tests/workflows/review_regressions_test.sh)
+          jq -s --argjson declared_axioms "$declared_json" '
+            def user_name:
+              (split(".") as $parts
+               | if $parts[0] == "_private" then
+                   ([$parts | to_entries[] | select(.key > 0 and (.value | test("^[0-9]+$"))) | .key][0] // 0) as $idx
+                   | ($parts[$idx + 1:] | join("."))
+                 else . end);
+            def source_declared_axiom:
+              (user_name) as $u
+              | (($declared_axioms | index($u)) != null)
+                or (($declared_axioms | index($u | split(".") | last)) != null);
+            def internal_component:
+              . == "_at" or . == "lcProof" or . == "lcUnreachable"
+              or test("^_cstage") or test("^_unfold") or test("^_hyg")
+              or test("^_spec(_[0-9]+)?$") or test("^_eq(_[0-9]+)?$")
+              or test("^(match|eq)_[0-9]+");
+            def internal_decl:
+              (user_name | split(".") | any(internal_component));
+            def compiler_placeholder:
+              internal_decl and (source_declared_axiom | not);
+            def kept_axioms: map(select(compiler_placeholder | not));
+            def filtered_axioms: ((.axiomsUsed // []) | kept_axioms);
+            def all_violations:
+              [(.violations[]? | .axioms |= kept_axioms)];
+            def filtered_violations:
+              [(all_violations[]
+                | select(((.axioms - ["propext","Classical.choice","Quot.sound"]) | length) > 0))];
+            def internal_violations:
+              [(all_violations[]
+                | select((.decl | internal_decl)
+                         and (((.axioms - ["propext","Classical.choice","Quot.sound"]) | length) == 0)))];
+            {
+              ok: all(.[];
+                (.audited > 0)
+                and ((filtered_violations | length) == 0)
+                and (((filtered_axioms - ["propext","Classical.choice","Quot.sound"]) | length) == 0)),
+              audited: (map(.audited) | add),
+              axiomsUsed: (map(filtered_axioms) | add | unique),
+              violations: (map(filtered_violations) | add),
+              internalViolationsIgnored: (map(internal_violations | length) | add),
+              internalViolationDecls: (map(internal_violations | map(.decl)) | add | unique)
+            }' \
+            "$work"/report-*.json > "$report"
+          # axiom-filter-jq:end
+          cat "$report"
+          # Non-vacuous and clean: declarations were actually audited, no
+          # source declaration has a filtered violation, and every logical
+          # axiom used project-wide is in the allowlist.
+          jq -e '
+            (.ok == true)
+            and (.audited > 0)
+            and ((.violations | length) == 0)
+            and ((.axiomsUsed - ["propext","Classical.choice","Quot.sound"]) | length == 0)
+          ' "$report" >/dev/null || {
+            echo "::error::axiom audit failed or was vacuous — see report above"
+            # The same facts as annotations (checks-API readable without logs):
+            echo "::error::axiomsUsed=$(jq -c '.axiomsUsed' "$report") violations=$(jq -c '.violations[0:10]' "$report") internalIgnored=$(jq -c '.internalViolationDecls[0:20]' "$report")"
+            exit 1; }
+          echo "::notice title=axiom-audit::audited $(jq -r .audited "$report") declarations; axioms used: $(jq -r '.axiomsUsed | join(", ")' "$report"); ignored $(jq -r .internalViolationsIgnored "$report") compiler-generated declaration(s)"
+          rm -rf "$work"

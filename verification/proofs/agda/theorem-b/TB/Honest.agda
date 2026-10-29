@@ -1,4 +1,4 @@
-{-# OPTIONS --safe --without-K #-}
+{-# OPTIONS --safe --without-K --cubical-compatible --exact-split #-}
 -- SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 -- SPDX-License-Identifier: MPL-2.0
 --
@@ -30,17 +30,26 @@ open import TB.Syntax using (atten-atom; drop-atom; sever-atom; predicate-atom)
 -- Veridicality (Veridicality.idr): the THREE deceptive duals, one per coordinate.
 --------------------------------------------------------------------------------
 
+-- Return true exactly for falsified, the deceptive fate.
 isDeceptiveFate : Fate → Bool
 isDeceptiveFate falsified = true
-isDeceptiveFate _         = false
+isDeceptiveFate present = false
+isDeceptiveFate (atten _) = false
+isDeceptiveFate predicated = false
+isDeceptiveFate dropped = false
 
+-- Return true exactly for misbound, the deceptive bond.
 isDeceptiveBond : Bond → Bool
 isDeceptiveBond misbound = true
-isDeceptiveBond _        = false
+isDeceptiveBond intact = false
+isDeceptiveBond withheld = false
+isDeceptiveBond severed = false
 
+-- Return true exactly for conflated, the deceptive merge.
 isDeceptiveMerge : Merge → Bool
 isDeceptiveMerge conflated = true
-isDeceptiveMerge _         = false
+isDeceptiveMerge single = false
+isDeceptiveMerge fused = false
 
 -- Uniqueness: each coordinate's deceptive predicate holds for exactly one value.
 fateDeceptiveUnique : ∀ f → isDeceptiveFate f ≡ true → f ≡ falsified
@@ -76,14 +85,23 @@ moveFate Drop          = dropped
 moveFate Sever         = present
 moveFate Fuse          = present
 
+-- Return severed for Sever, withheld for Drop, and intact for all other moves.
 moveBond : Move → Bond
 moveBond Sever = severed
 moveBond Drop  = withheld
-moveBond _     = intact
+moveBond Preserve = intact
+moveBond (Attenuate _) = intact
+moveBond Predicate = intact
+moveBond Fuse = intact
 
+-- Return fused for Fuse and single for all other moves.
 moveMerge : Move → Merge
 moveMerge Fuse = fused
-moveMerge _    = single
+moveMerge Preserve = single
+moveMerge (Attenuate _) = single
+moveMerge Predicate = single
+moveMerge Drop = single
+moveMerge Sever = single
 
 -- (1) The atoms produce only HONEST values (never a deceptive dual).
 movesHonestFate : ∀ m → isDeceptiveFate (moveFate m) ≡ false

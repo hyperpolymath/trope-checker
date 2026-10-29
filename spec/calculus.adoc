@@ -1,9 +1,8 @@
-// SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 // SPDX-License-Identifier: CC-BY-SA-4.0
-// SPDX-License-Identifier: CC-BY-SA-4.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
 = The Trope-Particularity Calculus — a normative core
-:revnumber: 0.1 (draft for review)
-:revdate: 2026-06-22
+:revnumber: 0.2 (consolidated; ratified carrier R-2026-07-07, ADR 0004; O5 proposed pending ADR 0005 acceptance)
+:revdate: 2026-10-13
 :toc: macro
 :sectnums:
 :sectnumlevels: 2
@@ -14,15 +13,20 @@
 This document specifies the type-level discipline of *trope-particularity*: a
 graded effect system over a Turing-complete term language, in which each
 operation on a property-instance carries a declared *loss-shape* grade, grades
-compose by fixed algebra, and a declared *use-model* yields a decidable verdict.
-It pins the loss-shape category, gives the seven effects as typing rules, states
-the composition and order laws normatively, fixes the interaction with general
-recursion, defines the verdict, states the soundness target with its firewalls,
-and defines a language-neutral interchange (the Trope IR) so that a *tropechecker*
-can be implemented portably and independently of any one source language.
+compose by a fixed algebra, and a declared *use-model* yields a decidable
+verdict. It pins the loss-shape carrier, names the nine effects of the
+vocabulary and gives the six writable ones as typing rules, states the
+composition and order laws normatively, fixes the interaction with general
+recursion, defines the verdict, states the soundness results with their
+firewalls, defines the language-neutral interchange (the Trope IR) so that a
+*tropechecker* can be implemented portably, and lists the open obligations.
 
-The key words *MUST*, *MUST NOT*, *SHALL*, *SHOULD*, *MAY*, and *OPTIONAL* are to
-be interpreted as in RFC 2119/8174.
+This is the v0.2 consolidation: it folds the v0.1 text (2026-06-22), the
+grade-algebra addendum (2026-06-23) and the two ratification notes of
+2026-07-07 into one normative document. Where a law or result is machine-checked
+it is cited by its name in the proof developments (§9.3); where it is open it is
+listed in §10. The key words *MUST*, *MUST NOT*, *SHALL*, *SHOULD*, *MAY*, and
+*OPTIONAL* are to be interpreted as in RFC 2119/8174.
 
 toc::[]
 
@@ -38,7 +42,7 @@ conflating them is itself a modelling error this calculus exists to forbid.
 | trope-the-valuation
 | The bottleneck (max–min) grading of a path by its weakest link, with the
   argmin locating the edge to repair. (The *invariant-path* sense.) Used below
-  only by analogy, for the verdict witness.
+  only by analogy, for the verdict witness (§6.2).
 
 | trope-the-residual
 | A residual treated as a sum-typed object rather than a scalar error term,
@@ -46,9 +50,12 @@ conflating them is itself a modelling error this calculus exists to forbid.
   (The *typed-residual* sense.) Reused below as the grade.
 
 | *trope-the-particular*
-| An *abstract particular* in the sense of Williams and Campbell: a property
-  considered as a non-repeatable, situated instance — *this* quality, here,
-  borne by *this* bearer. *This is the object of the present calculus.*
+| A *property-instance*: a property considered as a non-repeatable, situated
+  instance — *this* quality, here, borne by *this* bearer. The classical home
+  of the notion is trope theory (Williams, Campbell); the calculus needs only
+  what every instance ontology supplies — that property-instances are
+  particulars — and not the further theses of any one of them (bundle theory,
+  one-category ontology). *This is the object of the present calculus.*
 |===
 
 A classical trope is _quality borne by a bearer_. This calculus works on a
@@ -62,7 +69,8 @@ explicitly so that downstream readers do not attribute it to Williams.
 content_ of a property-instance: how much of its being-this-one-in-this-situation
 survives an operation. It is *graded and use-relative*, not binary and absolute.
 Classical particularity is the limiting case where the only admissible verdicts
-are "identical" and "not identical"; this calculus refines that to a lattice.
+are "identical" and "not identical"; this calculus refines that to a chain per
+coordinate.
 ====
 
 == The object: property-instances
@@ -82,40 +90,50 @@ A trope whose quality has been severed from its bearer is a distinct type,
 `FloatingQuality`, with no bearer field. Collapse of a quality to a predicate
 yields a non-trope type — the predicate's codomain (typically `Bool`).
 
-== The grade: the loss-shape category
+Two of the calculus's constructs are the ones that require property-instances
+to be particulars rather than universals: *attenuation* (only an instance can
+lose fidelity; a universal is exact) and *detaching* (a quality that survives
+severance as a free-standing `FloatingQuality` is an instance with no bearer;
+severing a universal from its instance leaves the universal, which was never
+_this_). Everything else in the calculus would survive a change of ontology;
+these two would not.
+
+== The grade: the loss-shape carrier
 
 A grade records what an operation did to a trope. It is *not a scalar*: two
 operations can lose the same _amount_ yet differ in _kind_ and in _honesty_.
-A grade stem:[g] is a record of three orthogonal coordinates,
+A grade stem:[g] is a record of three coordinate *kinds*,
 
 [stem]
 ++++
 g \;=\; (\mathsf{fate},\ \mathsf{bond},\ \mathsf{merge}),
 ++++
 
-each living in its own lattice. Composition (§4) and the order (§5) act
-*componentwise*, which is what keeps the algebra decidable while the term
-language stays Turing complete (§7).
+where `fate` is itself indexed by the four fields of stem:[\Phi]. A grade
+therefore has *six slots* (four fates, one bond, one merge) over *three
+coordinate kinds*; both descriptions are used in the stack and mean the same
+carrier. Composition (§4) and the order (§5) act *slot-wise*, which is what
+keeps the algebra decidable while the term language stays Turing complete (§7).
 
 === Coordinate 1 — field fate
 
 A *fate* records, per field, what survived. Let stem:[\delta \in \mathbb{N}\cup\{\infty,\top\}]
 be a fidelity element, where finite stem:[\delta] is a quantified loss in the
-tropical (min-plus) order, stem:[\infty] is total quantified loss, and
-stem:[\top] is loss of *unknown amount*.
+tropical (min-plus) order, stem:[\infty] (`Total`) is total quantified loss,
+and stem:[\top] (`Unknown`) is loss of *unknown amount*.
 
 [cols="1,3",options="header"]
 |===
 | Fate | Reading
 
-| `Present`            | The field survives faithfully. (Lattice top.)
-| `Attenuated(δ)`      | Survives, fidelity degraded by stem:[\delta]. `Attenuated(0) = Present`.
+| `Present`            | The field survives faithfully. (Chain top.)
+| `Attenuated(δ)`      | Survives, fidelity degraded by stem:[\delta]. `Attenuated(0)` is identified with `Present` by normalization (A3, below).
 | `Predicated(P)`      | (`quality` only.) Survives *only* as the value of predicate `P` over it — the checkbox.
 | `Dropped`            | Withheld entirely. (Honest bottom.)
-| `Falsified`          | *Deceptive dual:* a value asserted faithful that is in fact false. (Lattice bottom; fails every honest floor. Not writable in source — a lowering fault, §6.)
+| `Falsified`          | *Deceptive dual:* a value asserted faithful that is in fact false. (Chain bottom; fails every honest floor. Not writable in source — a lowering fault, §6.)
 |===
 
-The fate order is a *chain* (R-2026-07-07 (A2); originally a lattice with a
+The fate order is a *complete chain* (R-2026-07-07 (A2); v0.1 had a
 `Predicated ∥ Dropped` antichain):
 
 [stem]
@@ -127,7 +145,7 @@ The fate order is a *chain* (R-2026-07-07 (A2); originally a lattice with a
 
 `Present` is top; `Attenuated(δ)` decreases as stem:[\delta] increases;
 `Predicated(P)` sits below every attenuation and above `Dropped` — a checkbox
-retains at least as much of the quality as nothing at all. What the original
+retains at least as much of the quality as nothing at all. What the v0.1
 incomparability protected is preserved: a use-model needing the full quality
 rejects both `Predicated(P)` and `Dropped`; a use-model needing only the
 predicate accepts `Predicated(P)` but rejects `Dropped`.
@@ -135,12 +153,17 @@ predicate accepts `Predicated(P)` but rejects `Dropped`.
 [NOTE]
 ====
 *Ratification record (R-2026-07-07, ADR 0004; analysis in
-`spec/notes/2026-07-07-l4-boundary-and-atoms.adoc`).* (A2) `Dropped ⊑
-Predicated` dissolves the antichain — one of the two machine-proved sources of
-L4 failure — and makes the fate order a complete chain. (A3) the
-`Attenuated(0) = Present` identification is *imposed by normalization at IR
-ingest* (validators rewrite `Attenuated(Q 0)` to `Present`; composition
-preserves normal forms), so carrier datatypes stay as-is.
+`spec/notes/2026-07-07-l4-boundary-and-atoms.adoc`).* (A1) each deceptive
+bottom is a *two-sided* zero of its coordinate's composition — in particular
+`Dropped ▷ Falsified = Falsified`, replacing the v0.1 clause
+`Dropped ▷ Falsified = Dropped` that let an upstream honest drop erase a
+downstream lie and was the sole source of the algebra's non-commutativity
+after erasing predicate and fusion labels.
+(A2) `Dropped ⊑ Predicated`, dissolving the antichain. (A3) `Attenuated(0) =
+Present` is *imposed by normalization at IR ingest*: validators rewrite
+`Attenuated(Q 0)` to `Present` before grading, and composition preserves normal
+forms (finite tropical addition reaches 0 only from 0+0), so carrier datatypes
+stay as-is and stored and composed grades are normal forms.
 ====
 
 `Predicated` is well-formed *only* on the `quality` field. A grade asserting
@@ -157,15 +180,18 @@ The *bond* records the constitutive quality–bearer tie.
 | `Intact`   | Bearer present, tie holds. (Top.)
 | `Withheld` | Bearer field dropped by projection; tie *recoverable in principle*.
 | `Severed`  | Tie cut, quality asserted free-standing; *irrecoverable*. (Honest bottom.)
-| `Misbound` | *Deceptive dual:* the quality presented as borne by a bearer that is not in fact its bearer. (Lattice bottom; fails every honest floor. Not writable in source — a lowering fault, §6.)
+| `Misbound` | *Deceptive dual:* the quality presented as borne by a bearer that is not in fact its bearer. (Chain bottom; fails every honest floor. Not writable in source — a lowering fault, §6.)
 |===
 
-Ordered `Intact ⊐ Withheld ⊐ Severed ⊐ Misbound`. The distinction between `Withheld` and
-`Severed` is the whole content of detaching versus projecting-away-the-bearer:
-both leave no bearer, but the former is a clean named drop and the latter is a
-constitutive severance. *This distinction surfaces in the type, not only the
-grade* — detaching changes `Trope[S]` to `FloatingQuality`, so any downstream
-operation needing a bearer fails to typecheck.
+Ordered `Intact ⊐ Withheld ⊐ Severed ⊐ Misbound`. The distinction between
+`Withheld` and `Severed` is the whole content of detaching versus
+projecting-away-the-bearer: both leave no bearer, but the former is a clean
+named drop and the latter a constitutive severance. *This distinction surfaces
+in the type, not only the grade* — detaching changes `Trope[S]` to
+`FloatingQuality`, so any downstream operation needing a bearer fails to
+typecheck. The bond coordinate is *fibred over the bearer's fate* (HC-4): a
+grade with the bearer `Present` and the bond `Severed`, or the bearer absent and
+the bond `Intact`, is incoherent and unrepresentable at the validation boundary.
 
 === Coordinate 3 — merge (cardinality and honesty)
 
@@ -184,17 +210,18 @@ honestly.
 Ordered `Single ⊐ Fused(τ) ⊐ Conflated` by recoverable plurality. `Conflated`
 is the *deceptive* collapse — the tag that would reveal the merge is discarded,
 so downstream is silently wrong about at least one constituent; `Fused(τ)` is
-the *faithful* collapse. This is precisely the faithful/deceptive veridicality
-axis of the typed-residual framework, instantiated on cardinality.
+the *faithful* collapse. This is the faithful/deceptive veridicality axis of
+the typed-residual framework, instantiated on cardinality.
 
 [IMPORTANT]
 ====
-*`Conflated` is reachable in the grade lattice but not by well-formed terms.*
-The lattice is complete — it has its bottom — because the soundness story and the
-use-model order require it as a formal element, and because a front end that
-lowers some source operation to an untagged merge must have its output *named*
-as `Conflated` when the validator rejects it (§6, §9). But no well-formed term
-of the source language produces it: see the conflation decision in §6.
+*`Conflated` is reachable in the grade carrier but not by well-formed terms.*
+The carrier is complete — it has its bottom — because the soundness story and
+the use-model order require it as a formal element, and because a front end
+that lowers some source operation to an untagged merge must have its output
+*named* as `Conflated` when the validator rejects it (§6, §9). But no
+well-formed term of the source language produces it: see the conflation
+decision in §6.1.
 ====
 
 === The unit
@@ -208,69 +235,188 @@ The unit grade is
 
 — full presence on every field, intact bond, no merge. `preserve` introduces it.
 
+=== The nine effects and the nine atom families
+
+The vocabulary (`trope-particularity-workbench`) names *nine* effects. The
+calculus realises them as follows. An *atom* is a grade that differs from
+stem:[\varepsilon] in exactly one slot; atoms come in nine families, one per
+non-unit coordinate value kind. *Every pre-ratification `Grade` factors as a
+▷-product of its single-slot projections* (`EffectAtoms.lean`, importing the
+historical `GradeBoundary` carrier: `Grade.atom_factorization`, `nine_families`,
+`family_realized`, `families_disjoint`). The same factorisation is proved on
+the ratified carrier this calculus actually uses (`EffectAtomsRatified.lean`:
+`GradeR.atom_factorization`); the nine-family classification classifies
+*coordinate values*, which ratification did not change, so it carries over
+unchanged. O1's carrier-relative half is therefore PROVED for `GradeR` (§10);
+what remains open is O1-coord, the adequacy of the coordinates themselves.
+
+[cols="2,1,1,2,1",options="header"]
+|===
+| Vocabulary effect | Coordinate | Value | Calculus status | Veridicality
+
+| `p-preserving`  | —     | stem:[\varepsilon] | writable (`preserve`)                     | faithful
+| `p-projecting`  | fate / bond | `Dropped` / `Withheld` | writable (`project[S]`); composite of the `drop` atoms | faithful
+| `p-collapsing`  | fate  | `Predicated(P)` | writable (`collapse[P]`); composite of `predicate` + `drop` | faithful
+| `p-detaching`   | bond  | `Severed`      | writable (`detach`); composite of `sever` + `drop`       | faithful
+| `p-attenuating` | fate  | `Attenuated(δ)` | writable (`attenuate[δ]`); the `attenuate` atom          | faithful
+| `p-fusing`      | merge | `Fused(τ)`     | writable (`fuse[τ]`); the `fuse` atom                     | faithful
+| `p-falsifying`  | fate  | `Falsified`    | *not writable* — validation fault                         | deceptive
+| `p-misbinding`  | bond  | `Misbound`     | *not writable* — validation fault                         | deceptive
+| `p-conflating`  | merge | `Conflated`    | *not writable* — validation fault (R-2026-06-22)          | deceptive
+|===
+
+Two structure theorems fix this table rather than leaving it a list:
+
+* *Honest Generation.* The five atomic moves `attenuate`, `predicate`, `drop`,
+  `sever`, `fuse` together with stem:[\varepsilon] generate exactly the honest
+  fragment of each coordinate, and never produce a deceptive dual
+  (`Trope.Generation.{genFate,genBond,genMerge}`; Agda `TB.Honest.genFate` etc.,
+  `honest-closed-▷`).
+* *Veridicality Derivation.* The deceptive fragment has exactly three
+  inhabitants, one per coordinate kind — `Falsified`, `Misbound`, `Conflated` —
+  each the unique deceptive element of its coordinate
+  (`Trope.Veridicality.{fate,bond,merge}DeceptiveUnique`; Agda
+  `TB.Honest.{fate,bond,merge}DeceptiveUnique`). One cannot deceptively assert
+  a loss; the only deceptions are false value, false bearer, false singleness.
+
+[NOTE]
+====
+*Two senses of "deceptive", kept apart.* *Grade-deceptive* is the
+veridicality sense above: `Falsified`, `Misbound`, `Conflated` — grades that
+claim a faithfulness they do not have. The fidelity carrier Δ has its own
+*tier* classification (`TB.Tier.dTier`), under which `⊤` (`Unknown`, loss of
+unknown amount) is the *tier-deceptive* element: worst-case opacity about
+*how much* was lost. These are different claims. `Attenuated(⊤)` is
+grade-*honest* — it declares its ignorance rather than asserting a bound it
+does not have — and tier-deceptive. Unqualified "deceptive" in this document
+means grade-deceptive; the fidelity sense is always written
+*tier-deceptive*. The distinction is load-bearing at L3 (§4.1): no-laundering
+quantifies over grade-deception, while `Dropped` absorbing `Attenuated(⊤)`
+is an honest absorber subsuming admitted ignorance — retention only
+decreases (L4), and no false claim is erased, because none was made.
+====
+
+So "seven effects" (six writable plus the conflation fault), which earlier
+versions of this document used, and "nine effects" (the vocabulary) describe the
+same carrier: nine atom families, of which six are writable surface effects
+and three are faults. This document uses *nine* throughout.
+
 == Composition and order — the normative laws
 
 === Composition
 
 Sequencing two effects (apply the second to the residual of the first) composes
-grades by stem:[\triangleright], defined componentwise.
+grades by stem:[\triangleright], defined slot-wise.
 
-*Fate composition* (per field), the partial operation stem:[f_1 \triangleright f_2]:
+*Fate composition* (per field), stem:[f_1 \triangleright f_2], on the ratified carrier:
 
 [source]
 ----
 Present        ▷ f             = f
 f              ▷ Present       = f
-Attenuated(δ₁) ▷ Attenuated(δ₂)= Attenuated(δ₁ + δ₂)      -- tropical: losses add
-Attenuated(_)  ▷ Predicated(P) = Predicated(P)            -- collapse subsumes prior fidelity loss
-Attenuated(_)  ▷ Dropped       = Dropped
+Attenuated(δ₁) ▷ Attenuated(δ₂)= Attenuated(δ₁ + δ₂)      -- tropical: losses add; ⊤ absorbs ∞ absorbs finite
+Attenuated(_)  ▷ Predicated(P) = Predicated(P)            -- collapse subsumes prior fidelity loss (and symmetrically)
+Attenuated(_)  ▷ Dropped       = Dropped                  -- (and symmetrically)
 Predicated(_)  ▷ Predicated(Q) = Predicated(Q)            -- predicate of the bit; rare, defined for totality
-Predicated(_)  ▷ Dropped       = Dropped
-Dropped        ▷ _             = Dropped                  -- nothing further can be lost from nothing
+Predicated(_)  ▷ Dropped       = Dropped                  -- (and symmetrically)
+Dropped        ▷ Dropped       = Dropped
+Falsified      ▷ _             = Falsified                -- two-sided zero (A1)
+_              ▷ Falsified     = Falsified
 ----
 
-*Bond composition* — meet in `Intact ⊐ Withheld ⊐ Severed`, `Severed` absorbing.
-*Merge composition* — meet in `Single ⊐ Fused ⊐ Conflated`, with
-`Fused(τ₁) ▷ Fused(τ₂) = Fused(τ₁ ⊗ τ₂)` (nested honest merge, label is the
-pair), and `Conflated` absorbing.
+*Bond composition* — meet in `Intact ⊐ Withheld ⊐ Severed`, with `Misbound` a
+two-sided zero. *Merge composition* — meet in `Single ⊐ Fused ⊐ Conflated`,
+with `Fused(τ₁) ▷ Fused(τ₂) = Fused(τ₁ ⊗ τ₂)` (nested honest merge, label is the
+pair) and `Conflated` a two-sided zero.
 
-The laws stem:[g] must satisfy, to be enforced by the verified core (§8):
+The verified developments (§9.3) erase predicate and fusion labels:
+`Predicated(P)` becomes `Predicated` and `Fused(τ)` becomes `Fused`, with all
+other components unchanged. Erasure preserves composition. The laws below
+apply to this erased grade carrier; equality of labels is outside the proof
+contract. In particular, the right-predicate rule above need not commute on
+labels: `Predicated(P) ▷ Predicated(Q) = Predicated(Q)`, whereas reversing the
+operands gives `Predicated(P)`. Nested fusion pairs need neither commute nor
+associate as literal labels: `(τ₁, τ₂)` differs from `(τ₂, τ₁)`, and
+`((τ₁, τ₂), τ₃)` differs from `(τ₁, (τ₂, τ₃))`.
+
+The laws the erased grade MUST satisfy, each enforced by the verified developments:
 
 [cols="1,4",options="header"]
 |===
 | ID | Law
 
-| *L1 (associativity)* | stem:[(g_1 \triangleright g_2)\triangleright g_3 = g_1 \triangleright (g_2 \triangleright g_3)].
-| *L2 (unit)*          | stem:[\varepsilon \triangleright g = g = g \triangleright \varepsilon].
-| *L3 (bottom-absorption)* | In each coordinate, the *deceptive* lattice bottom is a *two-sided zero* of that coordinate's composition (R-2026-07-07 (A1)): `Falsified`, `Misbound`, and `Conflated` absorb from both sides — no honest absorber launders deception. The *honest* bottoms (`Dropped`, `Severed`) absorb from the left *within the honest fragment*, and `Attenuated(⊤)` is absorbing within the fidelity dimension.
-| *L4 (monotonicity)*  | stem:[\triangleright] is monotone in each argument w.r.t. the retention order stem:[\sqsubseteq] (§5). Composing after more loss never yields more retention. (*Holds in full on the ratified carrier* — R-2026-07-07 (A1)+(A2) removed the two machine-proved failure points of the original v0.1 carrier, the `Predicated ∥ Dropped` antichain and the `Dropped ▷ Falsified` clause; the §7 least-fixed-point argument is thereby restored. History and proofs: `spec/notes/2026-07-07-l4-boundary-and-atoms.adoc`, `verification/proofs/lean4/grade-boundary/L4Monotonicity.lean`.)
-| *L5 (conflation infectiousness)* | Once the merge coordinate is `Conflated`, no composition restores `Fused` or `Single`. (A corollary of L3, stated separately because it is the non-compositionality-of-deceptive-channels result and the moral core.)
+| *L1 (associativity)* | stem:[(g_1 \triangleright g_2)\triangleright g_3 = g_1 \triangleright (g_2 \triangleright g_3)]. (`Trope.Laws.gradeAssoc`; Agda `gmonoid-assoc`; Lean `GradeR.instCommMonoid`.)
+| *L2 (unit)*          | stem:[\varepsilon \triangleright g = g = g \triangleright \varepsilon]. (`Trope.Grade.{gradeUnitL,gradeUnitR}`; Agda `gmonoid-unit{L,R}`.)
+| *L3 (bottom-absorption)* | Each *deceptive* bottom — `Falsified`, `Misbound`, `Conflated` — is a *two-sided zero* of its coordinate's composition (R-2026-07-07 (A1)): no honest absorber launders deception, in either composition order. (Lean `FateA.falsified_two_sided_zero`, `GradeR.gBotR_two_sided_zero`; Agda `falsified-absorb{L,R}`, `misbound-absorbL`, `conflated-absorbL`, `deceptive-absorbs-▷`.) The *honest* bottoms (`Dropped`, `Severed`) absorb within the honest fragment. Fidelity's `Unknown` (`⊤`) is a two-sided zero of the *fidelity* composition (Δ-addition) only, and is *tier*-deceptive, not grade-deceptive (§3.5 note): `Attenuated(⊤)` is honest, so its absorption by `Dropped` at the fate coordinate launders nothing — total admitted loss subsumes unquantified admitted loss. What A1 forbids is exactly the deceptive case, e.g. `Dropped ▷ Falsified = Falsified`, never `Dropped`.
+| *L4 (monotonicity)*  | stem:[\triangleright] is monotone in each argument with respect to the retention order stem:[\sqsubseteq] (§5): composing after more loss never yields more retention. *Holds in full on the ratified carrier.* (Idris2 `Trope.Soundness.{fateL4MonoR,fateL4MonoL}`, `Trope.Order.{bondComposeMono,mergeComposeMono}`; Lean `FateA.comp_mono_{right,left}`; Agda `TB.Order.fateL4Mono{R,L}`.) History: strict L4 failed on the v0.1 carrier at exactly the two points (A1)/(A2) amended — `spec/notes/2026-07-07-l4-boundary-and-atoms.adoc`, `L4Monotonicity.lean` (`comp_not_monotone_{right,left}`, retained as theorems about the pre-ratification carrier).
+| *L5 (deception infectiousness)* | Once any coordinate is at its deceptive bottom, no composition restores an honest value. A corollary of L3, stated separately because it is the non-compositionality-of-deceptive-channels result and the moral core; it covers `Conflated` (v0.1's statement), `Falsified` and `Misbound` alike.
+| *L6 (commutativity)* | For grades with predicate and fusion labels erased, stem:[g_1 \triangleright g_2 = g_2 \triangleright g_1]. New at v0.2: on this ratified carrier the grade monoid is *commutative* (Lean `GradeR.instCommMonoid`, `FateA.comp_comm`; Agda `grade-comm`). These proofs carry no predicate or fusion labels and assert no equality between labelled grades. The v0.1 non-commutativity (`GradeBoundary.grade_mul_not_comm`) was an artefact of the clause (A1) removed. Order-sensitivity of erased loss-shapes MUST come from DAG structure (§9.1); label metadata may retain composition order.
 |===
 
 [NOTE]
 ====
-L1–L2 make stem:[(\text{grades}, \triangleright, \varepsilon)] a monoid, hence
-the effect system is a *graded monad* on the term category with this monoid as
-its grade object. L4 makes the order a *lax* compatibility, which is what the
-verdict subsumption (§5, §6) needs. None of L1–L5 is novel as a _shape_; the
-content is that the three-coordinate loss-shape monoid is the right grade object
-for trope-particularity, which §10-O1 marks as the open completeness question.
+L1–L2 make stem:[(\text{erased grades}, \triangleright, \varepsilon)] a monoid,
+L6 a commutative one; the effect system is a *graded monad* on the term
+category with this erased monoid as its grade object. Label metadata is
+retained separately and is not covered by these monoid equalities.
+L4 is what the verdict subsumption
+(§5–§6) and the recursion rule (§7) need. None of L1–L6 is novel as a _shape_;
+the content is that this carrier is the right grade object for
+trope-particularity, which §10-O1 marks as the open adequacy question.
 ====
+
+=== The cancellation structure
+
+Three further facts about the carrier are normative because downstream designs
+(splitting, rejoining, any cut) must respect them (R-2026-06-23-02..04, as
+amended by R-2026-07-07):
+
+[cols="1,4",options="header"]
+|===
+| ID | Fact
+
+| *C1 (conicality)* | stem:[g_1 \triangleright g_2 = \varepsilon \Rightarrow g_1 = g_2 = \varepsilon]: nothing lossy composes back to no-loss. (Lean `GradeR.conical`, `FateA.conical`; Agda `grade-conical`.)
+| *C2 (the cancellation boundary)* | The boundary is carrier-relative, and both carriers matter. On the *unquotiented* carrier, an element of the grade monoid is left-cancellative *iff* it is stem:[\varepsilon] — finite attenuation fails to cancel there, correctly, because `Attenuated(Q 0)` is a distinct element from `Present` and the two collide (Lean `GradeR.gradeR_leftCancel_iff`; historical carrier: `Grade.grade_leftCancel_iff`; per-element witnesses in `TierTwoComplete.lean`). On the *A3-normalized* carrier — the one IR ingest actually stores, where `Attenuated(Q 0)` is rewritten to `Present` — that collision disappears and finite attenuation *is* left-cancellative on the fate coordinate (Lean `FateA.atten_cancel_on_normalForms`; Δ-level: Agda `TB.Tier.Q-cancelʳ`), so cancellation holds exactly on the finite-fidelity core stem:[\mathcal{C}] (fates in `Q ℕ ≅ (ℕ,+,0)`, `bond = Intact`, `merge = Single`) and fails on the honest-but-lossy and deceptive tiers alike (Agda's six `*-not-cancel` lemmas). C1/C2 in this section quantify over the normalized carrier unless stated. Consequence: a lossless *split / rejoin* can be cancellative only inside stem:[\mathcal{C}]; any such operator (§10, CO-1) MUST be stated against this boundary.
+| *C3 (partition)* | `Dropped`, `Total` (stem:[\infty]), `Severed`, `Predicated`, `Withheld`, `Fused` and `Attenuated(⊤)` (`Unknown`) are *honest* non-cancellative elements; `Falsified`, `Misbound` and `Conflated` are the *deceptive* ones. `Unknown` is deceptive only in the fidelity-*tier* sense (§3.5 note): it asserts no bound, so it makes no false claim. Absorbing is not the same as lying, and neither is admitted ignorance. (Lean `dropped_absorbing`, `fidelity_total_honest_not_cancel`; Agda `TB.Tier` classifiers.) Tier preservation under composition is *closure*, not a homomorphism: `tierOf (g ▷ h) = tierOf g ⊓ tierOf h` is false on fate even on the ratified carrier (`TB.Tier.fate-tier-meet-hom-fails`).
+|===
+
+=== The tropical factorisation
+
+A nontrivial monoid homomorphism stem:[\pi_R : (\mathrm{GradeR}, \triangleright, \varepsilon) \to (\Delta, +, Q\,0)]
+onto the commutative tropical fidelity carrier exists and is
+*veridicality-sighted*: `Dropped ↦ ∞` and `Falsified ↦ ⊤`, so the hom is blind
+to *which honest* absorber acted but not to *whether the absorber was honest*
+(`GradeFactorisationR.lean`: `piR_hom`, `piR_nontrivial`, `piR_surjective`,
+`piR_sighted`). The naive hom that reads the attenuation payload off verbatim is
+*not* a homomorphism on the ratified carrier (`phiId_not_hom`); the repair,
+`GradeFactorisationR.squash`, maps the tier-deceptive payload `Unknown`
+(`Delta.unknown`, `⊤`) to `Total` (`Delta.total`, or `∞`) inside attenuation
+(`sighted_forces_squash` proves every veridicality-sighted hom must give up
+that separation). On the v0.1 carrier every such hom was
+forced to collapse `Dropped` with `Falsified` (`GradeFactorisation.lean`,
+`forced_collapse_general`) — a theorem about the pre-ratification carrier only.
+This factorisation is a *precondition*, not a recursion result: whether a
+fixpoint's grade lives in the commutative part is a CO-1 question (§10).
 
 === The retention order and use-models
 
 Define stem:[\sqsubseteq] as the *retention order*: stem:[x \sqsubseteq y] means
 "stem:[y] retains at least as much particularity as stem:[x]" — i.e. stem:[y] is
-higher (less lossy) in every coordinate lattice. stem:[\sqsubseteq] is the
-componentwise product order; it is decidable because each coordinate lattice has
-decidable order (finite, except the fidelity dimension stem:[\mathbb{N}\cup\{\infty,\top\}],
-which is a decidable linear order with two adjoined tops).
+higher (less lossy) in every slot. stem:[\sqsubseteq] is the slot-wise product
+order; it is decidable because each coordinate is a decidable chain (the
+fidelity dimension stem:[\mathbb{N}\cup\{\infty,\top\}] is a decidable linear
+order with two adjoined tops). (`Trope.Laws.decGradeLte`; reflexivity and
+transitivity in `Trope.Coords`/`Trope.Order`, `gradeLteTrans`.)
 
 A *use-model* stem:[U] declares a *floor* stem:[\mathrm{floor}(U)] — the minimum
-retained particularity the use requires, possibly specified per field. The floor
+retained particularity the use requires, possibly specified per slot. The floor
 is data the author *declares*; it is the only place a use enters the calculus.
+The floor is a partial per-slot demand, not a grade value; HC-4 coherence is
+enforced on edge grades, and an author MAY write an incoherent floor (each
+demanded slot is then checked independently — harmless, but an author-error
+surface, not covered by the unrepresentability claim).
 
-== The seven effects as typing rules
+== The six writable effects as typing rules
 
 The typing judgement is
 
@@ -283,8 +429,8 @@ The typing judgement is
 types carry latent grade: stem:[A \xrightarrow{g} B] is "applying produces loss
 stem:[g]." The structural rules (variable, abstraction, application, `let`,
 `fix`) are standard; `let` is where composition enters and `fix` is in §7. The
-six *writable* effects and the subsumption rule follow. (The seventh,
-conflation, is treated in §6.1.)
+six *writable* effects and the subsumption rule follow; the three deceptive
+duals are not term formers (§6.1).
 
 .T-Preserve
 [%hardbreaks]
@@ -346,13 +492,14 @@ leaves `bond` and `merge` unchanged.
 ....
 Γ ⊢ e₁ : A ! g₁     Γ ⊢ e₂ : A ! g₂
 ─────────────────────────────────────────────────────
-Γ ⊢ fuse[τ] e₁ e₂ : A ! (g₁ ⊔ g₂) ▷ label(τ)
+Γ ⊢ fuse[τ] e₁ e₂ : A ! (g₁ ⊓ g₂) ▷ label(τ)
 ....
 
 where `label(τ)` sets `merge = Fused(τ)`, fates `Present` (the labelled blend is
-faithful), `bond` the meet of the inputs'. The `⊔` joins the two input grades
-(the fused value is no better than its worse constituent in any coordinate). The
-tag `τ` is *required*: a fusion term with no tag does not parse (§6.1).
+faithful), `bond` the meet of the inputs'. The stem:[\sqcap] meets the two input
+grades in the retention order (the fused value is no better than its worse
+constituent in any slot). The tag `τ` is *required*: a fusion term with no tag
+does not parse (§6.1).
 
 .T-Sub — conservative weakening: you MAY always claim more loss than occurred
 [%hardbreaks]
@@ -364,40 +511,59 @@ tag `τ` is *required*: a fusion term with no tag does not parse (§6.1).
 
 [NOTE]
 ====
-T-Sub weakens *downward* in retention only. Claiming *less* loss than occurred is
-unsound and has no rule. This one-sidedness is what makes the verdict (§6) a
-safe over-approximation.
+T-Sub weakens *downward* in retention only. Claiming *less* loss than occurred
+is unsound and has no rule. This one-sidedness is what makes the verdict (§6) a
+safe over-approximation — and it is also why the calculus, as it stands,
+certifies *sufficiency* (enough retained) and not *discretion* (no more than a
+ceiling retained): a declared grade is a lower bound on retention, never an
+upper bound. A ceiling verdict needs the dual theorem (§10, O6).
 ====
 
 == The conflation decision, and the verdict
 
-=== Decision: conflation is not a source primitive
+=== Decision: deception is not a source primitive
 
 [cols="1,4",options="header"]
 |===
 | ID | Decision (dated, for the decision-log)
 
-| *R-2026-06-22* | Conflation SHALL NOT be a writable primitive. `fuse[τ]` *requires* a tag; an untagged merge is a syntax error and does not elaborate. `Conflated` exists only as the absorbing bottom of the merge coordinate (§3.3); a well-formed term never produces it. Conflation therefore arises *only* as a *lowering fault*: when a front end lowers a source operation to a merge and fails to supply a tag, the resulting IR is malformed and the validator (§9) rejects it, *naming* the offending node's merge as `Conflated`. The tropechecker is, operationally, a *conflation detector at the lowering boundary*.
+| *R-2026-06-22* | Conflation SHALL NOT be a writable primitive. `fuse[τ]` *requires* a tag; an untagged merge is a syntax error and does not elaborate. `Conflated` exists only as the absorbing bottom of the merge coordinate (§3.3); a well-formed term never produces it. Conflation therefore arises *only* as a *lowering fault*: when a front end lowers a source operation to a merge and fails to supply a tag, the resulting IR is malformed and the validator (§9) rejects it, *naming* the offending node's merge as `Conflated`. The same holds, by construction, for `Falsified` and `Misbound` (the validator rejects them as not writable in the *prevent* profile). The tropechecker is, operationally, a *deception detector at the lowering boundary*.
 |===
 
 This is the door-too-small reading: the dangerous state exists in the semantics
 but is structurally unreachable by well-formed terms. It makes the moral content
-— _do not silently merge particulars_ — a validation error rather than a
-guideline.
+— _do not silently merge particulars, do not misattribute, do not substitute_ —
+a validation error rather than a guideline.
 
 [IMPORTANT]
-.Normative variant (conflation as a verdict-boundary primitive)
+.Normative variant (deception as a verdict-boundary primitive)
 ====
-Implementations MAY instead admit conflation as a writable primitive caught at
-the verdict rather than at validation. Exactly three things change, and nothing
-else:
+Implementations MAY instead admit the deceptive duals as writable primitives
+caught at the verdict rather than at validation. The variant applies
+*uniformly to all three duals* — a profile that defers one deception to the
+verdict while preventing another at validation is neither profile and MUST
+NOT be claimed. Exactly three things change, and nothing else:
 
-. *Add* a rule `T-Conflate : Γ ⊢ e₁ : A ! g₁,  Γ ⊢ e₂ : A ! g₂  ⟹  Γ ⊢ conflate e₁ e₂ : A ! (g₁ ⊔ g₂) ▷ unlabel`, where `unlabel` sets `merge = Conflated`.
-. *Relax* T-Fuse so an untagged merge is well-formed and elaborates to `conflate`.
-. *Move* the conflation check from the validation boundary (§9) to the verdict (§6.2): a `Conflated` grade is then rejected only when `floor(U)` demands `merge ⊒ Fused`.
+. *Add* one grade-forming rule per coordinate, each setting exactly its own
+  coordinate to the deceptive bottom and composing the rest as the erased
+  grade: `T-Falsify` (sets a fate to `Falsified` — a claimed-faithful value
+  substitution), `T-Misbind` (sets `bond = Misbound` — a bearer
+  substitution), and `T-Conflate : Γ ⊢ e₁ : A ! g₁,  Γ ⊢ e₂ : A ! g₂  ⟹  Γ ⊢ conflate e₁ e₂ : A ! (g₁ ⊓ g₂) ▷ unlabel`, where `unlabel` sets `merge = Conflated`.
+. *Relax* the corresponding prevent-side writability restrictions: grade
+  literals may carry `Falsified` / `Misbound` / `Conflated`, and T-Fuse
+  admits an untagged merge as well-formed, elaborating to `conflate`.
+. *Move* all three checks from the validation boundary (§9) to the verdict
+  (§6.2): a deceptive grade is then rejected exactly when `floor(U)`
+  constrains its coordinate above the bottom — `Conflated` only when the
+  floor demands `merge ⊒ Fused`, `Falsified` only when it demands a fate
+  above `Falsified`, `Misbound` only when it demands `bond ⊒ Intact`. A
+  deceptive grade under a floor indifferent to its coordinate is *not*
+  rejected under detect. That floor-dependence is the price of the variant,
+  and precisely why it is not the recommended reading.
 
 The recommended reading (R-2026-06-22) is _prevent_; the variant is _detect_.
-An implementation MUST pick one and state which in its conformance profile.
+An implementation MUST pick one and state which in its conformance profile. The
+reference and fast cores ship *prevent*.
 ====
 
 === The verdict
@@ -412,9 +578,14 @@ Given a closed program with final grade stem:[g] and a use-model stem:[U]:
 
 If the check fails, the verdict is `p-insufficient`, and the report MUST carry a
 *witness*: the operation (DAG edge, §9) whose composition first pushed the
-running grade below stem:[\mathrm{floor}(U)] in some coordinate. This witness is
-the trope-particularity analogue of the invariant-path argmin — it names the
-edge to repair, not merely that repair is needed.
+running grade below stem:[\mathrm{floor}(U)] in a failing slot during
+topological traversal and accumulation. Traverse the selected output's ancestor
+DAG in dependency order, breaking ties between ready edges by edge ID. Select
+the first edge whose accumulated output grade violates the floor in a failing
+slot. JSON document order MUST NOT affect this selection: reordering the edge
+array leaves the witness unchanged. This witness is the trope-particularity
+analogue of the invariant-path argmin — it names the edge to repair, not merely
+that repair is needed.
 
 [NOTE]
 ====
@@ -430,57 +601,74 @@ comonad form an adjunction whose unit/counit are exactly produce/demand is a
 
 == General recursion, and why it does not break the checker
 
-`fix` is what makes the term language Turing complete. Its grade rule takes the
-*least fixed-point grade* of the body's grade functional:
+`fix` is what makes the term language Turing complete. Its grade is the
+*tightest declaration the rule can certify*: in the retention order, the
+*greatest post-fixed point* of the body's grade functional (equivalently, the
+least fixed point in the loss order — v0.1's phrasing). The functional
+stem:[F(\gamma)] — the body's derived latent grade under the assumption that the
+recursive binder has latent grade stem:[\gamma] — is computable, and monotone in
+stem:[\gamma] by L4; each coordinate is a complete chain; so Knaster–Tarski gives
+stem:[\mathrm{gfp}\,F = \bigsqcup\{\gamma : \gamma \sqsubseteq F(\gamma)\}].
 
-[%hardbreaks]
-....
-Γ, x : (A ─g→ B) ⊢ e : (A ─g→ B)     g = lfp(λγ. grade-of(e)[γ])
-─────────────────────────────────────────────────────────────────
-Γ ⊢ fix x. e : (A ─g→ B) ! ε
-....
+*The rule (T-Fix-Decl).* The author declares stem:[\gamma]; the checker accepts
+iff
 
-The least fixed point exists because each coordinate lattice is complete and, by
-*L4*, the grade functional is monotone. A recursive trope-transformer that can
-attenuate without bound has fidelity grade stem:[\top] — and that is *correct*,
-not a failure: an unbounded loop of lossy steps yields an unknown residual, the
-checker reports stem:[\top], and any use-model demanding better than stem:[\top]
-rejects it.
+[stem]
+++++
+\gamma \;\sqsubseteq\; F(\gamma)
+++++
+
+— decidable (stem:[F] is computable on grades, stem:[\sqsubseteq] is
+decidable), and no fixed point is ever computed. Kleene iteration and
+ω-continuity are not needed: existence by Knaster–Tarski, checking by the
+post-fixed-point test, soundness by induction on call depth of a terminating
+run (`spec/notes/2026-07-07-co1-operational-model.adoc` §4).
+
+A recursive trope-transformer that can attenuate without bound has fidelity
+grade stem:[\top] — and that is *correct*, not a failure: no finite-δ
+signature is a post-fixed point, the strongest accepted signatures sit at
+`Attenuated(∞)`/`Attenuated(⊤)`, the checker reports stem:[\top], and any
+use-model demanding better rejects it.
 
 [IMPORTANT]
 ====
 *Turing-completeness does not break the checker; it means some grades are
 stem:[\top], and stem:[\top] is an honest answer.* The checker stays total
-because it computes on the grade lattice, never on the term. The undecidability
+because it computes on the grade carrier, never on the term. The undecidability
 that Rice's theorem guarantees is discharged honestly into the stem:[\top]
-element, exactly as the Aletheia design discharges it into an honest "cannot
-guarantee."
+element.
 ====
 
 *Inference versus checking.* Synthesising the minimal grade of an arbitrary
 fixpoint is undecidable. The checker SHALL therefore be *bidirectional*: grades
 are *checked* against *declared* loss-signatures at every recursive and effectful
-boundary (the author annotates the loss signature of a recursive
-trope-transformer, as one annotates an effect signature), and *inferred* only
-through the straight-line, non-recursive fragment (decidable, convenient).
-Declared signatures at the boundaries; inference in between.
+boundary, and *inferred* only through the straight-line, non-recursive fragment.
+Declared signatures at the boundaries; inference in between. The T-Fix-Decl side
+condition is an obligation of the *front end* at its recursive boundaries; the
+IR checker sees only the declared signature.
+
+*Status.* The operational model this section relies on — the core language
+λ-trope, its instrumented small-step semantics with tagged values, and observed
+retention stem:[\rho] read off the output tag — is DESIGNED
+(`spec/notes/2026-07-07-co1-operational-model.adoc`). Its mechanisation is OPEN
+(§10, CO-1): Theorem B's `fix` case is NOT-REACHED and not postulated.
 
 == Soundness, and the firewalls
 
 Let stem:[\rho(\text{in}, \text{out})] be the *observed retention* of one
-execution: the grade read off by comparing the input and output trope records.
-The verified core (§9) targets:
+execution: the grade read off by comparing the input and output trope records
+(in λ-trope, the output value's tag). The results, with their status:
 
-[cols="1,4",options="header"]
+[cols="1,4,1",options="header"]
 |===
-| ID | Statement
+| ID | Statement | Status
 
-| *Grade soundness* | If stem:[\Gamma \vdash e : A \mathbin{!} g] then for every well-typed input, stem:[g \sqsubseteq \rho(\text{in}, \text{out})]: the declared grade never claims more retention than the execution delivers (equivalently, it over-approximates loss).
-| *Verdict soundness* (corollary) | If the checker reports `p-sufficient` (i.e. stem:[\mathrm{floor}(U)\sqsubseteq g]) then by transitivity stem:[\mathrm{floor}(U)\sqsubseteq \rho], so the real residual meets the use-model.
+| *Grade soundness* | If stem:[\Gamma \vdash e : A \mathbin{!} g] then for every well-typed input, stem:[g \sqsubseteq \rho(\text{in}, \text{out})]: the declared grade never claims more retention than the execution delivers (it over-approximates loss). | *Exact lowering:* PROVED (`Trope.Soundness.soundFromExact`). *β/let core:* PROVED, with the grade preserved exactly (Agda `TB.Reduction`, `TB.Substitution.cut-preserves-grade`). *Conservative lowering and `fix`:* OPEN — CO-1 mechanisation (§10).
+| *Verdict soundness* (corollary) | If the checker reports `p-sufficient` (i.e. stem:[\mathrm{floor}(U)\sqsubseteq g]) then by transitivity stem:[\mathrm{floor}(U)\sqsubseteq \rho], so the real residual meets the use-model. | PROVED, given grade soundness (`Trope.Soundness.verdictSound`; `subSound` for T-Sub).
 |===
 
 [WARNING]
-.Two firewalls — state both, do not let the theorem launder them
+.Three firewalls — state all three, do not let the theorems launder them
 ====
 . *Soundness, not completeness.* The checker MAY be conservative: it MAY report
 `p-insufficient` where the true residual would in fact have sufficed. This is the
@@ -490,9 +678,13 @@ safe direction and is acceptable. No completeness is claimed.
 *IR-level* grades. It does *not* prove that a front end's claim "this source
 operation _is_ a `collapse[P]`" is true. *Lowering correctness is a separate,
 per-front-end proof obligation* (§10-O2) and is NOT discharged by this theorem.
-This is the same firewall as "the analogy is not an instance": the core's
-guarantee is conditional on faithful lowering, and that conditionality lives in
-the spec, in the open, not hidden in a footnote.
+
+. *Veridicality is declared and propagated, not checked.* The checker cannot
+decide whether a value claimed faithful is in fact false; that needs ground
+truth the IR does not carry. What the calculus guarantees instead is L3/L5:
+deceptive grades are two-sided zeros, do not compose away, and fail every honest
+floor. The precise statement, and the interface a deployment may bind to do
+better, is §10-O5.
 ====
 
 == The portable tropechecker
@@ -502,7 +694,7 @@ depends only on a language-neutral interchange.
 
 === The Trope IR
 
-The portable artifact is a *Trope IR*: a labelled DAG.
+The portable artefact is a *Trope IR*: a labelled DAG.
 
 * *Nodes* are property-instances, each carrying its field-presence over
 stem:[\Phi] and its type tag (`Trope[S]`, `FloatingQuality`, or a collapse
@@ -511,70 +703,107 @@ codomain).
 * A distinguished *use-model node* carries stem:[\mathrm{floor}(U)].
 
 The IR's *canonical wire format SHALL be a JSON-schema-validated document*
-(`schemas/trope-ir.schema.json`); an AsciiDoc normative spec accompanies it; an
-*OPTIONAL* Nickel authoring contract MAY be offered front-side. (This mirrors,
-deliberately and verbatim, the invariant-path I/O-contract decision:
-author-side contracts are courtesy, generated from the schema; the schema is the
-trust boundary.) The grade algebra — stem:[\triangleright], stem:[\sqsubseteq],
-and stem:[\mathrm{floor}] — SHALL be specified *in the IR spec itself*,
-language-neutrally, so that two independent checker implementations agree by
-construction.
+(`schemas/trope-ir.schema.json`; normative prose in `spec/trope-ir.adoc`,
+version 0.2 — R-2026-07-07 changed verdict semantics only, and implementations
+MUST accept `0.1` and `0.2` documents and grade both under 0.2 semantics after
+normalization). An *OPTIONAL* Nickel authoring contract MAY be offered
+front-side; the schema is the trust boundary. The grade algebra —
+stem:[\triangleright], stem:[\sqsubseteq], and stem:[\mathrm{floor}] — is
+specified in the IR spec itself, language-neutrally, so that two independent
+checker implementations agree by construction. Order-sensitivity of erased
+loss-shapes lives in the DAG (routing, multi-parent nodes); predicate and
+fusion labels may retain composition order (L6).
 
 === The checker as a pure function
 
 The tropechecker is a *pure function from Trope IR to a verdict object*:
 `p-sufficient` / `p-insufficient`, plus the witness edge (§6.2). It performs
-grade composition over the DAG and the final floor-subsumption. *It MUST NOT
-parse, execute, or otherwise depend on source.* That independence is what makes
-it portable: it is a checker *of the IR*, and the IR is the contract.
+normalization (A3) and validation (HC-4 coherence; the prevent profile's
+rejection of deceptive values). Before grade accumulation, it MUST validate the
+graph structure, rejecting duplicate node or edge IDs, unknown node references,
+duplicate producers for a node, and cycles as validation faults; these inputs
+MUST NOT produce a verdict.
+Only a valid DAG proceeds to grade composition and final floor-subsumption.
+*It MUST NOT parse, execute, or otherwise depend on source.*
+
+Structural validation and the order-independent witness selection of §6.2 are
+implemented in both the reference (Idris2) and fast (Rust) cores and are
+conformance requirements: the `graph-invalid` corpus pins rejection of
+duplicate node and edge IDs, undeclared references, duplicate producers and cycles,
+and the `witness-permutation` cases pin that permuting the edge array cannot
+change the named witness.
 
 [cols="1,3",options="header"]
 |===
 | Property | Consequence
 
-| *Independence* | Own repository, own versioned IR schema, own conformance suite. The Turing-complete language is the *first* front end that lowers to the IR — dogfooding without coupling.
-| *Multi-producer* | A static analyser for an *existing* language MAY emit Trope IR for code it did not author (e.g. lowering a dataframe pipeline's operations to `project` / `collapse` / `fuse` edges). The same checker then trope-checks it.
-| *Honest trust boundary* | Front-end grade annotations are *claims*. The checker validates the *composition* of claims; it cannot validate that a source operation truly *is* a given effect. That is lowering correctness (§10-O2), per front end.
+| *Independence* | Own repository, own versioned IR schema, own conformance suite. The Turing-complete language (Haec) is the *first* front end that lowers to the IR — dogfooding without coupling.
+| *Multi-producer* | A static analyser for an *existing* language MAY emit Trope IR for code it did not author (e.g. lowering a dataframe pipeline's operations to `project` / `collapse` / `fuse` edges). The same checker then trope-checks it. The store (`vocarium`) and the query layer (`hermeneia`) are producers of this kind.
+| *Honest trust boundary* | Front-end grade annotations are *claims*. The checker validates the *composition* of claims; it cannot validate that a source operation truly *is* a given effect (O2) or that a claimed-faithful value is true (O5).
 |===
 
-=== Verified core, fast core, conformance suite
+=== Verified kernel, executable reference, fast core, conformance suite
 
-The *reference* tropechecker SHOULD be an Agda development that *defines* the
-loss-shape category, *proves* L1–L5 and the decidability of stem:[\sqsubseteq],
-and *proves* grade soundness (§8). That Agda artifact is the portable
-*semantics*. The *shipping* checker (Rust is the recommended target, continuing
-the shape-IR lineage, for speed) is validated against the Agda reference by a
-*conformance suite*: a corpus of `IR-fragment → expected-verdict` pairs that any
-implementation MUST pass. The particularity trainer is, in effect, a *human*
+Per the estate's proof-kernel ruling of 2026-10-12 (ADR 0005), the roles are:
+
+* *Normative kernel — Agda* (`verification/proofs/agda/theorem-b/`, `--safe
+  --without-K`, zero postulates): the carrier, the laws, the cancellation
+  boundary, the intrinsic calculus, substitution and β/let subject reduction
+  (Theorem B); the CO-1 mechanisation extends it. This is the portable
+  *semantics*: "portable" means *means-the-same-everywhere* because the meaning
+  is a checked artefact.
+* *Executable reference — Idris2* (`verification/proofs/idris2/`, `src/idris2/`):
+  the same carrier and laws in quantitative types, and the reference
+  `tropecheck` executable built on them. The verified core
+  (`verification/proofs/idris2/Trope/*`) is `%default total`; the executable’s
+  JSON parser, decoder and checker driver (`src/idris2/`) are `%default covering`,
+  because a parser is not structurally total without fuel. Neither uses
+  `believe_me`, `assert_total` or `postulate`.
+* *Provenance — Lean 4 + Mathlib* (`verification/proofs/lean4/`): the
+  grade-algebra boundary and its ratified mirror, the atom factorisation and the
+  tropical factorisation probe — the Mathlib-facing results, retained with
+  their axiom audits: no `sorryAx`, no user axiom; `propext`, `Quot.sound` and,
+  in three theorems (`nine_families`, `Q_add_left_cancel`,
+  `atten_cancel_on_normalForms`), `Classical.choice`.
+* *Fast core — Rust* (`src/rust/`, dependency-free): the shipping checker,
+  validated against the reference bit-for-bit over the conformance corpus.
+
+The *conformance suite* (`tests/conformance/`) is a corpus of
+`IR-fragment → expected-verdict` pairs plus schema-invalid documents that MUST be
+rejected at the named slot; any implementation claiming conformance MUST pass it
+in its declared profile. The particularity trainer is, in effect, a *human*
 conformance suite for the taxonomy; the machine suite is its formal sibling.
-"Portable" thereby means *means-the-same-everywhere* — because the meaning is a
-checked Agda artifact and the suite enforces agreement — not merely
-*runs-everywhere*.
 
 == Open obligations and falsifiers
 
-[cols="1,4",options="header"]
+[cols="1,4,1",options="header"]
 |===
-| ID | Obligation / falsifier
+| ID | Obligation / falsifier | Status
 
-| *O1 (completeness of the seven)* | The claim that the writable effects are _exhaustive_ is, at present, a well-chosen list, not a theorem. *Falsifier:* exhibit a particularity-affecting operation that is none of the six writable forms (plus the conflation fault). *Upgrade path:* if the three axes — loss-structure × bond-integrity × cardinality/honesty — are the true generators, *derive* the typology as the inhabited cells of their product and *prove* exhaustiveness relative to those axes, turning the list into a theorem (the same move that turned "three layers in a pipeline" into "one substrate, two analyses, one law"). This decision SHOULD be taken *before* the IR schema is frozen.
-| *O2 (lowering correctness)* | Per front end: a proof that each source construct it lowers to an effect edge *is* that effect. Separate from grade soundness (§8, firewall 2). Not dischargeable by the core.
-| *O3 (the produce/demand adjunction)* | Whether the producing graded monad and the demanding graded comonad form an adjunction with produce/demand as unit/counit. Conjecture; requires the grade category pinned (O1) and the triangle laws checked. Until then, the verdict is a subsumption, *not* an adjunction cancellation.
-| *O4 (fidelity carrier)* | Whether the fidelity dimension stem:[\mathbb{N}\cup\{\infty,\top\}] suffices, or a transfinite/coinductive carrier is needed once iterated attenuation must be ordered beyond stem:[\omega] (the standing `Conat`-vs-tag fork from the choreographic-typing line). Defer until a second instance demands it.
+| *O1-carrier (exhaustiveness relative to the carrier)* | Every grade factors as a ▷-product of single-slot projections drawn from the nine atom families; the effect typology is exhaustive *relative to the three-coordinate carrier*. | PROVED on the ratified carrier (`EffectAtomsRatified.lean`: `GradeR.atom_factorization`); the coordinate-value classification (`EffectAtoms.lean`: `nine_families`, `family_realized`, `families_disjoint`) is carrier-independent and carries over unchanged. (`EffectAtoms.lean`'s `Grade.atom_factorization` is the same statement over the historical pre-ratification carrier, retained as history.)
+| *O1-coord (metaphysical adequacy)* | Are `fate`, `bond`, `merge` themselves exhaustive as ways to individuate-and-lose? A claim about the world, not the algebra. *Falsifier:* a particularity-affecting operation that no atom family captures. *Live probe:* the transposition of a quality between bearers (the classic *swapping* problem) is not expressible — it is neither `sever` nor `fuse` nor any bond value — and a *bond-transfer* move with an honest (labelled) and a deceptive (`Misbound`) form is the candidate tenth family. Either it reduces to the existing atoms or it is a fourth generator; the adequacy argument must say which. | OPEN (workbench WP-5).
+| *O2 (lowering correctness)* | Per front end: a proof that each source construct it lowers to an effect edge *is* that effect. Separate from grade soundness (§8, firewall 2). Not dischargeable by the core. | OPEN per producer; no producer has discharged it.
+| *O3 (the produce/demand adjunction)* | Whether the producing graded monad and the demanding graded comonad form an adjunction with produce/demand as unit/counit. Requires the triangle laws checked against the ratified carrier (now pinned, so no longer gated by O1-carrier). Until then, the verdict is a subsumption, *not* an adjunction cancellation. | OPEN (conjecture).
+| *O4 (fidelity carrier)* | Whether stem:[\mathbb{N}\cup\{\infty,\top\}] suffices for ordering iterated attenuation. | RESOLVED (ADR 0004): it does — transfinite carriers would require transfinitely deep `fix` nesting, which finitary syntax cannot express. Whether the carrier should be a *parameter* (any resource algebra with two adjoined tops) rather than this one instance is a separate design question recorded in ADR 0005.
+| *O5 (the veridicality oracle)* | *Remark O5-a (IR-relative undecidability).* A valid Trope IR is a set of claims. For any IR document stem:[D] and any slot, there exist two worlds — one in which the claimed value is the value the trope in fact had, one in which it is not — inducing the same stem:[D]; since the checker is a pure function of stem:[D], no checker can decide veridicality. What is guaranteed instead is L3/L5. *Interface.* An implementation MAY bind a *veridicality oracle*, an external judgement `Oracle ⊨ record r faithful-to trope t` (per slot), subject to: *O5-1 (soundness)* if the oracle affirms a slot, the honest grade claimed for it is true of the world, and the oracle MUST NOT affirm a `Falsified`, `Misbound` or `Conflated` situation; *O5-2 (attestation)* every oracle verdict MUST be carried as evidence — who checked, against what access to the world, when — and that attestation enters the `record` slot's provenance, not the quality's value; *O5-3 (no laundering)* an oracle verdict upgrades *confidence*, never *grade*: a checked `Attenuated(δ)` is still `Attenuated(δ)`. *Falsifier:* a deployment where an interface satisfying O5-1..3 lets a deceptive grade reach `p-sufficient` against an honest floor. *Upgrade path:* mechanise O5-1 as a side condition on an `Oracle`-indexed variant of the verdict judgement. Vocarium's warrants are O5-2 attestations; Hermeneia's *licensed* band is the verdict band O5-backed claims occupy. | PROPOSED (from the workbench proposal of 2026-07-17; adoption pending acceptance of ADR 0005); mechanisation OPEN.
+| *O6 (the ceiling verdict)* | New at v0.2. The verdict certifies sufficiency only. A *ceiling* use-model — "no more than this may be retained" (the privacy direction: a `Withheld` bond is a recoverable, hence still-personal, record; `Severed` is not) — needs the dual theorem stem:[\rho \sqsubseteq g_{\mathrm{ceiling}}], which T-Sub's one-sidedness does not give for conservative lowering. *Deliverable:* either the dual verdict proved for the exact-lowering fragment and stated as unavailable for the conservative one, or a second, upper-bound grade on edges. | OPEN.
+| *CO-1 (the operational model)* | The calculus's reduction dynamics for `fix` and routing. The grade algebra is not at fault (the gfp endpoint is ▷-fixed and tier-stable). | DESIGNED (λ-trope, tagged values, T-Fix-Decl: `spec/notes/2026-07-07-co1-operational-model.adoc`); MECHANISATION OPEN (Agda, steps 1–5 of that note's §6; closes Theorem B Target 3 and conservative grade soundness).
 |===
 
 == Provenance of the ideas (so nothing is overclaimed)
 
 Graded monads, coeffects, and effect rows are established machinery
-(Katsumata; Gaboardi; Petricek, Orchard, Mycroft; Uustalu). Tropes as abstract
-particulars are established metaphysics (Williams; Campbell). The
-graded-monad-for-loss reading is the echo-types line. What is assembled *here* —
-a graded effect discipline tracking *which kind* of particularity-loss an
-operation inflicts on a provenance-enriched metaphysical trope, with
-conflating/fusing as the deceptive/faithful collapse, checked against a
-use-model coeffect demand, lowered to a language-neutral IR — is, as a *named
-combination*, the contribution. The atoms are mostly already named; the
-unclaimed ground is the unification and the three-coordinate loss-shape grade.
+(Katsumata; Gaboardi; Petricek, Orchard, Mycroft; Uustalu). Property-instances
+as particulars are established metaphysics (Williams; Campbell) and established
+applied ontology (UFO's moments, DOLCE's qualities, BFO's specifically dependent
+continuants). The graded-monad-for-loss reading is the echo-types line. What is
+assembled *here* — a graded effect discipline tracking *which kind* of
+particularity-loss an operation inflicts on a provenance-enriched
+property-instance, with the three deceptive duals as faults rather than moves,
+checked against a use-model coeffect demand, lowered to a language-neutral IR —
+is, as a *named combination*, the contribution. The atoms are mostly already
+named; the unclaimed ground is the unification, the three-coordinate loss-shape
+grade, and the structure theorems (§3.5, §4.2) that fix it.
 
 == Worked check (the duck, end to end)
 
@@ -583,15 +812,17 @@ This is `collapse[isQuack]`: the residual grade has
 `fate(quality)=Predicated(isQuack)`, all other fields `Dropped`, `bond=Withheld`,
 `merge=Single`. Against a use-model whose floor demands the call's spectral
 content — `floor(U)` requires `quality ⊒ Attenuated(δ)` for some finite stem:[\delta]
-— we check `floor(U) ⊑ g`. Since `Predicated(isQuack)` is *incomparable to and
-below* any `Attenuated(δ)` in the fate lattice (§3.1), the check fails: verdict
-`p-insufficient`, witness = the `collapse` edge. The same call recorded losslessly
-with ring number, pond, date and weather is `preserve`, grade stem:[\varepsilon],
-which dominates every floor: `p-sufficient`. The trainer's intuition and the
+— we check `floor(U) ⊑ g`. Since `Predicated(isQuack)` sits *strictly below*
+every `Attenuated(δ)` in the fate chain (§3.1), the check fails: verdict
+`p-insufficient`, witness = the `collapse` edge (conformance fixture
+`duck-collapse`). The same call recorded losslessly with ring number, pond, date
+and weather is `preserve`, grade stem:[\varepsilon], which dominates every
+floor: `p-sufficient` (`duck-preserve`). The trainer's intuition and the
 calculus agree, which is the point.
 
 '''
-_Suggested CHANGELOG line:_ `docs: pin trope-particularity calculus v0.1
-(three-coordinate loss-shape grade; six writable effects + conflation-as-fault
-[R-2026-06-22]; composition laws L1–L5; verdict = floor-subsumption; grade
-soundness target + lowering firewall; portable Trope IR)._`
+_CHANGELOG line:_ `docs(spec): consolidate the calculus at v0.2 — nine effects
+with the atom table, ratified carrier inline (A1–A3), L6 commutativity and the
+cancellation structure as laws, the tropical factorisation recorded as sighted,
+§7 restated as greatest post-fixed point with T-Fix-Decl, O5 proposed pending ADR acceptance and O6
+(ceiling verdict) opened, prover roles per ADR 0005._

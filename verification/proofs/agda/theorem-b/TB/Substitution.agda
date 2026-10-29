@@ -1,4 +1,4 @@
-{-# OPTIONS --safe --without-K #-}
+{-# OPTIONS --safe --without-K --cubical-compatible --exact-split #-}
 -- SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 -- SPDX-License-Identifier: MPL-2.0
 --
@@ -28,6 +28,7 @@
 module TB.Substitution where
 
 open import Relation.Binary.PropositionalEquality using (_≡_)
+open import Data.Unit.Base using (⊤)
 
 open import TB.Grade
 open import TB.Syntax
@@ -39,9 +40,25 @@ open import TB.Syntax
 Rename : Ctx → Ctx → Set
 Rename Γ Δ = ∀ {A} → Γ ∋ A → Δ ∋ A
 
+private
+  -- Eliminate a variable before fixing its context to a snoc. Matching a
+  -- variable directly at (Γ , B) needs constructor injectivity, which Agda
+  -- 2.7 cannot yet make compute on Cubical transports. The result family
+  -- exposes the same two cases after matching an unconstrained context.
+  VarCase : Ctx → Ty → (Ty → Set) → Set
+  VarCase ∅       A P = ⊤
+  VarCase (Γ , B) A P = P B → (∀ {C} → Γ ∋ C → P C) → P A
+
+  -- Select atTop for the newest variable or apply atEarlier to an older variable.
+  varCase : ∀ {Γ A P} → Γ ∋ A → VarCase Γ A P
+  varCase here      atTop atEarlier = atTop
+  varCase (there x) atTop atEarlier = atEarlier x
+
+-- Extend a renaming under a binder, keeping the newest variable fixed and
+-- shifting renamed older variables into the extended target context.
 ext : ∀ {Γ Δ B} → Rename Γ Δ → Rename (Γ , B) (Δ , B)
-ext ρ here      = here
-ext ρ (there x) = there (ρ x)
+ext {Δ = Δ} {B = B} ρ x =
+  varCase {P = λ A → (Δ , B) ∋ A} x here (λ y → there (ρ y))
 
 rename : ∀ {Γ Δ A g} → Rename Γ Δ → Γ ⊢ A ! g → Δ ⊢ A ! g
 rename ρ (`var x)         = `var (ρ x)
@@ -65,9 +82,11 @@ rename ρ (`sub p d)       = `sub p (rename ρ d)
 Subst : Ctx → Ctx → Set
 Subst Γ Δ = ∀ {A} → Γ ∋ A → Δ ⊢ A ! ε
 
+-- Extend a value substitution under a binder, keeping the newest variable and
+-- weakening older replacements into the extended target context at grade ε.
 exts : ∀ {Γ Δ B} → Subst Γ Δ → Subst (Γ , B) (Δ , B)
-exts σ here      = `var here
-exts σ (there x) = rename there (σ x)
+exts {Δ = Δ} {B = B} σ x =
+  varCase {P = λ A → (Δ , B) ⊢ A ! ε} x (`var here) (λ y → rename there (σ y))
 
 -- subst : preserves the grade g EXACTLY (no ▷ appears in the conclusion's grade).
 subst : ∀ {Γ Δ A g} → Subst Γ Δ → Γ ⊢ A ! g → Δ ⊢ A ! g
@@ -84,8 +103,7 @@ subst σ (`sub p d)       = `sub p (subst σ d)
 
 -- Single substitution of one value for the most-recent variable, grade-exact.
 σ₀ : ∀ {Γ B} → Γ ⊢ B ! ε → Subst (Γ , B) Γ
-σ₀ v here      = v
-σ₀ v (there x) = `var x
+σ₀ {Γ = Γ} v x = varCase {P = λ A → Γ ⊢ A ! ε} x v `var
 
 infix 8 _[_]
 _[_] : ∀ {Γ B A g} → (Γ , B) ⊢ A ! g → Γ ⊢ B ! ε → Γ ⊢ A ! g
