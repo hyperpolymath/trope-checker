@@ -12,7 +12,11 @@ on:
 permissions: {}
 
 concurrency:
-  group: fork-governance-publish-${{ github.event.workflow_run.head_branch }}
+  # Keyed on the completed run's head SHA, not its (fork-controlled)
+  # branch name: the publish step re-checks the PR head against this
+  # SHA before posting, so a stale publisher for an older SHA fails
+  # closed instead of racing the newer one.
+  group: fork-governance-publish-${{ github.event.workflow_run.head_sha }}
   cancel-in-progress: true
 
 jobs:
