@@ -726,8 +726,11 @@ Only a valid DAG proceeds to grade composition and final floor-subsumption.
 *It MUST NOT parse, execute, or otherwise depend on source.*
 
 Structural validation and the order-independent witness selection of §6.2 are
-conformance requirements still to be implemented in the reference and fast cores;
-their current accumulation and witness routines do not establish these guarantees.
+implemented in both the reference (Idris2) and fast (Rust) cores and are
+conformance requirements: the `graph-invalid` corpus pins rejection of
+duplicate node IDs, undeclared references, duplicate producers and cycles,
+and the `witness-permutation` cases pin that permuting the edge array cannot
+change the named witness.
 
 [cols="1,3",options="header"]
 |===

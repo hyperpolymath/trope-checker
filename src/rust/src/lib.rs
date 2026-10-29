@@ -764,10 +764,78 @@ pub fn dec_floor(v: &Json) -> Result<Floor, String> {
         merge: me,
     })
 }
+/// Validate the graph structure the calculus requires before grading: node
+/// IDs are unique, every referenced node (edge inputs, edge outputs, and
+/// `use_model.output`) is declared, each node has at most one producing
+/// edge, and the producer graph is acyclic.
+///
+/// Structural faults are validation faults and MUST NOT produce a verdict:
+/// accumulation treats a missing producer as grade ε, so without this check
+/// an undeclared `use_model.output` silently returned `p-sufficient`.
+fn validate_graph(nodes: &[Node], edges: &[Edge], out: &str) -> Result<(), String> {
+    let mut declared: BTreeSet<&str> = BTreeSet::new();
+    for n in nodes {
+        if !declared.insert(n.id.as_str()) {
+            return Err(format!("nodes/{}: duplicate node id", n.id));
+        }
+    }
+    if !declared.contains(out) {
+        return Err(format!("use_model/output: undeclared node \"{out}\""));
+    }
+    let mut producer: BTreeMap<&str, &str> = BTreeMap::new();
+    for e in edges {
+        if !declared.contains(e.output.as_str()) {
+            return Err(format!(
+                "edges/{}/output: undeclared node \"{}\"",
+                e.id, e.output
+            ));
+        }
+        for i in &e.inputs {
+            if !declared.contains(i.as_str()) {
+                return Err(format!(
+                    "edges/{}/inputs: undeclared node \"{}\"",
+                    e.id, i
+                ));
+            }
+        }
+        if let Some(prev) = producer.insert(e.output.as_str(), e.id.as_str()) {
+            return Err(format!(
+                "edges/{}/output: node \"{}\" already produced by edge \"{}\"",
+                e.id, e.output, prev
+            ));
+        }
+    }
+    // Acyclicity: Kahn over every edge; an unemittable remainder is a cycle.
+    let mut emitted: BTreeSet<&str> = BTreeSet::new();
+    let mut remaining: Vec<&Edge> = edges.iter().collect();
+    while !remaining.is_empty() {
+        let is_ready = |e: &Edge| {
+            e.inputs
+                .iter()
+                .all(|i| !producer.contains_key(i.as_str()) || emitted.contains(i.as_str()))
+        };
+        match remaining.iter().position(|e| is_ready(e)) {
+            Some(idx) => {
+                emitted.insert(remaining.remove(idx).output.as_str());
+            }
+            None => {
+                return Err(format!(
+                    "edges/{}: cycle in the producer graph",
+                    remaining[0].id
+                ));
+            }
+        }
+    }
+    Ok(())
+}
+
 /// Decode an IR document under the shared 0.1/0.2 semantics.
 ///
 /// # Errors
-/// Returns an error for unsupported versions, missing document fields, or invalid nodes, edges, or floors.
+/// Returns an error for unsupported versions, missing document fields,
+/// invalid nodes, edges, or floors, or a structurally invalid graph
+/// (duplicate node IDs, undeclared node references, duplicate producers,
+/// or cycles) — see `validate_graph`.
 pub fn dec_doc(v: &Json) -> Result<Doc, String> {
     // Accepted document versions (IR 0.2, R-2026-07-07). "0.1" stays accepted:
     // the wire format is identical, and 0.1 documents are normalized and graded
@@ -798,7 +866,7 @@ pub fn dec_doc(v: &Json) -> Result<Doc, String> {
         .ok_or("use_model: missing output")?
         .to_string();
     let floor = dec_floor(um.field("floor").ok_or("use_model: missing floor")?)?;
-    let _ = &nodes; // nodes are validated at decode; structural coherence already enforced
+    validate_graph(&nodes, &edges, &out)?;
     Ok(Doc {
         nodes,
         edges,
