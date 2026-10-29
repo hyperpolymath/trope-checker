@@ -22,9 +22,11 @@ Agda.
 
 == The central open problem
 
-*CO-1* — the calculus has no operational model for `fix`/routing dynamics (gated by
-v0.1's *O4*, the limit carrier). Tracked at issue #10 (CO-1), #12 (O4). See
-`verification/proofs/INTEGRATION-REPORT.adoc` §4 and ADR `docs/decisions/0003-split-reference-semantics.adoc`.
+*CO-1* — an operational model for `fix`/routing dynamics has been designed, but
+not yet mechanised; full subject reduction remains open (issue #10). *O4*, the
+limit-carrier question (issue #12), is resolved under the ratified carrier repair
+and no longer gates CO-1. See `spec/notes/2026-07-07-co1-operational-model.adoc`
+and `spec/notes/2026-07-07-l4-boundary-and-atoms.adoc` §4.
 
 == Gates
 

@@ -608,6 +608,16 @@ pub fn dec_edge(v: &Json) -> Result<Edge, String> {
         .and_then(|x| x.as_str())
         .ok_or("edges: missing id")?
         .to_string();
+    match v.field("effect").and_then(Json::as_str) {
+        Some("preserve" | "project" | "collapse" | "detach" | "attenuate" | "fuse") => {}
+        Some(effect) => {
+            return Err(format!(
+                "edges/{}/effect: unknown effect \"{}\"",
+                id, effect
+            ))
+        }
+        None => return Err(format!("edges/{}/effect: missing or non-string effect", id)),
+    }
     let inputs = v.field("inputs").map(str_list).unwrap_or_default();
     let output = v
         .field("output")
@@ -666,6 +676,16 @@ pub fn dec_doc(v: &Json) -> Result<Doc, String> {
             ))
         }
         None => return Err("missing \"version\"".into()),
+    }
+    match v.field("profile").and_then(Json::as_str) {
+        Some("prevent") => {}
+        Some(profile) => {
+            return Err(format!(
+                "profile: unsupported \"{}\" (expected prevent)",
+                profile
+            ))
+        }
+        None => return Err("profile: missing or non-string profile".into()),
     }
     let nodes = v
         .field("nodes")
@@ -880,5 +900,73 @@ mod grade_le_tests {
             "floor 3 must NOT be met by loss 6"
         );
         assert!(grade_le(&loose, &residue), "floor 10 must be met by loss 6");
+    }
+}
+
+#[cfg(test)]
+mod decoder_profile_effect_tests {
+    use super::*;
+
+    fn fixture() -> Json {
+        parse_json(include_str!(
+            "../../../tests/conformance/fixtures/atten-zero-normalizes.ir.json"
+        ))
+        .unwrap()
+    }
+
+    fn set_field(value: &mut Json, name: &str, replacement: Option<Json>) {
+        let Json::Obj(fields) = value else {
+            panic!("expected an object");
+        };
+        fields.retain(|(key, _)| key != name);
+        if let Some(replacement) = replacement {
+            fields.push((name.to_string(), replacement));
+        }
+    }
+
+    #[test]
+    fn document_requires_prevent_profile() {
+        assert!(dec_doc(&fixture()).is_ok());
+        for value in [None, Some(Json::Null), Some(Json::Str("detect".into()))] {
+            let mut doc = fixture();
+            set_field(&mut doc, "profile", value);
+            assert!(dec_doc(&doc).err().unwrap().contains("profile"));
+        }
+    }
+
+    #[test]
+    fn edge_requires_a_writable_effect() {
+        let Json::Arr(edges) = fixture().field("edges").unwrap().clone() else {
+            panic!("expected edges");
+        };
+        let edge = &edges[0];
+        for effect in [
+            "preserve",
+            "project",
+            "collapse",
+            "detach",
+            "attenuate",
+            "fuse",
+        ] {
+            let mut edge = edge.clone();
+            set_field(&mut edge, "effect", Some(Json::Str(effect.into())));
+            assert!(dec_edge(&edge).is_ok(), "{effect}");
+        }
+        for value in [None, Some(Json::Null), Some(Json::Str("falsify".into()))] {
+            let mut doc = fixture();
+            let Json::Obj(ref mut fields) = doc else {
+                panic!("expected a document");
+            };
+            let Json::Arr(edges) = &mut fields
+                .iter_mut()
+                .find(|field| field.0 == "edges")
+                .unwrap()
+                .1
+            else {
+                panic!("expected edges");
+            };
+            set_field(&mut edges[0], "effect", value);
+            assert!(dec_doc(&doc).err().unwrap().contains("effect"));
+        }
     }
 }

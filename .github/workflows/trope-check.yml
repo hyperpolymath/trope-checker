@@ -95,7 +95,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7.0.1
-      - name: Build the Rust fast-core (dep-free, offline) and run the conformance corpus
+      - name: Test and build the Rust fast-core (dep-free, offline) and run the conformance corpus
         run: |
-          ( cd src/rust && cargo build --release )
+          ( cd src/rust && cargo test && cargo build --release )
           TROPECHECK_BIN=src/rust/target/release/tropecheck-rs bash tests/conformance/run.sh
