@@ -1,0 +1,205 @@
+# SPDX-License-Identifier: MPL-2.0
+# patch-bridge.yml — panic-attack Patch Bridge CVE triage, and nothing else.
+#
+# This file replaces static-analysis-gate.yml (2026-10-28). That workflow ran
+# a SECOND, divergent copy of the estate scanner lane beside the canonical
+# one: its own Hypatia build at an older pin than fork-governance.yml's, its
+# own panic-attack assail at a different pin than the verdict grid's, and a
+# "deposit findings" combiner no consumer read. Worse, three of its four
+# evidence paths could not fail honestly: an unavailable Hypatia wrote an
+# empty findings file, and Patch Bridge was invoked as
+# `bridge triage --format json .` — a flag the tool does not accept (the
+# global flag is --output-format; triage takes --output) against a root
+# directory with no supported lockfile — so it errored on every run and the
+# step then replaced the payload with a fabricated all-zero report. The
+# canonical scanner sequence now lives in exactly one place per trigger:
+#
+#   pull_request  fork-governance.yml  (fleet → Hypatia+panic+pons → grid)
+#   push/schedule hypatia-scan.yml     (same reusable, same scanner pins)
+#
+# What remains here is the one analysis that lane does not do: Patch Bridge
+# CVE triage over supported lockfiles (Cargo.lock, mix.lock,
+# package-lock.json, requirements.txt). It is applicability-gated and
+# fail-closed about its own contract:
+#
+#   * No supported lockfile with external dependencies → an explicit
+#     `not_applicable` envelope (today: src/rust/Cargo.lock is deliberately
+#     dependency-free). That is a statement about Patch Bridge's surface,
+#     never a "no CVEs anywhere" claim; other ecosystems keep their own
+#     lanes (Dependabot, CodeQL, the Hypatia grid).
+#   * Applicable → the tool runs per lockfile directory at the SAME
+#     panic-attack pin the standards reusable uses; a non-zero exit or a
+#     malformed/inconsistent report FAILS this check. Findings themselves
+#     stay advisory (🟡): an unmitigable CVE is an architectural decision,
+#     not automatic proof a PR is wrong.
+name: "🟡 Check: Patch Bridge CVE triage"
+
+on:
+  pull_request:
+    branches: ['**']
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  patch-bridge-triage:
+    name: Patch Bridge CVE triage
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Determine the supported external-dependency surface
+        id: surface
+        run: |
+          set -euo pipefail
+          # One line per supported lockfile: <dir><TAB><lockfile><TAB><external count>.
+          # External means "could carry a CVE Patch Bridge can look up":
+          # registry packages in Cargo.lock, hex packages in mix.lock,
+          # installed packages in package-lock.json, requirement lines in
+          # requirements.txt. Local/path/workspace entries never count.
+          surface="$RUNNER_TEMP/patch-bridge-surface.tsv"
+          : > "$surface"
+          total=0
+          while IFS= read -r lockfile; do
+            dir=$(dirname "$lockfile")
+            case "$lockfile" in
+              */Cargo.lock|Cargo.lock)
+                count=$(grep -c '^source = "registry' "$lockfile" || true) ;;
+              */mix.lock|mix.lock)
+                count=$(grep -c '{:hex,' "$lockfile" || true) ;;
+              */package-lock.json|package-lock.json)
+                count=$(jq -r 'if has("packages") then .packages | keys | map(select(. != "")) | length else (.dependencies // {}) | length end' "$lockfile") ;;
+              */requirements.txt|requirements.txt)
+                count=$(grep -cvE '^[[:space:]]*(#|$)' "$lockfile" || true) ;;
+              *) count=0 ;;
+            esac
+            printf '%s\t%s\t%s\n' "$dir" "$lockfile" "$count" >> "$surface"
+            total=$((total + count))
+          done < <(find . -path ./.git -prune -o -type f \
+                     \( -name Cargo.lock -o -name mix.lock \
+                        -o -name package-lock.json -o -name requirements.txt \) \
+                     -print | sort)
+          echo "external_total=$total" >> "$GITHUB_OUTPUT"
+          echo "Supported external dependencies across all lockfiles: $total"
+          cat "$surface"
+
+      - name: Record not_applicable (no supported external dependencies)
+        if: steps.surface.outputs.external_total == '0'
+        run: |
+          set -euo pipefail
+          jq -n --arg sha "$GITHUB_SHA" --arg run "$GITHUB_RUN_ID" \
+            --argjson lockfiles "$(jq -R -s 'split("\n") | map(select(length > 0) | split("\t") | {dir: .[0], lockfile: .[1], external_dependencies: (.[2] | tonumber)})' "$RUNNER_TEMP/patch-bridge-surface.tsv")" \
+            '{status: "not_applicable", tool: "panic-attack bridge triage",
+              commit: $sha, run: $run,
+              reason: "no supported lockfile declares external dependencies; Patch Bridge CVE triage has no surface in this repository today",
+              lockfiles: $lockfiles}' > patch-bridge-status.json
+          {
+            echo "## Patch Bridge CVE triage — not applicable"
+            echo ""
+            echo "No supported lockfile (Cargo.lock, mix.lock, package-lock.json,"
+            echo "requirements.txt) declares external dependencies, so Patch Bridge"
+            echo "has nothing to triage. This is **not** a clean CVE result and says"
+            echo "nothing about other ecosystems (GitHub Actions, Idris2, Lean),"
+            echo "which keep their own lanes."
+            echo ""
+            echo "| Lockfile | External dependencies |"
+            echo "|----------|-----------------------|"
+            jq -r '.lockfiles[] | "| \(.lockfile) | \(.external_dependencies) |"' patch-bridge-status.json
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Install panic-attack (estate pin, source build)
+        if: steps.surface.outputs.external_total != '0'
+        env:
+          # The same commit the standards Hypatia reusable builds
+          # (PANIC_ATTACK_SHA in hypatia-scan-reusable.yml at the pinned
+          # standards revision): one panic-attack version grades this repo.
+          PANIC_ATTACK_REV: b689a74d2762a1c19839ae3fbd59b7fe5ef920ea
+        run: |
+          set -euo pipefail
+          # --features http is load-bearing: at this pin the whole `bridge`
+          # subcommand (and its CVE lookups) sits behind
+          # #[cfg(feature = "http")] with default features empty — without
+          # it the binary builds clean and then rejects `bridge` as an
+          # unknown command at triage time.
+          cargo install --git https://github.com/hyperpolymath/panic-attack.git \
+            --rev "$PANIC_ATTACK_REV" --locked --features http --bin panic-attack \
+            --root "$RUNNER_TEMP/panic-attack"
+          "$RUNNER_TEMP/panic-attack/bin/panic-attack" --version
+          echo "$RUNNER_TEMP/panic-attack/bin" >> "$GITHUB_PATH"
+
+      - name: Run Patch Bridge triage per lockfile directory
+        id: triage
+        if: steps.surface.outputs.external_total != '0'
+        run: |
+          set -euo pipefail
+          mkdir -p bridge-reports
+          unmitigable_total=0
+          while IFS= read -r dir; do
+            slug=$(printf '%s' "$dir" | tr '/.' '__')
+            report="bridge-reports/${slug}.json"
+            # Correct contract (panic-attack src/main.rs, BridgeAction::Triage):
+            # global --quiet before the subcommand, project DIR positional,
+            # JSON written by --output. stderr stays on the log; nothing is
+            # substituted on failure — a non-zero exit fails this step.
+            panic-attack --quiet bridge triage "$dir" --output "$report"
+            # Fail closed on a malformed or internally inconsistent report:
+            # the classification counts must recount the CVE list exactly
+            # (BridgeReport::recount upstream).
+            jq -e '
+              type == "object"
+              and (.schema_version | type == "string" and length > 0)
+              and (.cves | type == "array")
+              and ([.mitigated, .unmitigable, .informational] | all(type == "number"))
+              and ((.mitigated + .unmitigable + .informational) == (.cves | length))
+            ' "$report" > /dev/null || {
+              echo "::error::Patch Bridge report for $dir is malformed or its counts do not recount its CVE list"
+              exit 1
+            }
+            unmitigable_total=$((unmitigable_total + $(jq '.unmitigable' "$report")))
+            {
+              echo "## Patch Bridge — $dir"
+              echo ""
+              echo "| Classification | Count |"
+              echo "|----------------|-------|"
+              jq -r '"| Unmitigable | \(.unmitigable) |", "| Mitigated | \(.mitigated) |", "| Informational | \(.informational) |", "| Dependencies scanned | \(.total_dependencies) |"' "$report"
+              echo ""
+            } >> "$GITHUB_STEP_SUMMARY"
+          # Each triage invocation discovers all supported lockfiles in DIR.
+          done < <(awk -F '\t' '$3 > 0 {print $1}' "$RUNNER_TEMP/patch-bridge-surface.tsv" | sort -u)
+          jq -n --arg sha "$GITHUB_SHA" --arg run "$GITHUB_RUN_ID" \
+            --argjson unmitigable "$unmitigable_total" \
+            '{status: "ran", tool: "panic-attack bridge triage",
+              commit: $sha, run: $run, unmitigable_total: $unmitigable}' \
+            > patch-bridge-status.json
+          echo "unmitigable_total=$unmitigable_total" >> "$GITHUB_OUTPUT"
+
+      - name: Surface unmitigable CVEs (advisory)
+        if: steps.triage.outputs.unmitigable_total > 0
+        env:
+          UNMITIGABLE: ${{ steps.triage.outputs.unmitigable_total }}
+        run: |
+          echo "::warning::Patch Bridge found $UNMITIGABLE unmitigable CVE(s) — review required (advisory: dependency replacement or rearchitecture is a human decision; the tool's own failure would have failed this check above)"
+
+      - name: Upload Patch Bridge evidence
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: patch-bridge
+          path: |
+            patch-bridge-status.json
+            bridge-reports/
+          if-no-files-found: warn
+          retention-days: 90

@@ -1,3 +1,13 @@
 name: trope-theorem-b
 include: .
 depend: standard-library
+-- The strictest soundness posture, enforced for every check of this
+-- library (CI, just, or by hand): no postulates/unsafe features (--safe),
+-- no Streicher K, cubical-compatible restrictions, definitional clauses
+-- (--exact-split), and warnings as errors. Mirrors the OPTIONS pragmas.
+flags:
+  --safe
+  --without-K
+  --cubical-compatible
+  --exact-split
+  --warning=error

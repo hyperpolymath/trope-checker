@@ -42,17 +42,32 @@ on:
   pull_request:
     types: [opened, reopened, synchronize]
 permissions:
-  contents: read # needed to enable auto-merge
+  contents: write # needed to enable auto-merge (read is NOT enough)
   pull-requests: write # needed to approve
   # NB: keep narrow — do NOT add secrets: read or id-token: write here.
 jobs:
   automerge:
-    # Only run for PRs actually authored by Dependabot.
-    if: github.actor == 'dependabot[bot]' && github.event.pull_request.user.login == 'dependabot[bot]'
+    # Only run for PRs actually authored by Dependabot. The gate is the PR
+    # AUTHOR (event payload, unspoofable); the old belt-and-braces actor half
+    # moved into the first step - gating a job on github.actor is attacker-
+    # controllable on fork triggers (hypatia), while an in-job abort is not
+    # a security boundary, just noise reduction for humans pushing fixups
+    # onto a bot-opened branch.
+    if: github.event.pull_request.user.login == 'dependabot[bot]' # zizmor: ignore[bot-conditions]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
+      - name: Skip human re-triggers (bot-authored PRs only proceed on bot pushes)
+        env:
+          ACTOR: ${{ github.actor }}
+        id: actor-check
+        run: |
+          proceed=false
+          if [ "$ACTOR" = "dependabot[bot]" ]; then proceed=true;
+          else echo "::notice::Triggered by ${ACTOR}, not dependabot[bot]; leaving this PR to the human flow."; fi
+          echo "proceed=$proceed" >> "$GITHUB_OUTPUT"
       - name: Fetch Dependabot metadata
+        if: steps.actor-check.outputs.proceed == 'true'
         id: meta
         uses: dependabot/fetch-metadata@v3.1.0
         with:
@@ -73,6 +88,7 @@ jobs:
       # Otherwise: do nothing. Human reviews HIGH+CRITICAL security
       # updates and all non-security bumps.
       - name: Decide policy outcome
+        if: steps.actor-check.outputs.proceed == 'true'
         id: policy
         env:
           GHSA_ID: ${{ steps.meta.outputs.ghsa-id }}
@@ -102,25 +118,30 @@ jobs:
           else
             echo "action=skip" >> "$GITHUB_OUTPUT"
           fi
-          echo "security=$is_security" >> "$GITHUB_OUTPUT"
-          echo "update_type=$UPDATE_TYPE" >> "$GITHUB_OUTPUT"
-          echo "ghsa=$GHSA_ID" >> "$GITHUB_OUTPUT"
+          {
+            echo "security=$is_security"
+            echo "update_type=$UPDATE_TYPE"
+            echo "ghsa=$GHSA_ID"
+          } >> "$GITHUB_OUTPUT"
       - name: Approve PR (if policy allows)
-        if: steps.policy.outputs.action == 'automerge'
+        if: steps.actor-check.outputs.proceed == 'true' && steps.policy.outputs.action == 'automerge'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_URL: ${{ github.event.pull_request.html_url }}
+          STEPS_POLICY_OUTPUTS_GHSA: ${{ steps.policy.outputs.ghsa }}
+          STEPS_POLICY_OUTPUTS_UPDATE_TYPE: ${{ steps.policy.outputs.update_type }}
         run: |
           gh pr review --approve "$PR_URL" \
-            --body "Auto-approving Dependabot security update (${{ steps.policy.outputs.ghsa }}, ${{ steps.policy.outputs.update_type }}). Policy: low/moderate security patches/minors only."
+            --body "Auto-approving Dependabot security update ($STEPS_POLICY_OUTPUTS_GHSA, $STEPS_POLICY_OUTPUTS_UPDATE_TYPE). Policy: low/moderate security patches/minors only."
       - name: Enable auto-merge (if policy allows)
-        if: steps.policy.outputs.action == 'automerge'
+        if: steps.actor-check.outputs.proceed == 'true' && steps.policy.outputs.action == 'automerge'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_URL: ${{ github.event.pull_request.html_url }}
         run: |
           gh pr merge --auto --squash "$PR_URL"
       - name: Write decision to step summary
+        if: steps.actor-check.outputs.proceed == 'true'
         env:
           ACTION: ${{ steps.policy.outputs.action }}
           IS_SECURITY: ${{ steps.policy.outputs.security }}

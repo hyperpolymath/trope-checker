@@ -4,19 +4,33 @@
 # This workflow is managed by gh actions-lock.
 # workflow-linter.yml - Validates GitHub workflows against RSR security standards
 # This workflow can be copied to other repos for consistent enforcement
+#
+# The enforcement core is actionlint (workflow semantics + shellcheck over
+# every `run:` script) and zizmor (GitHub Actions security audit), both
+# version- and checksum-pinned below, plus the estate's own rules that no
+# off-the-shelf tool knows: SPDX header blocks, a top-level permissions
+# declaration, actions.lock coverage, and — the check whose absence let
+# three reusable-workflow pins rot into commits that no longer exist —
+# live re-resolution of every external `uses:` ref.
 name: "🟡 Check: Workflow security lint"
 
 on:
   push:
     paths:
       - '.github/workflows/**'
+      - '.github/zizmor.yml'
   pull_request:
     paths:
       - '.github/workflows/**'
+      - '.github/zizmor.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   lint-workflows:
@@ -28,23 +42,41 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Check SPDX Headers
         run: |
-          echo "=== Checking SPDX License Headers ==="
-          failed=0
-          for file in .github/workflows/*.yml .github/workflows/*.yaml; do
-            [ -f "$file" ] || continue
-            if ! head -1 "$file" | grep -q "^# SPDX-License-Identifier:"; then
-              echo "ERROR: $file missing SPDX header"
-              failed=1
-            fi
-          done
-          if [ $failed -eq 1 ]; then
-            echo "Add '# SPDX-License-Identifier: MPL-2.0' as first line"
-            exit 1
-          fi
-          echo "All workflows have SPDX headers"
+          # An SPDX tag counts when it is in the file's leading comment block
+          # (the REUSE convention), NOT only when it is literally line 1:
+          # gh actions-lock prepends its own "# This workflow is managed by
+          # gh actions-lock." banner to line 1 of every workflow it touches,
+          # so the old `head -1` test failed all 26 workflows — including
+          # this one — forever. A test that cannot pass is not a gate; the
+          # genuine miss it was hiding (main-estate-audit.yml had no SPDX at
+          # all) is fixed and is now actually enforced by this version.
+          python3 - <<'PY'
+          import glob, sys
+          failed = []
+          for path in sorted(glob.glob('.github/workflows/*.yml') + glob.glob('.github/workflows/*.yaml')):
+              ok = False
+              for line in open(path, encoding='utf-8'):
+                  s = line.strip()
+                  if not s.startswith('#'):
+                      if s:
+                          break          # first non-comment: header block over
+                      continue           # blank line inside/after the header
+                  if s.startswith('# SPDX-License-Identifier:'):
+                      ok = True
+                      break
+              if not ok:
+                  print(f"::error file={path}::missing SPDX-License-Identifier in the leading comment block")
+                  failed.append(path)
+          if failed:
+              print("Add '# SPDX-License-Identifier: MPL-2.0' to the header comment block")
+              sys.exit(1)
+          print("All workflows carry an SPDX tag in the header comment block")
+          PY
 
       - name: Check Permissions Declaration
         run: |
@@ -56,116 +88,211 @@ jobs:
               echo "ERROR: $file missing top-level 'permissions:' declaration"
               failed=1
             fi
+            if grep -qE "^permissions:\s*(write-all|read-all)" "$file"; then
+              echo "ERROR: $file uses a blanket permissions grant; enumerate least-privilege scopes"
+              failed=1
+            fi
           done
           if [ $failed -eq 1 ]; then
-            echo "Add a top-level 'permissions:' block (e.g. contents: read)"
+            echo "Add a top-level 'permissions:' block (usually contents: read)"
             exit 1
           fi
-          echo "All workflows have permissions declared"
+          echo "All workflows declare enumerated top-level permissions"
 
-      - name: Check SHA-Pinned Actions
+      - name: Verify actions.lock coverage
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          echo "=== Checking Action Pinning ==="
-          if [ -f .github/workflows/actions.lock ]; then
-            gh extension install github/gh-actions-lock
-            gh actions-lock --verify-local
-            unpinned=$(grep -rnE "^[[:space:]]+uses:[[:space:]]*[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/\.github/workflows/[^@]+@" .github/workflows/ | \
-              grep -v "@[a-f0-9]\{40\}" || true)
-            if [ -n "$unpinned" ]; then
-              echo "ERROR: reusable workflow calls not SHA-pinned:"; echo "$unpinned"; exit 1
-            fi
-            echo "Lockfile coverage verified"; exit 0
-          fi
-          # No lockfile: every uses: must carry an inline SHA pin.
-          unpinned=$(grep -rnE "^[[:space:]]+uses:" .github/workflows/ | \
-            grep -v "@[a-f0-9]\{40\}" | \
-            grep -v "uses: \./\|uses: docker://\|uses: actions/github-script" || true)
-
-          if [ -n "$unpinned" ]; then
-            echo "ERROR: Found unpinned actions:"
-            echo "$unpinned"
-            echo ""
-            echo "Replace version tags with SHA pins, e.g.:"
-            echo "  uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6.0.1"
+          echo "=== Checking Action Pinning (actions.lock coverage) ==="
+          if [ ! -f .github/workflows/actions.lock ]; then
+            echo "ERROR: .github/workflows/actions.lock is missing — run 'gh actions-lock'"
             exit 1
           fi
-          echo "All actions are SHA-pinned"
+          gh extension install github/gh-actions-lock
+          # --verify-local is a COVERAGE check (every uses: has a lock entry),
+          # not a provenance check; the next step supplies the missing half
+          # by re-resolving each ref against the live repositories.
+          gh actions-lock --verify-local
+          echo "Lockfile coverage verified"
+
+      - name: Every external uses ref resolves, and none floats
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # The blind spot that structured the estate's worst invisible red:
+          # jobs.<id>.uses (reusable workflows) is a documented actions-lock
+          # limitation, and a coverage check cannot notice that a 40-hex pin
+          # stops existing upstream. Three standards reusable pins in this
+          # repo did exactly that; the runs failed at startup with zero
+          # jobs, so not even a red tick appeared on any PR. Resolution is
+          # the only check that sees it, so resolve: hash pins must be
+          # fetchable commits in their repo, everything else must be an
+          # existing version tag. Branch refs (@main) fail by construction.
+          #
+          # Resolution alone is NOT enough — measured 2026-10-28: after
+          # `standards` moved hyperpolymath → metadatastician, every commit
+          # and contents lookup under the OLD name still succeeded (REST and
+          # git follow the redirect), while every reusable `uses:` under it
+          # died at startup ("workflow was not found", zero jobs). The
+          # redirect that makes the API forgiving is exactly what makes the
+          # failure invisible, so each coordinate's owner/repo is ALSO
+          # asserted canonical: the API's returned `full_name` must equal
+          # the coordinate as written. A mismatch names the current owner
+          # to re-point at (the pinned revision survives a transfer).
+          python3 - <<'PY'
+          import glob, re, subprocess, sys
+          uses_re = re.compile(r'^[ \t]*(?:-[ \t]*)?uses:[ \t]*([^ \t#]+/[^\s#@]+)@([^\s#]+)')
+          version_re = re.compile(r'^v?\d+(\.\d+)*([-.+][0-9A-Za-z.-]+)?$')
+          seen, failed, canonical, refchecked = {}, [], {}, set()
+          def canonical_name(repo):
+              if repo not in canonical:
+                  r = subprocess.run(['gh', 'api', f'repos/{repo}', '--jq', '.full_name'],
+                                     capture_output=True, text=True)
+                  # Empty stdout with a zero exit is not a canonical name;
+                  # treat it as unresolved rather than as a move to "".
+                  canonical[repo] = (r.stdout.strip() or None) if r.returncode == 0 else None
+              return canonical[repo]
+          for path in sorted(glob.glob('.github/workflows/*.yml') + glob.glob('.github/workflows/*.yaml')):
+              for n, line in enumerate(open(path, encoding='utf-8'), 1):
+                  m = uses_re.match(line)
+                  if not m:
+                      continue
+                  coord, ref = m.groups()
+                  if coord.startswith(('./', 'docker://')):
+                      continue
+                  repo = '/'.join(coord.split('/')[:2])
+                  # De-duplicate per COORDINATE, never per repository: nine
+                  # reusable workflows can share one repo@SHA (the standards
+                  # lanes do), and keying on (repo, ref) alone checked only
+                  # the first path upstream — a renamed sibling workflow
+                  # would still pass here and die invisibly at startup.
+                  key = (coord, ref)
+                  if key in seen:
+                      continue
+                  seen[key] = (path, n)
+                  canon = canonical_name(repo)
+                  if canon is None:
+                      print(f"::error file={path},line={n}::repository {repo} does not resolve at all (deleted, renamed without redirect, or private)")
+                      failed.append(key)
+                      continue
+                  if canon.lower() != repo.lower():
+                      print(f"::error file={path},line={n}::{coord}@{ref} names a MOVED repository: {repo} now lives at {canon}. REST/git follow the redirect but a reusable `uses:` does not — calls under the old name fail at startup with zero jobs. Re-point to {canon} (same pin) and confirm this repo's Actions allow-list admits the new owner.")
+                      failed.append(key)
+                      continue
+                  if '/.github/workflows/' in coord:
+                      wf_path = coord.split('/', 2)[2]
+                      r = subprocess.run(['gh', 'api', f'repos/{repo}/contents/{wf_path}?ref={ref}', '--jq', '.path'],
+                                         capture_output=True, text=True)
+                      if r.returncode != 0:
+                          print(f"::error file={path},line={n}::reusable workflow {wf_path} does not exist in {repo} at {ref} (renamed or removed upstream: runs using it fail at startup, invisibly)")
+                          failed.append(key)
+                          continue
+                  # Commit/tag resolution is a property of (repo, ref) and is
+                  # the expensive part; do it once per pair. (The canonical
+                  # and path checks above already ran for THIS coordinate.)
+                  refkey = (repo, ref)
+                  if refkey in refchecked:
+                      continue
+                  refchecked.add(refkey)
+                  if re.fullmatch(r'[0-9a-f]{40}', ref):
+                      r = subprocess.run(['gh', 'api', f'repos/{repo}/commits/{ref}', '--jq', '.sha'],
+                                         capture_output=True, text=True)
+                      if r.returncode != 0 or r.stdout.strip() != ref:
+                          print(f"::error file={path},line={n}::pin {coord}@{ref} does not resolve to a commit in {repo} (phantom pin: runs using it fail at startup, invisibly)")
+                          failed.append(key)
+                  elif version_re.match(ref):
+                      r = subprocess.run(['gh', 'api', f'repos/{repo}/git/ref/tags/{ref}'],
+                                         capture_output=True, text=True)
+                      if r.returncode != 0:
+                          print(f"::error file={path},line={n}::tag {coord}@{ref} does not resolve in {repo}")
+                          failed.append(key)
+                  else:
+                      print(f"::error file={path},line={n}::floating ref {coord}@{ref}: pin a full commit SHA or an exact version tag")
+                      failed.append(key)
+          print(f"resolved {len(seen)} distinct external uses refs")
+          if failed:
+              sys.exit(1)
+          print("Every external uses: ref resolves; none floats")
+          PY
+
+      - name: Install pinned actionlint and shellcheck
+        env:
+          ACTIONLINT_VERSION: 1.7.12
+          ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+          SHELLCHECK_VERSION: 0.11.0
+          SHELLCHECK_SHA256: 8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/lint-tools" && cd "$RUNNER_TEMP/lint-tools"
+          curl --fail --proto '=https' --proto-redir '=https' --tlsv1.2 -sSL \
+            -o actionlint.tar.gz \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          echo "${ACTIONLINT_SHA256}  actionlint.tar.gz" | sha256sum -c -
+          tar -xzf actionlint.tar.gz actionlint
+          curl --fail --proto '=https' --proto-redir '=https' --tlsv1.2 -sSL \
+            -o shellcheck.tar.xz \
+            "https://github.com/koalaman/shellcheck/releases/download/v${SHELLCHECK_VERSION}/shellcheck-v${SHELLCHECK_VERSION}.linux.x86_64.tar.xz"
+          echo "${SHELLCHECK_SHA256}  shellcheck.tar.xz" | sha256sum -c -
+          tar -xJf shellcheck.tar.xz --strip-components=1 "shellcheck-v${SHELLCHECK_VERSION}/shellcheck"
+          echo "$PWD" >> "$GITHUB_PATH"
+          ./actionlint -version
+          ./shellcheck --version | head -2
+
+      - name: actionlint (workflow semantics + shellcheck over run scripts)
+        id: actionlint
+        run: actionlint -no-color -verbose
+
+      # Failure-only: re-run actionlint in annotation format so every finding
+      # lands on the PR as a file/line check annotation, readable via the
+      # checks API without downloading raw logs. (A bare `exit code 1`
+      # annotation cost a full debug cycle once already.)
+      - name: actionlint diagnostics (annotations, on failure only)
+        if: failure() && steps.actionlint.outcome == 'failure'
+        run: |
+          # Capture-and-report, never `|| true`: this step only runs because
+          # actionlint already failed, so the re-run is EXPECTED to exit
+          # non-zero — surface that code in a notice while the diagnostics
+          # are emitted, instead of masking it (Hypatia RE005).
+          rc=0
+          actionlint -no-color > "$RUNNER_TEMP/actionlint.txt" 2>&1 || rc=$?
+          echo "::notice::actionlint diagnostics re-run exited $rc (expected: this step runs on failure only)"
+          head -9 "$RUNNER_TEMP/actionlint.txt" | while IFS= read -r line; do
+            echo "::error::actionlint: $line"
+          done
+          {
+            echo "## actionlint diagnostics ($(wc -l < "$RUNNER_TEMP/actionlint.txt") lines)"
+            echo '```'
+            cat "$RUNNER_TEMP/actionlint.txt"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Install pinned zizmor
+        run: |
+          # Hash-pinned to the exact wheel pip resolves on this runner.
+          cat > "$RUNNER_TEMP/zizmor-requirements.txt" <<'REQ'
+          zizmor==1.31.1 --hash=sha256:58e878eb2dbd2c6183c105e1ac28c14f7dd1eca44a783f1fe2a69647d012c410
+          REQ
+          python3 -m pip install --quiet --require-hashes -r "$RUNNER_TEMP/zizmor-requirements.txt"
+          zizmor --version
+
+      - name: zizmor (GitHub Actions security audit)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: zizmor --strict-collection --config .github/zizmor.yml .github/workflows/
 
       - name: Check for Duplicate Workflows
         run: |
           echo "=== Checking for Duplicates ==="
-          # Known duplicate patterns
           if [ -f .github/workflows/codeql.yml ] && [ -f .github/workflows/codeql-analysis.yml ]; then
             echo "ERROR: Duplicate CodeQL workflows found"
             echo "Delete codeql-analysis.yml (keep codeql.yml)"
             exit 1
           fi
-          if [ -f .github/workflows/rust.yml ] && [ -f .github/workflows/rust-ci.yml ]; then
-            echo "WARNING: Potential duplicate Rust workflows"
-            echo "Consider consolidating rust.yml and rust-ci.yml"
-          fi
           echo "No critical duplicates found"
-
-      - name: Check CodeQL Language Matrix
-        run: |
-          echo "=== Checking CodeQL Configuration ==="
-          if [ ! -f .github/workflows/codeql.yml ]; then
-            echo "No CodeQL workflow found (optional)"
-            exit 0
-          fi
-
-          # Detect repo languages
-          has_js=$(find . -name "*.js" -o -name "*.ts" -o -name "*.jsx" -o -name "*.tsx" -path "*/src/*" -o -path "*/lib/*" 2>/dev/null | head -1)
-          has_py=$(find . -name "*.py" -path "*/src/*" -o -path "*/lib/*" 2>/dev/null | head -1)
-          has_go=$(find . -name "*.go" -path "*/src/*" -o -path "*/cmd/*" -o -path "*/pkg/*" 2>/dev/null | head -1)
-          has_rs=$(find . -name "*.rs" -path "*/src/*" 2>/dev/null | head -1)
-          has_java=$(find . -name "*.java" -path "*/src/*" 2>/dev/null | head -1)
-          has_rb=$(find . -name "*.rb" -path "*/lib/*" -o -path "*/app/*" 2>/dev/null | head -1)
-
-          echo "Detected languages:"
-          [ -n "$has_js" ] && echo "  - javascript-typescript"
-          [ -n "$has_py" ] && echo "  - python"
-          [ -n "$has_go" ] && echo "  - go"
-          [ -n "$has_rs" ] && echo "  - rust (note: CodeQL rust is limited)"
-          [ -n "$has_java" ] && echo "  - java-kotlin"
-          [ -n "$has_rb" ] && echo "  - ruby"
-
-          # Check for over-reach
-          if grep -q "language:.*'go'" .github/workflows/codeql.yml && [ -z "$has_go" ]; then
-            echo "WARNING: CodeQL configured for Go but no Go files found"
-          fi
-          if grep -q "language:.*'python'" .github/workflows/codeql.yml && [ -z "$has_py" ]; then
-            echo "WARNING: CodeQL configured for Python but no Python files found"
-          fi
-          if grep -q "language:.*'java'" .github/workflows/codeql.yml && [ -z "$has_java" ]; then
-            echo "WARNING: CodeQL configured for Java but no Java files found"
-          fi
-          if grep -q "language:.*'ruby'" .github/workflows/codeql.yml && [ -z "$has_rb" ]; then
-            echo "WARNING: CodeQL configured for Ruby but no Ruby files found"
-          fi
-
-          echo "CodeQL check complete"
-
-      - name: Check Secrets Guards
-        run: |
-          echo "=== Checking Secrets Usage ==="
-          # Look for secrets without conditional guards in mirror workflows
-          if [ -f .github/workflows/mirror.yml ]; then
-            if grep -q "secrets\." .github/workflows/mirror.yml; then
-              if ! grep -q "if:.*vars\." .github/workflows/mirror.yml; then
-                echo "WARNING: mirror.yml uses secrets without vars guard"
-                echo "Add 'if: vars.FEATURE_ENABLED == true' to jobs"
-              fi
-            fi
-          fi
-          echo "Secrets check complete"
 
       - name: Summary
         run: |
           echo ""
           echo "=== Workflow Linter Summary ==="
-          echo "All critical checks passed."
-          echo ""
-          echo "For more info, see: robot-repo-bot/ERROR-CATALOG.scm"
+          echo "SPDX header blocks, permissions, actions.lock coverage, live ref"
+          echo "resolution, actionlint, and zizmor all passed."

@@ -1,4 +1,4 @@
-{-# OPTIONS --safe --without-K #-}
+{-# OPTIONS --safe --without-K --cubical-compatible --exact-split #-}
 -- SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 -- SPDX-License-Identifier: MPL-2.0
 --
@@ -13,6 +13,9 @@
 -- (verification/proofs/lean4/grade-boundary/L4Monotonicity.lean, FateA).
 -- The original Lean frozen interface (GradeBoundary.lean) describes the
 -- PRE-RATIFICATION carrier and is retained upstream under a provenance note.
+-- Predicate and fusion labels are erased in this carrier: predicated and fused
+-- are nullary. The monoid laws and grade-comm concern erased loss-shapes;
+-- they assert no equality of predicate labels or nested provenance pairs.
 --
 --   F1  Grade is a product Monoid (componentwise)           — gmonoid-{assoc,unitL,unitR}
 --   F2′ the product is COMMUTATIVE on the ratified carrier   — grade-comm
@@ -33,12 +36,12 @@
 
 module TB.Grade where
 
-open import Data.Empty using (⊥-elim)
+open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Nat.Base using (ℕ; zero; suc; _+_)
 open import Data.Nat.Properties using (+-assoc; +-comm; +-identityʳ; +-cancelʳ-≡)
 open import Data.Product.Base using (_×_; _,_)
 open import Relation.Binary.PropositionalEquality
-  using (_≡_; _≢_; refl; cong; sym; trans)
+  using (_≡_; _≢_; refl; cong; sym; trans; subst)
 
 --------------------------------------------------------------------------------
 -- Fidelity carrier  Δ = WithTop (WithTop ℕ)  (Fidelity.idr / GradeBoundary.lean)
@@ -64,8 +67,20 @@ Q _     ⊕d total   = total
 Q a     ⊕d Q b     = Q (a + b)
 
 -- Q is injective: distinct finite losses are distinct fidelities.
+-- Proved by encode-decode (transport along a discriminating family), NOT by
+-- matching on `refl`: under --cubical-compatible the refl-match relies on
+-- constructor injectivity that does not compute through transports
+-- (UnsupportedIndexedMatch), whereas this proof is transport-clean.
+private
+  -- Evidence that a fidelity is Q n: equality of finite losses for Q m,
+  -- and the empty type for total or unknown.
+  Qcode : ℕ → Δ → Set
+  Qcode n (Q m)   = n ≡ m
+  Qcode n total   = ⊥
+  Qcode n unknown = ⊥
+
 Q-inj : ∀ {a b} → Q a ≡ Q b → a ≡ b
-Q-inj refl = refl
+Q-inj {a} eq = subst (Qcode a) eq refl
 
 -- dplus is associative (15-clause case split; only Q/Q/Q is non-refl).
 ⊕d-assoc : ∀ a b c → a ⊕d (b ⊕d c) ≡ (a ⊕d b) ⊕d c

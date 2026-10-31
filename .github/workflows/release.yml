@@ -23,6 +23,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
       - name: Detect project type and build
         id: build
         run: |
@@ -82,14 +84,32 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
         with:
+          persist-credentials: false
           fetch-depth: 0
       - name: Extract version from tag
         id: version
         run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
-      - name: Install git-cliff
+      - name: Install git-cliff (pinned, checksummed)
+        env:
+          GIT_CLIFF_VERSION: 2.14.2
+          GIT_CLIFF_SHA256: 24f397c733add5390fdceee3a2088588ab0d5f944ce00d34cb7029b888cf2db4
         run: |
-          curl -sSfL https://github.com/orhun/git-cliff/releases/latest/download/git-cliff-$(uname -m)-unknown-linux-gnu.tar.gz \
-            | tar -xz --strip-components=1 -C /usr/local/bin/ git-cliff-*/git-cliff
+          # Was releases/latest/... with an asset name upstream does not
+          # publish (missing the version segment), i.e. a guaranteed 404 on
+          # the next tag. Pin the version and verify the asset digest before
+          # it lands in /usr/local/bin. x86_64 asset: ubuntu-latest hosted
+          # runners are x86_64; bump version+sha together.
+          set -euo pipefail
+          asset="git-cliff-${GIT_CLIFF_VERSION}-x86_64-unknown-linux-gnu.tar.gz"
+          curl --fail --proto '=https' --proto-redir '=https' --tlsv1.2 -sSL \
+            -o "$RUNNER_TEMP/$asset" \
+            "https://github.com/orhun/git-cliff/releases/download/v${GIT_CLIFF_VERSION}/$asset"
+          echo "${GIT_CLIFF_SHA256}  $RUNNER_TEMP/$asset" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/git-cliff-extract"
+          tar -xzf "$RUNNER_TEMP/$asset" -C "$RUNNER_TEMP/git-cliff-extract"
+          find "$RUNNER_TEMP/git-cliff-extract" -maxdepth 3 -type f -name git-cliff \
+            -exec install -m 0755 {} /usr/local/bin/git-cliff \;
+          git cliff --version
       - name: Generate changelog for this release
         id: cliff
         run: |
@@ -119,6 +139,8 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
       # TODO: Download build artifacts if uploading to the release
       # - uses: actions/download-artifact@v4
       #
@@ -126,6 +148,8 @@ jobs:
       #     name: release-artifacts
       #     path: artifacts/
       - name: Create GitHub Release
+        # zizmor: ignore[superfluous-actions] — kept deliberately: release body comes from the
+        # changelog job output and this action is the audited estate pattern.
         uses: softprops/action-gh-release@v3.0.3
         with:
           body: ${{ needs.changelog.outputs.changelog }}

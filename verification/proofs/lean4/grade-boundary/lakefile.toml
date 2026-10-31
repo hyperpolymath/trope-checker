@@ -1,5 +1,5 @@
 name = "gradeBoundary"
-defaultTargets = ["GradeBoundary", "TierTwoComplete", "L4Monotonicity", "EffectAtoms", "GradeRatified"]
+defaultTargets = ["GradeBoundary", "TierTwoComplete", "L4Monotonicity", "EffectAtoms", "GradeRatified", "EffectAtomsRatified"]
 
 # Pinned recent-stable Mathlib. v4.16.0 carries the refactored canonically-ordered
 # hierarchy: `CanonicallyOrderedAddCommMonoid` is DEPRECATED in favour of the mixin
@@ -33,3 +33,8 @@ name = "EffectAtoms"
 # ported boundary results and the A3 normal-form cancellation refinement.
 [[lean_lib]]
 name = "GradeRatified"
+
+# O1-carrier on the ratified carrier: atom factorisation over GradeR
+# (EffectAtoms proves it over the historical Grade only).
+[[lean_lib]]
+name = "EffectAtomsRatified"

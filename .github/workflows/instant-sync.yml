@@ -15,8 +15,19 @@ jobs:
   dispatch:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      HAS_DISPATCH_TOKEN: ${{ secrets.FARM_DISPATCH_TOKEN != '' }}
     steps:
+      # This job holds FARM_DISPATCH_TOKEN; monitor its outbound egress
+      # (Hypatia RE001). Audit mode first: record every endpoint without
+      # risking the dispatch; tighten to block+allowlist once a main run
+      # shows the observed set.
+      - name: Harden runner (egress audit)
+        uses: step-security/harden-runner@v2.22.3
+        with:
+          egress-policy: audit
       - name: Trigger Propagation
+        if: env.HAS_DISPATCH_TOKEN == 'true'
         uses: peter-evans/repository-dispatch@v4.0.1
         with:
           token: ${{ secrets.FARM_DISPATCH_TOKEN }}
@@ -32,4 +43,9 @@ jobs:
       - name: Confirm
         env:
           REPO_NAME: ${{ github.event.repository.name }}
-        run: echo "::notice::Propagation triggered for ${REPO_NAME}"
+        run: |
+          if [ "$HAS_DISPATCH_TOKEN" = "true" ]; then
+            echo "::notice::Propagation triggered for ${REPO_NAME}"
+          else
+            echo "::notice::FARM_DISPATCH_TOKEN not configured; propagation skipped for ${REPO_NAME}"
+          fi

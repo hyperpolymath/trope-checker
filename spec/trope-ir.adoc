@@ -122,9 +122,11 @@ the invariant-path argmin).
 
 * *prevent* (this schema, shipped): deceptive grades are malformed; rejected at
   validation with the coordinate named.
-* *detect* (documented, calculus §6.1): deceptive grades are representable and
-  caught at the verdict instead. An implementation MUST declare which profile it
-  serves; this repository serves *prevent*.
+* *detect* (documented, calculus §6.1): all three deceptive grades
+  (`Falsified`, `Misbound`, `Conflated`) are representable and caught at the
+  verdict instead — each exactly when the use-model floor constrains its
+  coordinate. An implementation MUST declare which profile it serves; this
+  repository serves *prevent*.
 
 == Conformance
 

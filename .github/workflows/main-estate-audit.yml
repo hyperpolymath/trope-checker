@@ -1,4 +1,5 @@
 # This workflow is managed by gh actions-lock.
+# SPDX-License-Identifier: MPL-2.0
 
 name: Central Estate CI/CD Audit
 
@@ -8,86 +9,132 @@ on:
   pull_request:
     branches: [ "main" ]
 
+# Least privilege: every gate below is a read-only check over the tree.
+permissions:
+  contents: read
+
 jobs:
   estate-audit:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
+      # fetch-depth: 0 is load-bearing for the Affirmation Document Gate: it
+      # classifies the signature on the commit that last changed
+      # AFFIRMATION.adoc. In the default depth-1 checkout that "commit" is
+      # the shallow boundary (on a PR, GitHub's test-merge commit), so the
+      # gate graded a checkout artefact, not the affirming commit. The local
+      # check treats unavailable public keys as notices and still rejects bad
+      # signatures; the current GitHub key is in .github/affirmation-trusted/.
       - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
       
       - name: Required Files Gate
-        uses: hyperpolymath/cicd-suite/actions/required-files-check@main
+        if: ${{ !cancelled() }}
+        uses: hyperpolymath/cicd-suite/actions/required-files-check@bf7dd95cf49733019343ff485c2f45c6b261839c
         
       - name: Code Hygiene Gate
-        uses: hyperpolymath/cicd-suite/actions/code-hygiene-check@main
+        if: ${{ !cancelled() }}
+        uses: hyperpolymath/cicd-suite/actions/code-hygiene-check@bf7dd95cf49733019343ff485c2f45c6b261839c
         
       - name: Manifest Validation Gate
-        uses: hyperpolymath/cicd-suite/actions/manifest-check@main
+        if: ${{ !cancelled() }}
+        uses: hyperpolymath/cicd-suite/actions/manifest-check@bf7dd95cf49733019343ff485c2f45c6b261839c
         
       - name: Idris2 ABI Purity Gate
-        uses: hyperpolymath/cicd-suite/actions/idris2-abi-check@main
+        if: ${{ !cancelled() }}
+        uses: hyperpolymath/cicd-suite/actions/idris2-abi-check@bf7dd95cf49733019343ff485c2f45c6b261839c
         
       - name: Zig UnifiedApiAdapter API Gate
-        uses: hyperpolymath/cicd-suite/actions/zig-unified-api-adapter-check@main
+        if: ${{ !cancelled() }}
+        uses: hyperpolymath/cicd-suite/actions/zig-unified-api-adapter-check@bf7dd95cf49733019343ff485c2f45c6b261839c
         
       - name: Contractile Validation Gate
-        uses: hyperpolymath/cicd-suite/actions/contractile-validation-check@main
+        if: ${{ !cancelled() }}
+        uses: hyperpolymath/cicd-suite/actions/contractile-validation-check@bf7dd95cf49733019343ff485c2f45c6b261839c
         
       - name: Recipes Set Validation Gate
-        uses: hyperpolymath/cicd-suite/actions/recipes-set-check@main
+        if: ${{ !cancelled() }}
+        uses: hyperpolymath/cicd-suite/actions/recipes-set-check@bf7dd95cf49733019343ff485c2f45c6b261839c
         
       - name: Affirmation Document Gate
-        uses: hyperpolymath/cicd-suite/actions/affirmation-check@main
+        if: ${{ !cancelled() }}
+        run: bash .github/affirmation-trusted/check.sh
         
       - name: Academic Referencing Gate
-        uses: hyperpolymath/cicd-suite/actions/referencing-check@main
+        if: ${{ !cancelled() }}
+        uses: hyperpolymath/cicd-suite/actions/referencing-check@bf7dd95cf49733019343ff485c2f45c6b261839c
         
       - name: Semantic Audit Gate
-        uses: hyperpolymath/cicd-suite/actions/semantic-audit-check@main
+        if: ${{ !cancelled() }}
+        uses: hyperpolymath/cicd-suite/actions/semantic-audit-check@bf7dd95cf49733019343ff485c2f45c6b261839c
         
       - name: SPDX License Gate
-        uses: hyperpolymath/cicd-suite/actions/spdx-license-check@main
+        if: ${{ !cancelled() }}
+        uses: hyperpolymath/cicd-suite/actions/spdx-license-check@bf7dd95cf49733019343ff485c2f45c6b261839c
         
       - name: Proof Runner Gate
-        uses: hyperpolymath/cicd-suite/actions/proof-runner-check@main
+        if: ${{ !cancelled() }}
+        uses: hyperpolymath/cicd-suite/actions/proof-runner-check@bf7dd95cf49733019343ff485c2f45c6b261839c
         
       - name: PRAT Testing Gate
-        uses: hyperpolymath/cicd-suite/actions/prat-check@main
+        if: ${{ !cancelled() }}
+        uses: hyperpolymath/cicd-suite/actions/prat-check@bf7dd95cf49733019343ff485c2f45c6b261839c
         
-      - name: Panic Attack & Pons Gate
-        uses: hyperpolymath/cicd-suite/actions/custom-tools-check@main
-        
+      # No "Panic Attack & Pons" step here (removed 2026-10-28): the
+      # cicd-suite custom-tools-check composite prints "validation passed"
+      # when neither tool is on PATH — which is always — so it certified
+      # scans that never ran. panic-attack and pons-asinorum evidence is
+      # produced exactly once per trigger by the standards Hypatia lane
+      # (fork-governance.yml on PRs, hypatia-scan.yml on push/schedule)
+      # as verdict-grid rows with status envelopes; a presence proxy in
+      # this audit would only be a second, weaker claim to reconcile.
+
       - name: WWW & Well-Known Compliance Gate
-        uses: hyperpolymath/cicd-suite/actions/www-compliance-check@main
+        if: ${{ !cancelled() }}
+        uses: hyperpolymath/cicd-suite/actions/www-compliance-check@bf7dd95cf49733019343ff485c2f45c6b261839c
         
       - name: BoJ Cartridge Validation Gate
-        uses: hyperpolymath/cicd-suite/actions/boj-cartridge-check@main
+        if: ${{ !cancelled() }}
+        uses: hyperpolymath/cicd-suite/actions/boj-cartridge-check@bf7dd95cf49733019343ff485c2f45c6b261839c
         
       - name: Formatting Validation Gate
-        uses: hyperpolymath/cicd-suite/actions/formatting-check@main
+        if: ${{ !cancelled() }}
+        uses: hyperpolymath/cicd-suite/actions/formatting-check@bf7dd95cf49733019343ff485c2f45c6b261839c
         
       - name: Accreditations & Badges Gate
-        uses: hyperpolymath/cicd-suite/actions/badges-check@main
+        if: ${{ !cancelled() }}
+        uses: hyperpolymath/cicd-suite/actions/badges-check@bf7dd95cf49733019343ff485c2f45c6b261839c
         
       - name: Metrics Extraction Gate
-        uses: hyperpolymath/cicd-suite/actions/metrics-check@main
+        if: ${{ !cancelled() }}
+        uses: hyperpolymath/cicd-suite/actions/metrics-check@bf7dd95cf49733019343ff485c2f45c6b261839c
         
       - name: Linguist & Banned Languages Gate
-        uses: hyperpolymath/cicd-suite/actions/linguist-check@main
+        if: ${{ !cancelled() }}
+        uses: hyperpolymath/cicd-suite/actions/linguist-check@bf7dd95cf49733019343ff485c2f45c6b261839c
         
       - name: Test & Benchmarks Dashboard Gate
-        uses: hyperpolymath/cicd-suite/actions/tests-benches-check@main
+        if: ${{ !cancelled() }}
+        uses: hyperpolymath/cicd-suite/actions/tests-benches-check@bf7dd95cf49733019343ff485c2f45c6b261839c
         
       - name: Hosting & Site Status Gate
-        uses: hyperpolymath/cicd-suite/actions/hosting-check@main
+        if: ${{ !cancelled() }}
+        uses: hyperpolymath/cicd-suite/actions/hosting-check@bf7dd95cf49733019343ff485c2f45c6b261839c
         
       - name: Git-Sea Analytics Gate
-        uses: hyperpolymath/cicd-suite/actions/gitsea-check@main
+        if: ${{ !cancelled() }}
+        uses: hyperpolymath/cicd-suite/actions/gitsea-check@bf7dd95cf49733019343ff485c2f45c6b261839c
         
       - name: Trust & Humans Validation Gate
-        uses: hyperpolymath/cicd-suite/actions/trust-humans-check@main
+        if: ${{ !cancelled() }}
+        uses: hyperpolymath/cicd-suite/actions/trust-humans-check@bf7dd95cf49733019343ff485c2f45c6b261839c
         
       - name: Are We UnAPI Gate (Secret Scanning)
-        uses: hyperpolymath/cicd-suite/actions/secrets-check@main
+        if: ${{ !cancelled() }}
+        uses: hyperpolymath/cicd-suite/actions/secrets-check@bf7dd95cf49733019343ff485c2f45c6b261839c
         
       - name: Reasonably Good Token Validation Gate
-        uses: hyperpolymath/cicd-suite/actions/vaulted-tokens-check@main
+        if: ${{ !cancelled() }}
+        uses: hyperpolymath/cicd-suite/actions/vaulted-tokens-check@bf7dd95cf49733019343ff485c2f45c6b261839c

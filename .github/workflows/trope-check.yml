@@ -14,6 +14,8 @@ on:
     paths:
       - 'schemas/**'
       - 'src/idris2/**'
+      - 'src/interface/**'
+      - 'abi.ipkg'
       - 'tests/conformance/**'
       - 'verification/proofs/idris2/**'
       - 'spec/**'
@@ -27,8 +29,11 @@ permissions:
 jobs:
   ir-wellformed:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
       - name: Every IR fixture + the schema is well-formed JSON
         run: |
           for f in tests/conformance/fixtures/*.ir.json \
@@ -37,12 +42,56 @@ jobs:
             jq -e . "$f" >/dev/null || { echo "malformed JSON: $f"; exit 1; }
           done
           echo "all IR fixtures + schema are well-formed JSON"
-      - name: No unsound constructs in the verified core
+      - name: Schema is meta-valid, validates the positives, rejects the negatives
         run: |
-          if grep -rEn 'believe_me|assert_total|postulate|really_believe_me' verification/proofs/idris2/Trope; then
-            echo "unsound construct found"; exit 1
-          fi
-          echo "verified core: no unsound constructs"
+          set -euo pipefail
+          # `jq -e` above proves well-formedness only. The schema is a SHIPPED
+          # artefact (other consumers validate IR against it), so check the
+          # schema itself against the draft 2020-12 metaschema in strict mode,
+          # every positive fixture against the schema, and every
+          # schema-invalid fixture rejected BY THE SCHEMA (not merely by our
+          # checker for some other reason). ajv is version-pinned; node ships
+          # on the runner. (The checkers themselves stay no-Python/no-node;
+          # this validates the contract between them and the outside world.)
+          AJV="npx -y ajv-cli@5.0.0"
+          $AJV compile --spec=draft2020 --strict=true -s schemas/trope-ir.schema.json
+          $AJV validate --spec=draft2020 --strict=true \
+            -s schemas/trope-ir.schema.json \
+            -d "tests/conformance/fixtures/*.ir.json"
+          for f in tests/conformance/schema-invalid/*.json; do
+            if $AJV validate --spec=draft2020 --strict=true \
+                 -s schemas/trope-ir.schema.json -d "$f" >/dev/null 2>&1; then
+              echo "::error file=$f::schema-invalid fixture was ACCEPTED by the schema"
+              exit 1
+            fi
+          done
+          echo "schema meta-valid; positives validate; negatives rejected by the schema"
+      - name: No unsound constructs in any Idris2 tree; totality posture is as declared
+        run: |
+          set -euo pipefail
+          # Comment-aware (same stripper as the Lean gate) and over ALL Idris2
+          # trees, not only the verified core: an escape hatch in the checker
+          # CLI or the ABI seam is the same lie in a different directory.
+          fail=0
+          for f in $(git ls-files 'verification/proofs/idris2/*.idr' 'verification/proofs/idris2/*/*.idr' \
+                                  'src/idris2/*.idr' 'src/idris2/*/*.idr' 'src/interface/*/*.idr'); do
+            stripped=$(awk -f tests/lib/strip-proof-comments.awk "$f")
+            if grep -nE '\b(believe_me|really_believe_me|assert_total|assert_smaller|assert_equal|postulate)\b|%default[[:space:]]+partial' <<<"$stripped"; then
+              echo "::error file=$f::unsound Idris2 construct"; fail=1
+            fi
+          done
+          # Totality posture: the verified core and the ABI seam are
+          # `%default total` (assert it per module — a new file that forgets
+          # the pragma silently drops to partial-by-default); the checker CLI
+          # is `%default covering` where its headers say why (parser/IO).
+          for f in $(git ls-files 'verification/proofs/idris2/Trope/*.idr' 'src/interface/Abi/*.idr'); do
+            grep -q '^%default total' "$f" || { echo "::error file=$f::missing %default total"; fail=1; }
+          done
+          for f in $(git ls-files 'src/idris2/*.idr' 'src/idris2/*/*.idr'); do
+            grep -qE '^%default (total|covering)' "$f" || { echo "::error file=$f::missing %default total/covering"; fail=1; }
+          done
+          [ "$fail" -eq 0 ] || exit 1
+          echo "Idris2 trees: no unsound constructs; totality pragmas as declared"
 
   # Previously this job carried `continue-on-error: true` AND guarded its whole
   # body with `if command -v idris2` — and ubuntu-latest ships no idris2, so it
@@ -58,6 +107,8 @@ jobs:
       image: ghcr.io/stefan-hoeck/idris2-pack@sha256:de9781906050dc44704ec6de0108c86f899ef17b2642932b79e00245d613b8ad
     steps:
       - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
       - name: Install container prerequisites (jq)
         shell: bash
         run: |
@@ -77,11 +128,14 @@ jobs:
             *"0.8.0"*) ;;
             *) echo "::error::expected Idris 2 0.8.0, got: ${ver}"; exit 1 ;;
           esac
-      - name: Typecheck the verified core
+      - name: Typecheck the verified core and the ABI seam
         shell: bash
         run: |
           set -euo pipefail
-          cd verification/proofs/idris2 && idris2 --typecheck trope.ipkg
+          ( cd verification/proofs/idris2 && idris2 --typecheck trope.ipkg )
+          # The formally-typed ABI/FFI seam has shipped an .ipkg since the
+          # template landed and was never typechecked in CI until now.
+          idris2 --typecheck abi.ipkg
       - name: Build the reference checker from that core, and run conformance
         shell: bash
         run: |
@@ -93,9 +147,45 @@ jobs:
 
   rust-fast-core:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7.0.1
-      - name: Build the Rust fast-core (dep-free, offline) and run the conformance corpus
+        with:
+          persist-credentials: false
+      - name: Rust fast-core at full strictness (fmt, clippy pedantic, tests, locked release)
+        shell: bash
         run: |
-          ( cd src/rust && cargo build --release )
+          set -euo pipefail
+          cd src/rust
+          # --locked everywhere: Cargo.lock is the dependency truth (dep-free
+          # today, which is exactly when locking costs nothing and proves it).
+          cargo fmt --all --check
+          cargo clippy --locked --all-targets -- -D warnings -D clippy::pedantic
+          cargo test --locked
+          cargo build --locked --release
+          cd ../..
           TROPECHECK_BIN=src/rust/target/release/tropecheck-rs bash tests/conformance/run.sh
+      # Failure-only: re-run clippy in JSON mode and surface every lint as a
+      # check annotation (file/line/rule), so a red run is diagnosable from
+      # the checks API without downloading raw logs.
+      - name: Clippy diagnostics (annotations, on failure only)
+        if: failure()
+        working-directory: src/rust
+        run: |
+          set -uo pipefail
+          out="$RUNNER_TEMP/clippy-lints.txt"
+          cargo clippy --locked --all-targets --message-format=json -- -D warnings -D clippy::pedantic 2>/dev/null \
+            | jq -r 'select(.reason=="compiler-message") | .message
+                     | select(.level=="error" or .level=="warning")
+                     | "\(.code.code // "rustc") \(.spans[0].file_name):\(.spans[0].line_start):\(.spans[0].column_start) \(.message|gsub("[\r\n]+";" "))"' \
+            | sort -u > "$out" || true
+          # GitHub caps same-type annotations per step (~10): emit the first
+          # lines as annotations AND the complete list into the step summary.
+          head -9 "$out" | while IFS= read -r line; do echo "::error::clippy $line"; done
+          {
+            echo "## Clippy pedantic diagnostics ($(wc -l < "$out") lints)"
+            echo '```'
+            cat "$out"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          cargo fmt --all -- --check 2>&1 | head -40 || true

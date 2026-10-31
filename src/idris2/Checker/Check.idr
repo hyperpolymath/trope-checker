@@ -61,6 +61,51 @@ violations fl (MkGrade q b c r bo me) = catMaybes
   , chkFate "fate.context" fl.fC c, chkFate "fate.record" fl.fR r
   , chkBond fl.fBond bo, chkMerge fl.fMerge me ]
 
+-- The edge (if any) producing a node.
+producerOf : List Edge -> String -> Maybe Edge
+producerOf es n = find (\e => e.output == n) es
+
+-- Every producer input of a list of nodes.
+producerInputs : List Edge -> List String -> List String
+producerInputs _  []        = []
+producerInputs es (n :: ns) =
+  (case producerOf es n of
+     Just e  => e.inputs
+     Nothing => []) ++ producerInputs es ns
+
+-- Ancestors of the output: backwards closure through producer inputs
+-- (fuel-bounded, like accFuel).
+ancestors : List Edge -> Nat -> List String -> List String
+ancestors _  Z     seen = seen
+ancestors es (S k) seen =
+  let new = filter (\n => not (elem n seen)) (producerInputs es seen)
+  in case new of
+       [] => seen
+       _  => ancestors es k (seen ++ new)
+
+-- Candidate witness edges in calculus §6.2 order: topological over the
+-- output's ancestor DAG, ties between ready edges broken by edge ID
+-- (Kahn's algorithm emitting the smallest-ID ready edge, fuel-bounded).
+-- Document order must not affect the result, and a violating edge that is
+-- not an ancestor of the output is never a candidate.
+topoOrder : List Edge -> String -> List Edge
+topoOrder es out =
+  let anc  = ancestors es (S (length es)) [out]
+      cand = filter (\e => elem e.output anc) es
+  in go (length cand) cand [] []
+  where
+    hasProducer : String -> Bool
+    hasProducer n = maybe False (const True) (producerOf es n)
+    ready : List String -> Edge -> Bool
+    ready emitted e = all (\i => not (hasProducer i) || elem i emitted) e.inputs
+    go : Nat -> List Edge -> List String -> List Edge -> List Edge
+    go Z     _   _       acc = reverse acc
+    go (S k) rem emitted acc =
+      case sortBy (\a, b => compare a.eid b.eid) (filter (ready emitted) rem) of
+        []       => reverse acc
+        (e :: _) => go k (filter (\x => not (x.eid == e.eid)) rem)
+                       (e.output :: emitted) (e :: acc)
+
 witnessOf : List Edge -> Floor -> List String -> Nat -> List Edge -> Maybe (String, String)
 witnessOf _   _  _   _    []        = Nothing
 witnessOf all fl bad fuel (e :: es) =
@@ -83,4 +128,5 @@ check doc =
       bad   = violations doc.floor final
   in case bad of
        [] => Sufficient
-       _  => Insufficient bad (witnessOf doc.edges doc.floor bad fuel doc.edges)
+       _  => Insufficient bad (witnessOf doc.edges doc.floor bad fuel
+                                 (topoOrder doc.edges doc.outNode))
