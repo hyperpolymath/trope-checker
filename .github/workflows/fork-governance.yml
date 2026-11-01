@@ -2,7 +2,7 @@
 # fork-governance.yml — the estate conformance lanes on every pull request,
 # adopted per metadatastician/standards 3-practice/fork-governance/ADOPTION.adoc
 # at the same standards commit every other reusable in this repo pins
-# (34cf03f…). Scans here; fork-governance-publish.yml posts one comment:
+# (857ff096af11451841fb10488fed1438523973a1). Scans here; fork-governance-publish.yml posts one comment:
 #
 # CANONICAL COORDINATES (2026-10-28 repair). `standards` was transferred from
 # the `hyperpolymath` user account to the `metadatastician` organisation on
