@@ -187,7 +187,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          gh api 'repos/metadatastician/standards/contents/scripts/fork-governance-render.sh?ref=34cf03f988b8ca95b91b45d9b3351f7d3babfb65' \
+          gh api 'repos/metadatastician/standards/contents/scripts/fork-governance-render.sh?ref=857ff096af11451841fb10488fed1438523973a1' \
             --jq .content | base64 -d > "$RUNNER_TEMP/trusted-renderer.sh"
 
       - name: Render and publish the verified run's summary

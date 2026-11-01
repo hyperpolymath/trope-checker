@@ -29,7 +29,7 @@ jobs:
     permissions:
       actions: read
       contents: read
-    uses: metadatastician/standards/.github/workflows/governance-reusable.yml@34cf03f988b8ca95b91b45d9b3351f7d3babfb65
+    uses: metadatastician/standards/.github/workflows/governance-reusable.yml@857ff096af11451841fb10488fed1438523973a1
     with:
       # Strictest baseline mode: if a .hypatia-baseline.json acknowledgement
       # ever lands here it must carry an expires_at, or this fails. (The repo
