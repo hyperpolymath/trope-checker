@@ -208,13 +208,16 @@ validateGraph ns es ou =
   case dupOf declared of
     Just d  => Left ("nodes/" ++ d ++ ": duplicate node id")
     Nothing =>
-      if not (elem ou declared)
-         then Left ("use_model/output: undeclared node \"" ++ ou ++ "\"")
-         else do
-           checkEdges declared [] es
-           if acyclic (length es) es es []
-              then Right ()
-              else Left "edges: cycle in the producer graph"
+      case dupOf (map eid es) of
+        Just d => Left ("edges/" ++ d ++ ": duplicate edge id")
+        Nothing =>
+          if not (elem ou declared)
+             then Left ("use_model/output: undeclared node \"" ++ ou ++ "\"")
+             else do
+               checkEdges declared [] es
+               if acyclic (length es) es es []
+                  then Right ()
+                  else Left "edges: cycle in the producer graph"
 
 export
 decodeDoc : JValue -> Either String Document

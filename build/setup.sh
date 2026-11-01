@@ -134,9 +134,14 @@ detect_platform() {
             elif command -v choco >/dev/null 2>&1; then PKG_MGR="choco"
             fi
             ;;
-        FreeBSD*|DragonFly*)
+        FreeBSD*)
             OS="freebsd"
             DISTRO="freebsd"
+            PKG_MGR="pkg"
+            ;;
+        DragonFly*)
+            OS="dragonfly"
+            DISTRO="dragonfly"
             PKG_MGR="pkg"
             ;;
         OpenBSD*)
@@ -257,40 +262,30 @@ install_just_pinned() {
         }
     fi
 
-    if [ -w /usr/local/bin ]; then
-        _just_dest="/usr/local/bin"
-        _just_elevated="false"
-    elif [ "$(id -u 2>/dev/null || echo 1)" = "0" ] \
-        || command -v sudo >/dev/null 2>&1 || command -v doas >/dev/null 2>&1; then
-        _just_dest="/usr/local/bin"
-        _just_elevated="true"
+    _just_dest="/usr/local/bin"
+    if [ -d "$_just_dest" ] && [ -w "$_just_dest" ] &&
+        install -m 0755 "$_just_tmp/$_just_binary" "$_just_dest/$_just_binary"; then
+        : # Installed without elevation.
+    elif [ -d "$_just_dest" ] && { [ "$(id -u 2>/dev/null || echo 1)" = "0" ] ||
+        command -v sudo >/dev/null 2>&1 || command -v doas >/dev/null 2>&1; } &&
+        as_root install -m 0755 "$_just_tmp/$_just_binary" "$_just_dest/$_just_binary"; then
+        : # Installed with elevation.
     elif [ -n "${HOME:-}" ]; then
         _just_dest="$HOME/.local/bin"
-        _just_elevated="false"
-        mkdir -p "$_just_dest"
+        if ! mkdir -p "$_just_dest" || ! install -m 0755 "$_just_tmp/$_just_binary" "$_just_dest/$_just_binary"; then
+            fail "Could not install just into $_just_dest"
+            rm -rf "$_just_tmp"
+            return 1
+        fi
         warn "Installing just into $_just_dest; ensure it is on PATH for future shells"
     else
         fail "No writable install directory for just"
         rm -rf "$_just_tmp"
         return 1
     fi
-
-    if [ "$_just_elevated" = "true" ] && [ ! -w "$_just_dest" ]; then
-        as_root install -m 0755 "$_just_tmp/$_just_binary" "$_just_dest/$_just_binary" || {
-            fail "Could not install just into $_just_dest"
-            rm -rf "$_just_tmp"
-            return 1
-        }
-    else
-        install -m 0755 "$_just_tmp/$_just_binary" "$_just_dest/$_just_binary" || {
-            fail "Could not install just into $_just_dest"
-            rm -rf "$_just_tmp"
-            return 1
-        }
-    fi
-    PATH="$_just_dest:$PATH"
-    export PATH
     rm -rf "$_just_tmp"
+    PATH="$_just_dest${PATH:+:$PATH}"
+    export PATH
 }
 
 # Ensure just is on PATH, reusing an existing installation when available.
@@ -320,8 +315,9 @@ install_just() {
         scoop)      scoop install just ;;
         winget)     winget install --exact --id Casey.Just ;;
         choco)      choco install just -y ;;
-        rpm-ostree) as_root rpm-ostree install just ;;
-        guix)       guix install just ;;
+        # rpm-ostree layers packages for the next boot; Guix's profile may
+        # not be on this process's PATH. The pinned binary is usable now.
+        rpm-ostree|guix) install_just_pinned ;;
         pkg)        as_root pkg install -y just ;;
         pkg_add)    as_root pkg_add just ;;
         pkgin)      as_root pkgin -y install just ;;

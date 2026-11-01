@@ -29,59 +29,59 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      
+
       - name: Required Files Gate
         if: ${{ !cancelled() }}
         uses: hyperpolymath/cicd-suite/actions/required-files-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-        
+
       - name: Code Hygiene Gate
         if: ${{ !cancelled() }}
         uses: hyperpolymath/cicd-suite/actions/code-hygiene-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-        
+
       - name: Manifest Validation Gate
         if: ${{ !cancelled() }}
         uses: hyperpolymath/cicd-suite/actions/manifest-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-        
+
       - name: Idris2 ABI Purity Gate
         if: ${{ !cancelled() }}
         uses: hyperpolymath/cicd-suite/actions/idris2-abi-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-        
+
       - name: Zig UnifiedApiAdapter API Gate
         if: ${{ !cancelled() }}
         uses: hyperpolymath/cicd-suite/actions/zig-unified-api-adapter-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-        
+
       - name: Contractile Validation Gate
         if: ${{ !cancelled() }}
         uses: hyperpolymath/cicd-suite/actions/contractile-validation-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-        
+
       - name: Recipes Set Validation Gate
         if: ${{ !cancelled() }}
         uses: hyperpolymath/cicd-suite/actions/recipes-set-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-        
+
       - name: Affirmation Document Gate
         if: ${{ !cancelled() }}
         run: bash .github/affirmation-trusted/check.sh
-        
+
       - name: Academic Referencing Gate
         if: ${{ !cancelled() }}
         uses: hyperpolymath/cicd-suite/actions/referencing-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-        
+
       - name: Semantic Audit Gate
         if: ${{ !cancelled() }}
         uses: hyperpolymath/cicd-suite/actions/semantic-audit-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-        
+
       - name: SPDX License Gate
         if: ${{ !cancelled() }}
         uses: hyperpolymath/cicd-suite/actions/spdx-license-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-        
+
       - name: Proof Runner Gate
         if: ${{ !cancelled() }}
         uses: hyperpolymath/cicd-suite/actions/proof-runner-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-        
+
       - name: PRAT Testing Gate
         if: ${{ !cancelled() }}
         uses: hyperpolymath/cicd-suite/actions/prat-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-        
+
       # No "Panic Attack & Pons" step here (removed 2026-10-28): the
       # cicd-suite custom-tools-check composite prints "validation passed"
       # when neither tool is on PATH — which is always — so it certified
@@ -94,47 +94,47 @@ jobs:
       - name: WWW & Well-Known Compliance Gate
         if: ${{ !cancelled() }}
         uses: hyperpolymath/cicd-suite/actions/www-compliance-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-        
+
       - name: BoJ Cartridge Validation Gate
         if: ${{ !cancelled() }}
         uses: hyperpolymath/cicd-suite/actions/boj-cartridge-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-        
+
       - name: Formatting Validation Gate
         if: ${{ !cancelled() }}
         uses: hyperpolymath/cicd-suite/actions/formatting-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-        
+
       - name: Accreditations & Badges Gate
         if: ${{ !cancelled() }}
         uses: hyperpolymath/cicd-suite/actions/badges-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-        
+
       - name: Metrics Extraction Gate
         if: ${{ !cancelled() }}
         uses: hyperpolymath/cicd-suite/actions/metrics-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-        
+
       - name: Linguist & Banned Languages Gate
         if: ${{ !cancelled() }}
         uses: hyperpolymath/cicd-suite/actions/linguist-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-        
+
       - name: Test & Benchmarks Dashboard Gate
         if: ${{ !cancelled() }}
         uses: hyperpolymath/cicd-suite/actions/tests-benches-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-        
+
       - name: Hosting & Site Status Gate
         if: ${{ !cancelled() }}
         uses: hyperpolymath/cicd-suite/actions/hosting-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-        
+
       - name: Git-Sea Analytics Gate
         if: ${{ !cancelled() }}
         uses: hyperpolymath/cicd-suite/actions/gitsea-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-        
+
       - name: Trust & Humans Validation Gate
         if: ${{ !cancelled() }}
         uses: hyperpolymath/cicd-suite/actions/trust-humans-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-        
+
       - name: Are We UnAPI Gate (Secret Scanning)
         if: ${{ !cancelled() }}
         uses: hyperpolymath/cicd-suite/actions/secrets-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-        
+
       - name: Reasonably Good Token Validation Gate
         if: ${{ !cancelled() }}
         uses: hyperpolymath/cicd-suite/actions/vaulted-tokens-check@bf7dd95cf49733019343ff485c2f45c6b261839c

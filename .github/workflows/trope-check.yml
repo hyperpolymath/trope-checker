@@ -14,9 +14,11 @@ on:
     paths:
       - 'schemas/**'
       - 'src/idris2/**'
+      - 'src/rust/**'
       - 'src/interface/**'
       - 'abi.ipkg'
       - 'tests/conformance/**'
+      - 'tests/lib/strip-proof-comments.awk'
       - 'verification/proofs/idris2/**'
       - 'spec/**'
       - '.github/workflows/trope-check.yml'

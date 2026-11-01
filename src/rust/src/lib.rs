@@ -709,6 +709,11 @@ pub fn dec_edge(v: &Json) -> Result<Edge, String> {
         .and_then(|x| x.as_str())
         .ok_or("edges: missing id")?
         .to_string();
+    match v.field("effect").and_then(Json::as_str) {
+        Some("preserve" | "project" | "collapse" | "detach" | "attenuate" | "fuse") => {}
+        Some(effect) => return Err(format!("edges/{id}/effect: unknown effect \"{effect}\"")),
+        None => return Err(format!("edges/{id}/effect: missing or non-string effect")),
+    }
     let inputs = match v.field("inputs") {
         Some(i) => str_list(i),
         None => Vec::new(),
@@ -765,8 +770,8 @@ pub fn dec_floor(v: &Json) -> Result<Floor, String> {
     })
 }
 /// Validate the graph structure the calculus requires before grading: node
-/// IDs are unique, every referenced node (edge inputs, edge outputs, and
-/// `use_model.output`) is declared, each node has at most one producing
+/// and edge IDs are unique, every referenced node (edge inputs, edge outputs,
+/// and `use_model.output`) is declared, each node has at most one producing
 /// edge, and the producer graph is acyclic.
 ///
 /// Structural faults are validation faults and MUST NOT produce a verdict:
@@ -783,7 +788,11 @@ fn validate_graph(nodes: &[Node], edges: &[Edge], out: &str) -> Result<(), Strin
         return Err(format!("use_model/output: undeclared node \"{out}\""));
     }
     let mut producer: BTreeMap<&str, &str> = BTreeMap::new();
+    let mut edge_ids = BTreeSet::new();
     for e in edges {
+        if !edge_ids.insert(e.id.as_str()) {
+            return Err(format!("edges/{}: duplicate edge id", e.id));
+        }
         if !declared.contains(e.output.as_str()) {
             return Err(format!(
                 "edges/{}/output: undeclared node \"{}\"",
@@ -831,8 +840,8 @@ fn validate_graph(nodes: &[Node], edges: &[Edge], out: &str) -> Result<(), Strin
 /// # Errors
 /// Returns an error for unsupported versions, missing document fields,
 /// invalid nodes, edges, or floors, or a structurally invalid graph
-/// (duplicate node IDs, undeclared node references, duplicate producers,
-/// or cycles) — see `validate_graph`.
+/// (duplicate node or edge IDs, undeclared node references, duplicate
+/// producers, or cycles) — see `validate_graph`.
 pub fn dec_doc(v: &Json) -> Result<Doc, String> {
     // Accepted document versions (IR 0.2, R-2026-07-07). "0.1" stays accepted:
     // the wire format is identical, and 0.1 documents are normalized and graded
@@ -841,6 +850,15 @@ pub fn dec_doc(v: &Json) -> Result<Doc, String> {
         Some("0.1" | "0.2") => {}
         Some(o) => return Err(format!("version: unsupported \"{o}\" (accepted: 0.1, 0.2)")),
         None => return Err("missing \"version\"".into()),
+    }
+    match v.field("profile").and_then(Json::as_str) {
+        Some("prevent") => {}
+        Some(profile) => {
+            return Err(format!(
+                "profile: unsupported \"{profile}\" (expected prevent)"
+            ))
+        }
+        None => return Err("profile: missing or non-string profile".into()),
     }
     let nodes = v
         .field("nodes")
@@ -1114,5 +1132,73 @@ mod grade_le_tests {
             "floor 3 must NOT be met by loss 6"
         );
         assert!(grade_le(&loose, &residue), "floor 10 must be met by loss 6");
+    }
+}
+
+#[cfg(test)]
+mod decoder_profile_effect_tests {
+    use super::*;
+
+    fn fixture() -> Json {
+        parse_json(include_str!(
+            "../../../tests/conformance/fixtures/atten-zero-normalizes.ir.json"
+        ))
+        .unwrap()
+    }
+
+    fn set_field(value: &mut Json, name: &str, replacement: Option<Json>) {
+        let Json::Obj(fields) = value else {
+            panic!("expected an object");
+        };
+        fields.retain(|(key, _)| key != name);
+        if let Some(replacement) = replacement {
+            fields.push((name.to_string(), replacement));
+        }
+    }
+
+    #[test]
+    fn document_requires_prevent_profile() {
+        assert!(dec_doc(&fixture()).is_ok());
+        for value in [None, Some(Json::Null), Some(Json::Str("detect".into()))] {
+            let mut doc = fixture();
+            set_field(&mut doc, "profile", value);
+            assert!(matches!(dec_doc(&doc), Err(e) if e.contains("profile")));
+        }
+    }
+
+    #[test]
+    fn edge_requires_a_writable_effect() {
+        let Json::Arr(edges) = fixture().field("edges").unwrap().clone() else {
+            panic!("expected edges");
+        };
+        let edge = &edges[0];
+        for effect in [
+            "preserve",
+            "project",
+            "collapse",
+            "detach",
+            "attenuate",
+            "fuse",
+        ] {
+            let mut edge = edge.clone();
+            set_field(&mut edge, "effect", Some(Json::Str(effect.into())));
+            assert!(dec_edge(&edge).is_ok(), "{effect}");
+        }
+        for value in [None, Some(Json::Null), Some(Json::Str("falsify".into()))] {
+            let mut doc = fixture();
+            let Json::Obj(ref mut fields) = doc else {
+                panic!("expected a document");
+            };
+            let Json::Arr(edges) = &mut fields
+                .iter_mut()
+                .find(|field| field.0 == "edges")
+                .unwrap()
+                .1
+            else {
+                panic!("expected edges");
+            };
+            set_field(&mut edges[0], "effect", value);
+            assert!(matches!(dec_doc(&doc), Err(e) if e.contains("effect")));
+        }
     }
 }
