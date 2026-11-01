@@ -52,7 +52,7 @@ permissions:
 jobs:
   deed:
     name: DEED syntax
-    uses: metadatastician/standards/.github/workflows/deed-conformance.yml@34cf03f988b8ca95b91b45d9b3351f7d3babfb65
+    uses: metadatastician/standards/.github/workflows/deed-conformance.yml@857ff096af11451841fb10488fed1438523973a1
     permissions:
       contents: read
     with:
@@ -60,7 +60,7 @@ jobs:
 
   k9:
     name: K9-DEED conformance
-    uses: metadatastician/standards/.github/workflows/k9-conformance.yml@34cf03f988b8ca95b91b45d9b3351f7d3babfb65
+    uses: metadatastician/standards/.github/workflows/k9-conformance.yml@857ff096af11451841fb10488fed1438523973a1
     permissions:
       contents: read
       pull-requests: read
@@ -88,7 +88,7 @@ jobs:
     # orange fleet rows, never as a missing lane.
     needs: [fleet]
     if: ${{ always() }}
-    uses: metadatastician/standards/.github/workflows/hypatia-scan-reusable.yml@34cf03f988b8ca95b91b45d9b3351f7d3babfb65
+    uses: metadatastician/standards/.github/workflows/hypatia-scan-reusable.yml@857ff096af11451841fb10488fed1438523973a1
     permissions:
       actions: read
       contents: read
