@@ -23,7 +23,7 @@ jobs:
       # risking the dispatch; tighten to block+allowlist once a main run
       # shows the observed set.
       - name: Harden runner (egress audit)
-        uses: step-security/harden-runner@v2.22.3
+        uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43 # v2.22.3
         with:
           egress-policy: audit
       - name: Trigger Propagation

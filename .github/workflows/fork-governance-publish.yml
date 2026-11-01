@@ -3,9 +3,10 @@
 # Never check out the PR or execute anything downloaded from its run.
 #
 # Trust model: a fork PR controls the PR-side Fork governance workflow, so
-# its artifacts can lie. Lane pass/fail is therefore derived from GitHub's
-# own run metadata (job conclusions), the run must have actually called the
-# pinned reusable workflows named by the DEFAULT branch's
+# its artifacts can lie. Publication requires the PR head and base copies of
+# the scan workflow to match the default branch's trusted copy byte-for-byte.
+# Lane pass/fail is derived from GitHub's own run metadata (job conclusions),
+# and the run must have actually called the pinned reusable workflows named by the DEFAULT branch's
 # fork-governance.yml (referenced_workflows), and the artifact's lane
 # claims must agree or publication is refused. What remains
 # artifact-sourced is display shading only (K9/Hypatia verdict colors,
@@ -75,6 +76,23 @@ jobs:
           # workflow that fakes or swaps a lane does not satisfy this.
           gh api "repos/$GITHUB_REPOSITORY/contents/.github/workflows/fork-governance.yml" \
             --jq .content | base64 -d > "$RUNNER_TEMP/trusted-fork-governance.yml"
+          # A malicious PR can call the pinned reusables AND forge lookalike
+          # jobs/artifacts. Require the actual PR head and base workflow files
+          # to match the trusted default, not merely the list of reusables.
+          gh api "repos/$GITHUB_REPOSITORY/pulls/$pr" > "$RUNNER_TEMP/current-pr.json"
+          jq -e --arg sha "$sha" '.state == "open" and .head.sha == $sha' \
+            "$RUNNER_TEMP/current-pr.json" >/dev/null
+          head_repo=$(jq -r '.head.repo.full_name' "$RUNNER_TEMP/current-pr.json")
+          base_sha=$(jq -r '.base.sha' "$RUNNER_TEMP/current-pr.json")
+          gh api "repos/$head_repo/contents/.github/workflows/fork-governance.yml?ref=$sha" \
+            --jq .content | base64 -d > "$RUNNER_TEMP/head-fork-governance.yml"
+          gh api "repos/$GITHUB_REPOSITORY/contents/.github/workflows/fork-governance.yml?ref=$base_sha" \
+            --jq .content | base64 -d > "$RUNNER_TEMP/base-fork-governance.yml"
+          if ! cmp -s "$RUNNER_TEMP/trusted-fork-governance.yml" "$RUNNER_TEMP/head-fork-governance.yml" ||
+             ! cmp -s "$RUNNER_TEMP/trusted-fork-governance.yml" "$RUNNER_TEMP/base-fork-governance.yml"; then
+            echo "::error::PR scan workflow differs from the trusted default; refusing to publish."
+            exit 1
+          fi
           grep -oE 'uses: [^[:space:]#]+' "$RUNNER_TEMP/trusted-fork-governance.yml" \
             | awk '{print $2}' | grep '/\.github/workflows/' | sort -u \
             > "$RUNNER_TEMP/expected-reusables.txt"
@@ -116,7 +134,7 @@ jobs:
           name: fork-governance-result
           path: evidence
           github-token: ${{ github.token }}
-          run-id: ${{ steps.source.outputs.run }}
+          run-id: ${{ github.event.workflow_run.id }}
 
       - name: Validate lane result data
         if: steps.source.outputs.pr != ''
@@ -151,7 +169,7 @@ jobs:
           name: k9-grid
           path: k9-grid
           github-token: ${{ github.token }}
-          run-id: ${{ steps.source.outputs.run }}
+          run-id: ${{ github.event.workflow_run.id }}
 
       - name: Download the Hypatia grid from the verified run
         if: steps.source.outputs.pr != ''
@@ -161,18 +179,16 @@ jobs:
           name: verdict-grid
           path: verdict-grid
           github-token: ${{ github.token }}
-          run-id: ${{ steps.source.outputs.run }}
+          run-id: ${{ github.event.workflow_run.id }}
 
-      - name: Checkout the pinned trusted renderer
+      - name: Fetch the pinned trusted renderer
         if: steps.source.outputs.pr != ''
-        uses: actions/checkout@v7.0.1
-        with:
-          repository: metadatastician/standards
-          ref: 34cf03f988b8ca95b91b45d9b3351f7d3babfb65
-          path: canon
-          sparse-checkout: scripts/fork-governance-render.sh
-          sparse-checkout-cone-mode: false
-          persist-credentials: false
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api 'repos/metadatastician/standards/contents/scripts/fork-governance-render.sh?ref=34cf03f988b8ca95b91b45d9b3351f7d3babfb65' \
+            --jq .content | base64 -d > "$RUNNER_TEMP/trusted-renderer.sh"
 
       - name: Render and publish the verified run's summary
         if: steps.source.outputs.pr != ''
@@ -196,7 +212,7 @@ jobs:
                 --sha "$sha" --run "$(jq -r '.run' evidence/result.json)" --repo "$GITHUB_REPOSITORY")
           [ ! -s k9-grid/report.md ] || args+=(--k9-report k9-grid/report.md)
           [ ! -s verdict-grid/report.md ] || args+=(--hypatia-report verdict-grid/report.md)
-          bash canon/scripts/fork-governance-render.sh "${args[@]}" >/dev/null
+          bash "$RUNNER_TEMP/trusted-renderer.sh" "${args[@]}" >/dev/null
           cat "$RUNNER_TEMP/fork-governance/body.md" >> "$GITHUB_STEP_SUMMARY"
           comment_id=$(gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" \
             | jq -r '[.[][] | select(.user.login == "github-actions[bot]"
