@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: CC-BY-SA-4.0
 // SPDX-License-Identifier: CC-BY-SA-4.0
 = AFFIRMATION — trope-checker
-:revdate: 2026-10-27
+:revdate: 2026-11-04
 
 A dated, ground-truthed honesty snapshot (the README/EXPLAINME/AFFIRMATION trio).
 This is the brief's "STATUS" deliverable: what is proved, what is stubbed-and-named,
@@ -149,7 +149,7 @@ then #109 decoder fixes, #110, #111), read in an Ubuntu cloud container with rus
 *Ground truth (commands run here):*
 
 * `cargo build --release` in `src/rust` → `tropecheck-rs` builds;
-  `TROPECHECK_BIN=… bash tests/conformance/run.sh` → "conformance: all pass".
+  `TROPECHECK_BIN=src/rust/target/release/tropecheck-rs bash tests/conformance/run.sh` → "conformance: all pass".
 * `grep` over `verification/proofs/lean4/grade-boundary/EffectAtomsRatified.lean` →
   `theorem atom_factorization (g : GradeR)` with its own `#print axioms` line and no
   `sorry`; the module is in `lakefile.toml`'s default targets and in the
