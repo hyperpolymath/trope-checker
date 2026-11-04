@@ -149,8 +149,8 @@ claimed lemmas (the Lean results rest on the standard library's `propext`/`Quot.
 and `Classical.choice` in three theorems). On the ratified carrier (ADR 0004, R-2026-07-07) the grade algebra is a commutative
 monoid with the three deceptive bottoms as two-sided zeros; L1–L6, conicality, the
 cancellation boundary (left-cancellative iff ε), the Honest Generation and
-Veridicality theorems, the atom factorisation (O1's carrier half — stated on the v0.1 `Grade`,
-not yet restated on `GradeR`) and the tropical factorisations — pre-ratification
+Veridicality theorems, the atom factorisation (O1's carrier half, proved on the ratified `GradeR` in
+`EffectAtomsRatified.lean`; O1-coord stays open) and the tropical factorisations — pre-ratification
 `GradeFactorisation.lean` veridicality-blind, ratified `GradeFactorisationR.lean`
 veridicality-sighted — are proved across Agda, Idris2 and Lean; Theorem B gives
 grade-exact substitution and β/let subject reduction. The

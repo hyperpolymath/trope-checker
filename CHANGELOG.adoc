@@ -11,7 +11,8 @@ https://semver.org/spec/v2.0.0.html[Semantic Versioning].
 ==== Changed
 
 * *Status surfaces reconciled with the spec on O1-carrier (2026-11-04).*
-`+docs/status/PROOF-STATUS.adoc+` and `+docs/status/ROADMAP.adoc+` now say what
+`+docs/status/PROOF-STATUS.adoc+`, `+docs/status/ROADMAP.adoc+` and the README status
+paragraph now say what
 `+spec/calculus.adoc §3.5+`/`+§10+` already said: the atom factorisation is proved
 on the ratified `+GradeR+` (`+EffectAtomsRatified.lean+`), the nine-family
 classification is carrier-independent, and `+EffectAtoms.lean+` is history; the
