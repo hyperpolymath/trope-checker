@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: CC-BY-SA-4.0
 // SPDX-License-Identifier: CC-BY-SA-4.0
 = AFFIRMATION — trope-checker
-:revdate: 2026-10-27
+:revdate: 2026-11-04
 
 A dated, ground-truthed honesty snapshot (the README/EXPLAINME/AFFIRMATION trio).
 This is the brief's "STATUS" deliverable: what is proved, what is stubbed-and-named,
@@ -137,5 +137,37 @@ only" wording in spec §9.3, PROOF-STATUS and the proofs README overclaimed and 
 v0.1 `Grade`; no `GradeR` restatement exists. The factorisation is componentwise and
 should transfer, but that is an argument, not a proof — recorded in PROOF-STATUS (Open)
 and left for the owner where `spec/calculus.adoc §6/§10` cite it as ratified-carrier.
+
+— Run by the Phase 0 agent; the owner signs on landing.
+
+== As of 2026-11-04 — status surfaces reconciled with `main` after #107
+
+*Anchor.* `main` at `4ecba4f` (Phase 0 landed through #107 `190cc75` on 2026-10-31,
+then #109 decoder fixes, #110, #111), read in an Ubuntu cloud container with rustc
+1.97.0 and no Agda, Idris 2 or Lean toolchain reachable.
+
+*Ground truth (commands run here):*
+
+* `cargo build --release` in `src/rust` → `tropecheck-rs` builds;
+  `TROPECHECK_BIN=src/rust/target/release/tropecheck-rs bash tests/conformance/run.sh` → "conformance: all pass".
+* `grep` over `verification/proofs/lean4/grade-boundary/EffectAtomsRatified.lean` →
+  `theorem atom_factorization (g : GradeR)` with its own `#print axioms` line and no
+  `sorry`; the module is in `lakefile.toml`'s default targets and in the
+  `proofs.yml` `lean-build` module list.
+* Agda, Idris2 and Lean → *NOT RUN here*; the `proofs.yml` run on `main` at
+  `4ecba4f` is the attestation:
+  https://github.com/hyperpolymath/trope-checker/actions/runs/41519571355
+  (Agda Theorem B, both Lean packages with `leanchecker` and the axiom audit, and
+  the comment-aware honesty gate — all green).
+
+*What changed in the record.* Finding (4) of the 2026-10-27 entry is superseded:
+the `GradeR` restatement of the atom factorisation exists and is checked
+(`EffectAtomsRatified.lean`, `GradeR.atom_factorization`), as `spec/calculus.adoc
+§3.5` and `§10` already said on `main`; `docs/status/PROOF-STATUS.adoc` and
+`docs/status/ROADMAP.adoc`, which still called the port open, now agree with the
+spec. The 2026-10-27 entry's note on lean-action's `nanoda` step is history:
+`proofs.yml` no longer uses it (#104 closed). Nothing else in this entry re-asserts a
+result the 2026-10-27 entry stated; where a toolchain was not run here, the run cited
+above is the only evidence claimed.
 
 — Run by the Phase 0 agent; the owner signs on landing.

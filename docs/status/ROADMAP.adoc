@@ -26,8 +26,9 @@ what is open: `docs/status/PROOF-STATUS.adoc`, `AFFIRMATION.adoc`,
   Targets 1, 2, 4 proved; Target 3 β/let proved.
 * [x] L4 monotonicity in full, both arguments, every coordinate (Idris2, Lean, Agda); L6
   commutativity.
-* [x] Atom factorisation — O1-carrier proved on the historical `GradeBoundary`
-  carrier (`EffectAtoms.lean`): nine atom families. Restatement on ratified `GradeR` remains open.
+* [x] Atom factorisation — O1-carrier proved on the ratified `GradeR`
+  (`EffectAtomsRatified.lean`); the nine-family classification (`EffectAtoms.lean`)
+  is carrier-independent. O1-coord stays open.
 * [x] Tier-2 cancellation membership exhaustive (`TierTwoComplete.lean`).
 * [x] Tropical factorisation re-run on the ratified carrier: (B′) factors and
   veridicality-sighted (`GradeFactorisationR.lean`).
