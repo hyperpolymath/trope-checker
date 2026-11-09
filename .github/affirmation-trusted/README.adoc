@@ -15,9 +15,10 @@ still be classified.
 
 == Why it exists
 
-The Affirmation Document Gate (`actions/affirmation-check`) classifies the
-signature on the commit that last changed `AFFIRMATION.adoc`. The copy of the
-web-flow key vendored inside that action is GitHub's *previous* key
+The Affirmation Document Gate (`actions/affirmation-check`) attempts to classify
+the signature on the commit that last changed `AFFIRMATION.adoc`, using the
+available Git history. The copy of the web-flow key vendored inside that action
+is GitHub's *previous* key
 (`5DE3E0509C47EA3CF04A42D34AEE18F83AFDEB23`, expired 2024-01-16) — the action's
 own fingerprint allowlist names the new key, but the new key is not in its
 keyring. A GitHub-signed commit whose key the keyring lacks (web merges, squash
@@ -43,9 +44,10 @@ local script is no longer wired into CI.
 That gate checks out at depth 1, so the commit whose signature it classifies is
 the *checkout boundary*. On a pull request that is the test-merge commit; on a
 push it is the branch tip. Neither is necessarily the commit that last changed
-`AFFIRMATION.adoc`. The gate does say so — it emits a notice naming the
-boundary commit — but a green there means "the boundary commit's signature
-verified", which is weaker than "the affirming commit's signature verified".
+`AFFIRMATION.adoc`. The gate emits a notice naming the boundary commit. Even
+when that commit's signature verifies, CI may not have checked the signature
+on the commit that last changed `AFFIRMATION.adoc`. A passing gate can also
+report that the boundary commit's signature could not be verified.
 Measured on this repository 2026-11-09: the gate passes in both shapes
 (`estate-audit / governance` on PR run 42605863386; a depth-1 push-shape run
 over the GitHub-signed landing commit `c0eb4f1` exited 0 with "verified with a
