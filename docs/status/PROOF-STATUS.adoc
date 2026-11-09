@@ -32,12 +32,12 @@ toc::[]
 | Idris2 `Trope.Grade.{gradeUnitL,gradeUnitR}`, `Trope.Coords.fateUnitL`, `Trope.Fidelity.dplusZeroR`; Agda `TB.Grade.{gmonoid-unitL,gmonoid-unitR}`.
 
 | L3 (bottom absorption)
-| Each deceptive bottom (`Falsified`, `Misbound`, `Conflated`, fidelity `Unknown`) is a two-sided zero of its coordinate's composition (A1). `Total` absorbs within fidelity.
+| Each deceptive bottom (`Falsified`, `Misbound`, `Conflated`, fidelity `Unknown`) is a two-sided zero of its coordinate's composition (A1). `Total` absorbs within fidelity. In Agda both sides are stated only for `Falsified` (`falsified-absorbL`/`-absorbR`); for `Misbound`, `Conflated` and `Unknown` the left form is stated and the right form follows in one step from the coordinate's commutativity (`▷b-comm`, `▷m-comm`, `⊕d-comm`) but is not itself a lemma.
 | Agda `TB.Grade.{falsified-absorbL,falsified-absorbR,misbound-absorbL,conflated-absorbL,unknown-absorbL,total-absorb-Q}`, `TB.Tier.deceptive-absorbs-▷`; Lean `FateA.falsified_two_sided_zero`, `GradeR.gBotR_two_sided_zero`.
 
 | L4 (monotonicity), in full
-| stem:[\triangleright] is monotone in both arguments w.r.t. stem:[\sqsubseteq] on every coordinate of the ratified carrier.
-| Idris2 `Trope.Soundness.{fateL4MonoR,fateL4MonoL}`, `Trope.Order.{bondComposeMono,mergeComposeMono}`; Agda `TB.Order.{fateL4MonoR,fateL4MonoL}`; Lean `FateA.{comp_mono_right,comp_mono_left}`.
+| stem:[\triangleright] is monotone in both arguments w.r.t. stem:[\sqsubseteq] on every coordinate of the ratified carrier. Coverage differs by prover: the Agda covers the fate coordinate (`fateL4Mono{R,L}`) and the fidelity dimension (`dplusMono{R,L}`) only; the bond and merge coordinates, and the grade-level lifting that spec §7's Knaster–Tarski argument invokes, have an Idris2 leg only. Per PROOF-POLICY §8.1 Idris2 is an engineering prover and is not on the PWG ladder, so those parts of L4 currently have no gradeable theory leg.
+| Idris2 `Trope.Soundness.{fateL4MonoR,fateL4MonoL}`, `Trope.Order.{bondComposeMono,mergeComposeMono}`; Agda `TB.Order.{fateL4MonoR,fateL4MonoL}`; Lean `FateA.{comp_mono_right,comp_mono_left}` (fate coordinate only; `FateA.le` is defined on `Fate` alone and the Lean tree carries no `Bond`, `Merge` or `GradeR` order).
 
 | L5 (deception infectiousness)
 | Once a coordinate is at its deceptive bottom no composition restores an honest value; applying any further effect to a deceptive term keeps it deceptive. A corollary of L3.
@@ -83,13 +83,13 @@ toc::[]
 
 | C3 (partition; tier closure is not a homomorphism)
 | `Dropped`, `Total`, `Severed`, `Predicated`, `Withheld`, `Fused` are honest non-cancellative elements; `Falsified`, `Misbound`, `Conflated`, `Unknown` are the deceptive ones. `tierOf (g ▷ h) = tierOf g ⊓ tierOf h` is false on fate; tier preservation is closure.
-| Lean `dropped_absorbing`, `fidelity_total_honest_not_cancel` (`GradeBoundary.lean`); Agda `TB.Tier.fate-tier-meet-hom-fails`, the `TB.Tier` classifiers.
+| Lean `FateA.dropped_still_not_cancel` (`L4Monotonicity.lean`, ratified carrier), `fidelity_total_honest_not_cancel` (`GradeBoundary.lean`, over `Delta`, which ratification leaves unchanged); Agda `TB.Tier.fate-tier-meet-hom-fails`, the `TB.Tier` classifiers. (`GradeBoundary.lean`'s `dropped_absorbing` — `dropped * f = dropped` for `Fate.comp` — was cited here previously. It is a true theorem of the *pre-ratification* carrier that file mirrors, but it is not one of the ratified carrier this table is scoped to: amendment (A1) gives `FateA.comp dropped falsified = falsified`. Retained as history only.)
 
 3+^| _Factorisation_
 
 | O1-carrier (atom factorisation)
-| Every grade is the stem:[\triangleright]-product of its single-slot projections; nine atom families, each realised, pairwise disjoint. Proved on the ratified `GradeR` (`EffectAtomsRatified.lean`); the coordinate-value classification into nine families (`EffectAtoms.lean`) is carrier-independent and carries over unchanged. `EffectAtoms.lean`'s `Grade.atom_factorization` is the same statement over the historical pre-ratification carrier, retained as history (`spec/calculus.adoc §3.5`, `§10`).
-| Lean `EffectAtomsRatified.lean`: `Trope.GradeR.atom_factorization` (its `#print axioms` and the CI axiom audit: no `sorryAx`, no user axiom); `EffectAtoms.lean`: `Trope.nine_families`, `Trope.family_realized`, `Trope.families_disjoint`, `fateFamily_none_iff`.
+| *Mechanised:* every grade is the stem:[\triangleright]-product of its six single-slot projections, on the ratified `GradeR` (`EffectAtomsRatified.lean`). *Mechanised separately,* over the coordinate value types `Fate`/`Bond`/`Merge` — which `GradeR` reuses unchanged, so the results are independent of either carrier (`EffectAtoms.lean`): the nine-label type has nine elements (`nine_families`, the cardinality of `AtomFamily`), each label is realised by some coordinate value, and the three classifiers' images are pairwise disjoint. *Not mechanised:* the link between the two. No theorem maps a grade's slot projections to `AtomFamily`, and the `emb*_one` lemmas that would begin that bridge are stated but used by nothing; so "the projections are drawn from the nine families" and "the typology is exhaustive" are argued in the module docstring, not stated as propositions. Exhaustiveness over the coordinate types holds by their being closed inductives and by the totality of the three classifiers, which no proposition records. `EffectAtoms.lean`'s `Grade.atom_factorization` is the factorisation statement over the historical pre-ratification carrier, retained as history (`spec/calculus.adoc §3.5`, `§10`).
+| Lean `EffectAtomsRatified.lean`: `Trope.GradeR.atom_factorization`; `EffectAtoms.lean`: `Trope.nine_families`, `Trope.family_realized`, `Trope.families_disjoint`, `fateFamily_none_iff`. Receipt: `proofs.yml` run 41519571355, job "Lean grade-boundary: lake build + sorry-free environment", success, which emitted `'Trope.GradeR.atom_factorization' depends on axioms: [propext]` and `'Trope.nine_families' depends on axioms: [propext, Classical.choice, Quot.sound]`. That run is at `4ecba4f`, not at current `main`: `proofs.yml`'s push trigger is path-filtered and the commit that landed these rows (#112) touched no proof path. The carry-forward is sound but stated, not silent (PROOF-POLICY §8.4 rule 4) — `verification/proofs/lean4` is tree `5f32026` and `verification/proofs/agda` is tree `8d3370e` at both `4ecba4f` and `c0eb4f1`, i.e. byte-identical. The in-source `#print axioms` directive is a request to the kernel, not evidence; the emitted axiom lines above are. See the Proof Witness Grades section for this row's grade.
 
 | Tropical factorisation, (B′) sighted
 | A nontrivial surjective monoid homomorphism stem:[\pi_R] onto the commutative tropical fidelity carrier exists and distinguishes `Dropped` (stem:[\infty]) from `Falsified` (stem:[\top]); the verbatim-payload map is not a homomorphism, and any sighted homomorphism squashes `Unknown` to the deceptive top.
@@ -106,7 +106,7 @@ toc::[]
 | Agda `TB.Substitution.{cut-preserves-grade,cut-grade-comm}`.
 
 | Target 3 — subject reduction, β/let core
-| β and `let` steps preserve type and grade exactly; the redex grade is the contractum grade; the tier is preserved; sequencing two core computations stays in the core.
+| β and `let` steps preserve type and grade exactly; the redex grade is the contractum grade; the tier is preserved; sequencing two core computations stays in the core. The fragment is narrow and intrinsic: `TB.Reduction._↝_` has exactly two constructors, `β-app` and `β-let`, each requiring the substituted argument at grade `ε`, with no congruence or evaluation-context rule and no step for any effect former. Because the relation is indexed at the same type *and* the same grade on both sides, preservation holds by construction rather than by induction over a reduction system, as the module header states. There is no progress theorem.
 | Agda `TB.Reduction.{β-app,β-let,let-redex-grade,let-tier-preserved,seq-stays-core}`. (The `fix` case is open: see CO-1 below.)
 
 | Target 4 — Honest Generation and Veridicality
@@ -134,6 +134,91 @@ toc::[]
 
 The Rust fast core (`src/rust/`) is not a proof; it agrees with the Idris2
 reference over the whole conformance corpus (`just trope-rust`).
+
+== Proof Witness Grades
+
+Estate policy
+link:https://github.com/metadatastician/standards/blob/main/3-practice/PROOF-POLICY.adoc[`PROOF-POLICY.adoc`]
+§8 (owner ruling 2026-11-04) requires each *theory* theorem's Proof Witness
+Grade to be recorded in its home repository's proof-status file (§8.5). This
+section is that record. PWG counts independent machine-checked witnesses for a
+theory theorem; *lower is stronger* (§8, the numbers count down). It is not a
+status token (§5) and not a statement that the theorem complies with the policy
+(§8.4 rule 1). Grades here are *derived* from the receipts and the legs that
+exist (§8.4 rule 2); a gate may recompute them and should get the same values.
+
+Per §8.1, PWG applies only to theory obligations. The Idris2 developments are
+engineering proofs and are not graded on this ladder; they carry §5 tokens only.
+
+[cols="2,1,1,3",options="header"]
+|===
+| Theorem(s) | `pwg` | `foundation_diverse` | Legs (route · §5 token · §2.2 state · receipt)
+
+| Theorem B, Targets 1–4 (Agda `TB.*`)
+| `ungraded`
+| `false`
+| *Agda* re-proved · `PROVEN` (zero postulates; `--safe` refuses them, and the scan below finds none) · §2.2 state: the sources are checked, but no §8.2-complete receipt exists yet, so the leg is not demonstrable from this repository's records. The flags in force *are* the §2.1 invocation — `.github/workflows/proofs.yml:167` and `build/just/proofs.just:87,212` all pass `--safe --without-K --cubical-compatible` — but every *recorded* Agda result in this repository is written up as `--safe --without-K` only, and §2.1 is explicit that "Prior `--safe` or `--safe --without-K` successes are historical evidence, not receipts for this new combined profile". *Rocq* `unavailable` — the tree carries no Rocq (ADR 0005 D5 removed the never-instantiated template), so the leg cannot count (§8.2). *Lean* `unavailable` — the Lean tree states no part of Theorem B. Closing the gap needs only a recorded §2.1 run at the current commit; it is not a proof defect.
+
+| O1-carrier (atom factorisation), the tropical factorisations, the grade-algebra boundary results (Lean `GradeBoundary.lean`, `GradeRatified.lean`, `L4Monotonicity.lean`, `TierTwoComplete.lean`, `EffectAtoms.lean`, `EffectAtomsRatified.lean`, `GradeFactorisation.lean`, `GradeFactorisationR.lean`)
+| `ungraded`
+| `false`
+| *Agda* `OPEN` — no Agda source states these (§8.1: "a theorem with no Agda source" is `ungraded`). *Rocq* `unavailable`. *Lean* kernel-accepted `PROVEN-WITH-AXIOMS`, but it is target-only evidence under §3, so its §2.2 state is `BRIDGE-PENDING` and it does not count towards a grade (§2.2, §8.2). Independently, the whole Lean package imports Mathlib (`GradeBoundary.lean:3`, pinned in `lakefile.toml`), which PROOF-POLICY §2 forbids with no §4 exception recorded here — see the note below.
+
+|===
+
+*Census* (§8.4 rule 7, never a percentage): of 2 theory groups in this
+repository, `PWG-3` 0, `PWG-2i` 0, `PWG-2ii` 0, `PWG-1` 0, `ungraded` 2. No
+theorem here carries `+foundation-diverse` (§8.3).
+
+Why nothing reaches `PWG-1`: `PWG-1` presupposes `PWG-2ii`, which presupposes
+both recheck legs counting. No Rocq development exists in this repository, and
+the Lean development is not a recheck of an Agda source, so the ladder cannot
+be climbed from here however much Agda work is done. `ungraded` for Theorem B
+reflects a missing *record*, not a missing proof; `ungraded` for the Lean-only
+results reflects a missing Agda *source* (§8.1).
+
+=== Import cone (§1.1)
+
+§1.1 lets a checked dependency be recorded as a cone rather than an `ASSUMED`
+row, provided the record names the root module, the flags in force, the
+postulate count and the library pin:
+
+* *Root modules*: `verification/proofs/agda/theorem-b/All.agda` (all seven `TB.*`
+  modules are reachable from it) and `Smoke.agda`.
+* *Flags in force*: `--safe --without-K --cubical-compatible`, from
+  `theorem-b.agda-lib`'s `flags:` block plus the per-module `OPTIONS` pragma,
+  which additionally carry `--exact-split` and `--warning=error`. CI passes the
+  same three on the command line (`proofs.yml:167`).
+* *Postulate count*: zero. `--safe` refuses `postulate` outright; independently,
+  a comment-aware scan of the whole subtree (`hyperpolymath/mathesis`,
+  `scripts/census/proof-holes.sh`) run over
+  `verification/proofs/agda` at `c0eb4f1` emits no record of any class.
+* *Library*: `agda-stdlib` v2.0, pinned in `proofs.yml` by URL and SHA-256
+  `14eecb83d62495f701e1eb03ffba59a2f767491f728a8ab8c8bb9243331399d8`; Agda
+  2.7.0.1, pinned by URL and SHA-256 in the same file.
+
+So the cone is *checked, not assumed* (§1.1). What is still missing for `PWG-3`
+is the receipt itself, recorded against the current commit.
+
+[IMPORTANT]
+.Two items deferred to the owner
+====
+. *Mathlib.* PROOF-POLICY §2 reads "No Mathlib, in Lean or elsewhere ... A
+proof that needs a large external library to compile is a dependency, not a
+proof the estate owns." Every Lean file here sits in the `import Mathlib` cone.
+ADR 0005 D4 meanwhile makes "Lean 4 + Mathlib" the repository's *provenance*
+prover — a role PROOF-POLICY §1 does not define. The ADR and the policy cannot
+both stand as written; which gives way is the owner's call, as is whether to
+record a §4 exception or to de-Mathlib the package. One measurable cost of the
+dependency: `Trope.nine_families` is proved by `rfl` yet reports
+`[propext, Classical.choice, Quot.sound]`, reaching `Classical.choice` only
+through Mathlib's `Fintype.card`.
+. *Where these rows are published.* The Lean-witnessed results above are
+`ungraded` under §8.1 while appearing in the `== Proved` table under a header
+that says "machine-checked". Both statements are accurate on their own terms —
+the Lean kernel did accept them — but the placement and the header wording are
+a publication decision, not a derivation, so they are left unchanged here.
+====
 
 == Open
 
@@ -190,8 +275,10 @@ monotonicity for bond and merge. A machine-checked FINDING that strict L4 fails
 on the v0.1 fate coordinate (`fateL4MonotonicityFails`, since removed with the
 carrier it described) made L4 lax and blocked conservative grade soundness;
 both are resolved on the ratified carrier (L4 row above). O1 exhaustiveness and
-L4/L5 as standalone lemmas were listed open; both are now proved (O1-carrier,
-L4, L5 rows).
+L4/L5 as standalone lemmas were listed open. L4 and L5 are now proved (L4, L5
+rows). Of O1, only the carrier-relative half is mechanised (O1-carrier row);
+O1-coord — metaphysical adequacy — stays open, and O1 itself is therefore not
+closed.
 
 *2026-06-23.* Grade-algebra boundary in Lean (`GradeBoundary.lean`:
 `grade_mul_not_comm`, `grade_conical`, `grade_not_leftCancel`,

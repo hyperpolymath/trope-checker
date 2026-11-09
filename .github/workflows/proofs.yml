@@ -100,8 +100,12 @@ jobs:
   # Agda 2.7.0.1 release binary and the stdlib v2.0 source archive, verifies
   # both SHA-256 sums, and registers the stdlib under the name the .agda-lib
   # depends on. Verified 2026-10-13 with exactly these artefacts: All.agda and
-  # Smoke.agda typecheck under --safe --without-K, exit 0 (~100 s). A checksum
-  # mismatch fails loudly rather than silently testing a different stdlib.
+  # Smoke.agda typecheck under the PROOF-POLICY §2.1 invocation
+  # `--safe --without-K --cubical-compatible` — the flags the step below actually
+  # passes — exit 0 (~100 s). A checksum mismatch fails loudly rather than silently
+  # testing a different stdlib. NOTE: this job's display name still reads
+  # "(--safe --without-K)", understating the flags in force; renaming a check is an
+  # owner decision, since the name is what appears in the checks UI.
   agda-theorem-b:
     name: "Agda Theorem B (--safe --without-K)"
     runs-on: ubuntu-latest

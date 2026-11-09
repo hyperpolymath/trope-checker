@@ -10,6 +10,41 @@ https://semver.org/spec/v2.0.0.html[Semantic Versioning].
 
 ==== Changed
 
+* *Proof Witness Grades recorded, and the proof records reconciled with the
+sources (2026-11-09).* `+docs/status/PROOF-STATUS.adoc+` gains the §8.5 PWG record
+that `+PROOF-POLICY.adoc+` §8 (owner ruling 2026-11-04) requires, with both theory
+groups derived as `+ungraded+` — Theorem B for want of a §2.1-conformant *receipt*
+(its flags in force already are §2.1), the Lean-witnessed results for want of an
+Agda *source* — plus the §1.1 import-cone record and a census in the form §8.4
+rule 7 allows. Four published rows narrowed to what the provers actually state: L3
+(two-sidedness is stated only for `+Falsified+` in Agda), L4 (Agda covers fate and
+fidelity; Lean covers fate; bond, merge and the grade-level lifting have an Idris2
+leg only, which §8.1 excludes from the ladder), Target 3 (`+_↝_+` has two
+ε-argument rules, no congruence, preservation definitional, no progress theorem),
+and C3 (now cites the ratified `+FateA.dropped_still_not_cancel+`; the
+pre-ratification `+dropped_absorbing+` is marked history). The README no longer
+attributes the atom and tropical factorisations to Agda and Idris2 — they are
+Lean-only. The O1-carrier evidence cell cites the emitted axiom lines and names its
+receipt's commit instead of the inert in-source `+#print axioms+` directive, with
+the carry-forward from `+4ecba4f+` stated and the proof trees shown identical. The
+history section no longer reads as if O1 itself were closed.
+* *Theorem B interface report brought back to the ratified carrier (2026-11-09).*
+`+verification/proofs/agda/theorem-b/INTERFACE-REPORT.adoc+` stated
+`+dropped ▷f falsified = dropped+` as the live tier-homomorphism-failure witness.
+Amendment (A1) reversed that equation; the report now gives the witness the Agda
+actually proves (`+dropped ▷f atten unknown+` against the tier meet) and no longer
+claims the retired `+fate-L4-fails+` is a compiled guard theorem. Target 2's verdict
+no longer advertises a sharpness refutation that ratification retired, the
+toolchain and spec pointers match the pins (Agda 2.7.0.1, stdlib v2.0, spec v0.2),
+and the `+fix+` obstruction count is one, not two, per ADR 0004.
+* *Local Lean source gate strengthened to match CI (2026-11-09).*
+`+verification/proofs/lean4/grade-boundary/justfile+`'s `+falsify+` recipe grepped
+raw source and matched `+axiom+` only at line start, so it missed
+`+private axiom foo+` and tripped on the honest "sorry-free" prose in the module
+docstrings. It now uses the same comment-stripping pass and the same token-based
+regexes as `+.github/workflows/proofs.yml+`. Demonstrated on a planted probe: the
+old form missed the private axiom and false-positived on comment prose; the new
+form catches the axiom, ignores the prose, and still catches a real `+sorry+`.
 * *Status surfaces reconciled with the spec on O1-carrier (2026-11-04).*
 `+docs/status/PROOF-STATUS.adoc+`, `+docs/status/ROADMAP.adoc+` and the README status
 paragraph now say what
