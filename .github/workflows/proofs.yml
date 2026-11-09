@@ -223,7 +223,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Build ${{ matrix.pkg }} and check the environment
-        uses: leanprover/lean-action@v1.7.0
+        uses: leanprover/lean-action@v1.7.1
         env:
           # leanchecker loads a full Mathlib-importing environment per module;
           # uncapped parallelism OOMs the runner ("hosted runner lost

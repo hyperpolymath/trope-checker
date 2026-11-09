@@ -7,7 +7,7 @@ workflows:
         - 'actions/checkout@v7.0.1'
     '.github/workflows/codeql.yml':
         - 'actions/checkout@v7.0.1'
-        - 'github/codeql-action@v4.39.1'
+        - 'github/codeql-action@v4.39.3'
     '.github/workflows/dependabot-automerge.yml':
         - 'dependabot/fetch-metadata@v3.1.0'
     '.github/workflows/dogfood-gate.yml':
@@ -22,7 +22,7 @@ workflows:
     '.github/workflows/hypatia-scan.yml': []
     '.github/workflows/instant-sync.yml':
         - 'peter-evans/repository-dispatch@v4.0.1'
-        - 'step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43'
+        - 'step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a'
     '.github/workflows/label-triage.yml': []
     '.github/workflows/labels.yml': []
     '.github/workflows/main-estate-audit.yml':
@@ -36,16 +36,16 @@ workflows:
         - 'actions/upload-artifact@v7.0.2'
     '.github/workflows/proofs.yml':
         - 'actions/checkout@v7.0.1'
-        - 'leanprover/lean-action@v1.7.0'
+        - 'leanprover/lean-action@v1.7.1'
     '.github/workflows/push-email-notify.yml':
-        - 'dawidd6/action-send-mail@v23'
+        - 'dawidd6/action-send-mail@v24'
     '.github/workflows/quality.yml':
         - 'actions/checkout@v7.0.1'
         - 'editorconfig-checker/action-editorconfig-checker@v3.0.0'
     '.github/workflows/release.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/upload-artifact@v7.0.2'
-        - 'softprops/action-gh-release@v3.0.3'
+        - 'softprops/action-gh-release@v3.0.4'
     '.github/workflows/rhodibot.yml':
         - 'actions/checkout@v7.0.1'
     '.github/workflows/runtime-policy.yml':
@@ -81,9 +81,9 @@ dependencies:
         commit: 'sha1-cf430e030ddbb5b0abf93d22962f4752f3646cd9'
         owner_id: 44036562
         repo_id: 192625955
-    'dawidd6/action-send-mail@v23':
-        ref: 'v23'
-        commit: 'sha1-47af4a10b540781705f283a2cf1a9650713ac795'
+    'dawidd6/action-send-mail@v24':
+        ref: 'v24'
+        commit: 'sha1-27bf7a883db6de205849f760badd38a1a3ce0dd0'
         owner_id: 9713907
         repo_id: 222439721
     'dependabot/fetch-metadata@v3.1.0':
@@ -96,9 +96,9 @@ dependencies:
         commit: 'sha1-51f63319f592f97930c73d9c46184d20bd206393'
         owner_id: 26415196
         repo_id: 297874902
-    'github/codeql-action@v4.39.1':
-        ref: 'v4.39.1'
-        commit: 'sha1-9b3254085494b55a0f7c4c2b3d2d52cc712ce370'
+    'github/codeql-action@v4.39.3':
+        ref: 'v4.39.3'
+        commit: 'sha1-33d7b85da1a04171e211befe2c739303b9a4c066'
         owner_id: 9919
         repo_id: 259445878
     'hyperpolymath/cicd-suite@bf7dd95cf49733019343ff485c2f45c6b261839c':
@@ -131,9 +131,9 @@ dependencies:
         commit: 'sha1-2155aa26a21758f2ba119f61bc7e0e1981c106fb'
         owner_id: 6759885
         repo_id: 1275650185
-    'leanprover/lean-action@v1.7.0':
-        ref: 'v1.7.0'
-        commit: 'sha1-fe408643ea7367d8c0404a8be3975bb145f5fb64'
+    'leanprover/lean-action@v1.7.1':
+        ref: 'v1.7.1'
+        commit: 'sha1-ba3fdfe5c4476c925da13bf11a005ddb47e47aee'
         owner_id: 7233018
         repo_id: 795738301
         uses:
@@ -143,13 +143,13 @@ dependencies:
         commit: 'sha1-28959ce8df70de7be546dd1250a005dd32156697'
         owner_id: 18365890
         repo_id: 220359305
-    'softprops/action-gh-release@v3.0.3':
-        ref: 'v3.0.3'
-        commit: 'sha1-efb35369e0ad2afab669f228072c1b0d510eae64'
+    'softprops/action-gh-release@v3.0.4':
+        ref: 'v3.0.4'
+        commit: 'sha1-8a0cd651e5b2365bd640854a3fa5dfc70e4875f3'
         owner_id: 2242
         repo_id: 204253808
-    'step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43':
-        ref: 'v2.22.3'
-        commit: 'sha1-46b06cea07f9e64621fdf066ba77ac6915163d43'
+    'step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a':
+        ref: 'v2.22.4'
+        commit: 'sha1-1d88384fd173af6ecb012dfd0264a306b711241a'
         owner_id: 88700172
         repo_id: 422287306

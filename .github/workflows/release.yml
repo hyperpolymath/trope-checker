@@ -150,7 +150,7 @@ jobs:
       - name: Create GitHub Release
         # zizmor: ignore[superfluous-actions] — kept deliberately: release body comes from the
         # changelog job output and this action is the audited estate pattern.
-        uses: softprops/action-gh-release@v3.0.3
+        uses: softprops/action-gh-release@v3.0.4
         with:
           body: ${{ needs.changelog.outputs.changelog }}
           draft: false
