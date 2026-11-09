@@ -10,6 +10,23 @@ https://semver.org/spec/v2.0.0.html[Semantic Versioning].
 
 ==== Changed
 
+* *Estate audit is called, not copied (2026-11-09).*
+`.github/workflows/main-estate-audit.yml` is now a thin caller of
+`+hyperpolymath/proven-cicd-and-workflows`'s shared reusable audit at a full
+branch-reachable commit SHA (`+3120495+`), instead of an expanded 26-step copy of
+`+hyperpolymath/cicd-suite+`. The copy pinned the suite's pre-rename coordinate —
+a reusable call under the old name starts with **zero jobs** and reports only
+`+failure+` — and it still ran four gates upstream removed as stubs or
+pass-on-absence checks. The audit now reports five component checks
+(`+estate-audit / governance+`, `+hygiene+`, `+manifests+`, `+languages+`,
+`+advisory+`) so one red gate no longer hides the rest. Workflow name and caller
+job id are unchanged, so the required context keeps its prefix.
+`+actions.lock+` was regenerated with the supported tooling in the same change.
+* *Affirmation trust material records its own status.*
+`+.github/affirmation-trusted/README.adoc+` now states that the gate running in CI
+is upstream's composite, that the local `+check.sh+` repair is retained as the
+reference implementation and local oracle, and that the suite's vendored
+web-flow keyring still holds only the expired key (re-checked 2026-11-09).
 * *Status surfaces reconciled with the spec on O1-carrier (2026-11-04).*
 `+docs/status/PROOF-STATUS.adoc+`, `+docs/status/ROADMAP.adoc+` and the README status
 paragraph now say what
