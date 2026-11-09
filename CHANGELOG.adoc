@@ -28,6 +28,20 @@ Lean-only. The O1-carrier evidence cell cites the emitted axiom lines and names 
 receipt's commit instead of the inert in-source `+#print axioms+` directive, with
 the carry-forward from `+4ecba4f+` stated and the proof trees shown identical. The
 history section no longer reads as if O1 itself were closed.
+* *The (B′) tropical-factorisation row stated its own theorem backwards
+(2026-11-09).* It read "any sighted homomorphism squashes `+Unknown+` to the
+deceptive top". `+Unknown+` *is* the deceptive top of the fidelity carrier, and
+`+sighted_forces_squash+` concludes the opposite — `+f (atten Delta.unknown) ≠
+Delta.unknown+` — i.e. a sighted homomorphism must send it *away* from that
+value. The row now states the theorem, and names the repair that performs the
+move (`+squash_top+`, `+squash_ne_unknown+`, `+squash_add+`). The row and the
+PWG Lean leg also now name their receipts, as the O1-carrier row already did.
+* *`+Trope.Order+` no longer cites Python as the provenance of proof content
+(2026-11-09).* Two transitivity lemmas' docstrings read "exhaustive;
+Python-verified", naming a language on the estate deny-list as what checked a
+proof. What actually enforces exhaustiveness is Idris2's coverage checker under
+`+%default total+`, where a missing case is a compile error; the docstrings now
+say that. Comments only; no proof term changed.
 * *Theorem B interface report brought back to the ratified carrier (2026-11-09).*
 `+verification/proofs/agda/theorem-b/INTERFACE-REPORT.adoc+` stated
 `+dropped ▷f falsified = dropped+` as the live tier-homomorphism-failure witness.
