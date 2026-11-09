@@ -38,6 +38,8 @@ command -v jq >/dev/null || { echo "pwg-derive: jq is required" >&2; exit 2; }
 # The derivation, as one jq program. Every rule cites the policy clause it
 # implements, so a reader can check the code against section 8 line by line.
 # ---------------------------------------------------------------------------
+# shellcheck disable=SC2016  # single quotes are REQUIRED: $a/$c/$l/$t/$R below are
+# jq variables, and the shell must not expand them.
 DERIVE='
   # A section 5 token that means the kernel accepted it.
   def accepted: . == "PROVEN" or . == "PROVEN-WITH-AXIOMS";
@@ -143,6 +145,7 @@ case "$MODE" in
     echo '// Do not hand-edit: scripts/pwg-check.sh re-derives and fails on drift.'
     echo '[cols="2,1,1,3",options="header"]'
     echo '|==='
+    # shellcheck disable=SC2016  # a literal AsciiDoc header row; nothing to expand.
     echo '| Obligation | `pwg` | Counting legs | Agda · Rocq · Lean (route · §5 token · §2.2 state)'
     printf '%s' "$DERIVED" | jq -r '.[] |
       "\n| \(.title)\n| `\(.pwg)`\(if .foundation_diverse then " `+foundation-diverse`" else "" end)\n| \(if .kind != "theory" then "— (§8.1: not on the ladder)" else "\(.counting_legs) of 2" end)\n| "
