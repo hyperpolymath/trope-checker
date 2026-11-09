@@ -28,6 +28,18 @@ Lean-only. The O1-carrier evidence cell cites the emitted axiom lines and names 
 receipt's commit instead of the inert in-source `+#print axioms+` directive, with
 the carry-forward from `+4ecba4f+` stated and the proof trees shown identical. The
 history section no longer reads as if O1 itself were closed.
+* *"Axiom-clean" was an overclaim, and two neighbouring table rows were stale
+(2026-11-09).* `+README.adoc+`'s layout table called the Lean grade-boundary
+package "sorry-free, axiom-clean", and `+docs/proof-debt.adoc+`'s standing
+position said the Idris2 core, the Lean ground truth and the Agda metatheory
+"are all axiom-clean for their claimed lemmas". The kernel reports `+propext+`
+and `+Quot.sound+`, and `+Classical.choice+` in three theorems, so both now use
+the wording already adopted in `+PROOF-STATUS.adoc+` — no `+sorryAx+`, no user
+axiom, resting on those three — which is what PROOF-POLICY §8.4 rule 6 requires
+to travel with the claim. In the same table, the grade-factorisation verdict
+`+(B)+` now says "on the *pre-ratification* carrier" and points at `+(B′)+` and
+`+GradeFactorisationR.lean+`, and the Theorem B row names the full §2.1
+invocation rather than `+--safe --without-K+`.
 * *Theorem B reaches `+PWG-3+`, the estate's first graded theory theorem
 (2026-11-09).* It was recorded as `+ungraded+` earlier the same day, for want of
 a receipt rather than a proof: the flags in force already were the PROOF-POLICY

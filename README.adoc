@@ -71,9 +71,9 @@ rejects them at validation, naming the offending coordinate. The alternative
 | `src/rust/`                 | The Rust fast-core: a dep-free (std-only) second checker, validated against the Idris2 reference via the conformance corpus.
 | `tests/conformance/`        | The machine conformance suite: `cases.json` + `fixtures/` + `schema-invalid/`.
 | `verification/proofs/idris2/` | The verified core (Idris2): grade algebra + L1/L2/⊑/veridicality/generation.
-| `verification/proofs/lean4/grade-boundary/` | The grade-algebra ground truth (Lean 4 + Mathlib, sorry-free, axiom-clean): the three-tier honest/deceptive cancellation boundary.
-| `verification/proofs/lean4/grade-factorisation/` | The tropical factorisation probe (Lean 4 + Mathlib): imports the carrier and decides whether the grade admits a commutative cost-quotient — verdict *(B) factors but veridicality-blind*. A precondition only; does not address recursion (CO-1).
-| `verification/proofs/agda/theorem-b/` | Theorem B — the deferred calculus metatheory (Agda `--safe --without-K`, zero postulates): intrinsic graded calculus, value-substitution, subject reduction (β/let; `fix` open), Honest Generation.
+| `verification/proofs/lean4/grade-boundary/` | The grade-algebra ground truth (Lean 4 + Mathlib): the three-tier honest/deceptive cancellation boundary. No `sorryAx` and no user axiom; the kernel reports `propext` and `Quot.sound`, and `Classical.choice` in three theorems.
+| `verification/proofs/lean4/grade-factorisation/` | The tropical factorisation probe (Lean 4 + Mathlib): imports the carrier and decides whether the grade admits a commutative cost-quotient. Verdict *(B) factors but veridicality-blind* on the *pre-ratification* carrier; re-run on the ratified carrier it becomes *(B′) sighted* (`GradeFactorisationR.lean`). A precondition only; does not address recursion (CO-1).
+| `verification/proofs/agda/theorem-b/` | Theorem B — the deferred calculus metatheory (Agda `--safe --without-K --cubical-compatible`, the PROOF-POLICY §2.1 invocation; zero postulates): intrinsic graded calculus, value-substitution, subject reduction (β/let; `fix` open), Honest Generation.
 | `verification/proofs/INTEGRATION-REPORT.adoc` | How the three streams reconcile: the unified R-id ↔ Lean ↔ Agda ↔ status table, the convergence (central open problem), and the divergence adjudication.
 | `docs/CONTRIBUTING-A-FRONTEND.adoc` | How a new front-end targets the IR (the portability contract).
 | `docs/status/PROOF-STATUS.adoc` | What is proved vs. stubbed-and-named vs. deferred.
