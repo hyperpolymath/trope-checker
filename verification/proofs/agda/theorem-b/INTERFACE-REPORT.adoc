@@ -217,13 +217,16 @@ total.
 The two live together because they are *different notions of deceptive*, and it is
 worth being exact about which one closes. The tier classifier is deceptive on
 `atten unknown`, since `fateTier (atten unknown) = dTier unknown = deceptive`. The
-`Deceptive` predicate is not: it is defined by equality to the genuine zeros —
-`falsified` on a fidelity coordinate, `misbound` on the bond, `conflated` on the
-merge — so `atten unknown` does not satisfy it. Hence the *tier* class is not closed
+`Deceptive` predicate is not: it is a predicate on *grades*, defined by equality to
+the genuine zeros — `falsified` on any of the four fate coordinates, `misbound` on
+the bond, `conflated` on the merge — so a grade carrying `atten unknown` and no
+other deceptive coordinate does not satisfy it. (The four coordinates are
+`Fate`-typed; "fidelity" in this development is the `Δ` *inside* `atten`, which is
+exactly why the two notions come apart here.) Hence the *tier* class is not closed
 under stem:[\triangleright]: `dropped ▷f atten unknown = dropped`, whose tier is
 `honestLossy`, while the meet of the two tiers is `deceptive`. And hence
 `deceptive-absorbs-▷` is not weakened by that: it establishes closure for the
-narrower `Deceptive` predicate, which `atten unknown` was never in. A claim that
+narrower `Deceptive` predicate, which such a grade was never in. A claim that
 "deceptive is closed" is true of the predicate and false of the tier class, so this
 report always names which.
 

@@ -8,6 +8,67 @@ https://semver.org/spec/v2.0.0.html[Semantic Versioning].
 
 === [Unreleased]
 
+==== Fixed
+
+* *A comment marker inside a string literal is no longer read as a comment
+(2026-11-09).* `+tests/lib/strip-proof-comments.awk+` tracked block comments with
+no notion of string literals, so `+def m : String := "/-"+` opened a block
+comment that swallowed the rest of the file — and awk still exited `+0+`. An
+`+axiom+` declared after such a line was invisible to *every* gate that scans
+through the stripper. Measured: three shapes reproduce it (`+"/-"+`, the raw
+string `+r"/-"+`, and the hash-delimited `+r#"/-"#+`), and the swallow reached
+five call sites, two of them in CI — `+proofs.yml+`'s `+lean-source-honesty+` job
+(which exited `+0+` on a planted tree) and its `+declared-axioms+` extraction,
+which produced an EMPTY list and so fed the deep axiom audit's own
+"never excused" guard with nothing.
++
+Strings are now consumed as units and emitted as `+""+`, which also means a
+string whose *content* is the word `+sorry+` can no longer trip the gate. Char
+literals are skipped whole, guarded so that primed identifiers (`+h'+`, `+n'+`)
+are untouched — that clause is load-bearing, not cosmetic: without it the
+`+'"'+` in `+src/idris2/Checker/Json.idr+` opens a string and re-creates the hole
+in a different file. An unterminated comment or string is now a loud `+exit 1+`:
+a truncated scan must never be reported as a clean one. `+tests/aspect_tests.sh+`
+had one `+|| true+` covering the whole pipeline, which would have swallowed that
+exit; it now covers the `+find+` and the `+grep+` (no match is the good case) but
+never the awk.
++
+Verified: all three exploit shapes now expose the `+axiom+`; the eight real
+Lean proof files produce byte-identical stripper output; 38 scanned files produce
+no new failure; `+Admitted+` planted behind a string is caught where it was
+previously hidden. Lean 4's *nested* block comments are a known remaining
+limitation, recorded in the file — that direction fails loudly, not open, so it
+is a separable change.
+
+* *Three fail-open paths in this PR's own gates (2026-11-09).* All three were
+mine, found by review and reproduced before being fixed.
++
+`+scripts/pwg-check.sh+` skipped rule 5 silently when the status file was
+absent, and still printed "published table and census match". Renaming
+`+PROOF-STATUS.adoc+` was therefore enough to forge *every* grade in it and exit
+`+0+`; an empty ledger `+{}+` passed the same way, because rules 2–4 read a
+`+jq+` failure as "nothing wrong". A missing status file is now drift, every
+rule whose verdict comes from a command substitution fails when it fails, and
+the control-character check no longer depends on `+grep -P+` being compiled in
+(`+2>/dev/null+` had turned a `+grep+` without `+-P+` into a silent pass).
++
+`+scripts/test-gate-falsifiability.sh+` did not check its *own* fixtures. A
+canary whose `+jq+` program failed wrote an empty ledger, the gate rejected it
+for being invalid JSON rather than for the planted drift, and the canary scored
+PASS without exercising its target — measured on all six `+jq+`-driven canaries.
+A program that silently selected nothing (a renamed receipt key) left the ledger
+unchanged and passed the same way. Each canary now fails if its own transform
+fails, fails if the transform changes nothing, and — for a reject case —
+declares the reason it expects, so a rejection for an unrelated reason no longer
+counts. A dropped canary group used to report `+10/10+` and exit `+0+`; the case
+count is now part of the claim.
++
+Added canary 19, the *meta-canary*: it breaks one canary's own `+jq+` program and
+asserts the suite reports FAILURE. It fails against the pre-fix harness, which
+is what makes it evidence rather than decoration. The suite is *19/19*, and all
+four breakages — a corrupted transform, a no-op fixture, a dropped group, and a
+suite that cannot see its own breakage — were each confirmed to fail it.
+
 ==== Added
 
 * *The PWG record is now derived from an evidence ledger, and gated

@@ -40,14 +40,20 @@ else
     die "verification/pwg.json is not canonical JCS (owner ruling D306). Rewrite with: jq -cS . verification/pwg.json"
   fi
 fi
-if LC_ALL=C grep -qP '[\x00-\x08\x0b\x0c\x0e-\x1f]' "$LEDGER" 2>/dev/null; then
-  die "verification/pwg.json contains control characters"
+# Not `grep -qP`: -P is a build option, and `2>/dev/null` turned a grep that
+# cannot do -P into a silent pass. `tr -d` of every allowed byte leaves exactly
+# the disallowed ones, and is POSIX.
+if [ "$(LC_ALL=C tr -d '\011\012\015\040-\377' < "$LEDGER" | wc -c)" -gt 0 ]; then
+  die "verification/pwg.json contains control characters (I-JSON, RFC 7493)"
 fi
 
 # --- 2. the ledger must assert no grade -----------------------------------
 # A grade in the evidence file is drift by construction: it could only have been
 # written by hand, since the derivation lives in pwg-derive.sh.
-asserted=$(jq -r '[.theorems[] | select(has("pwg") or has("grade") or has("PWG"))] | length' "$LEDGER" 2>/dev/null || echo 0)
+# `2>/dev/null || echo 0` read "this ledger has no parseable .theorems" as "no
+# asserted grades" — a malformed ledger passed rule 2 by being malformed.
+asserted=$(jq -r '[.theorems[] | select(has("pwg") or has("grade") or has("PWG"))] | length' "$LEDGER") \
+  || die "rule 2 could not be evaluated: the ledger has no well-formed .theorems array"
 if [ "${asserted:-0}" -gt 0 ]; then
   die "$asserted theorem record(s) in the ledger assert a grade. The ledger carries EVIDENCE only; grades are derived (PROOF-POLICY 8.4 rule 2). Remove the pwg/grade keys."
 fi
@@ -60,7 +66,7 @@ missing=$(jq -r '
       | ($e.value.receipts // [])[]
       | select(($R[.] // null) == null)
       | "\($t.id)/\($e.key) -> \(.)" ]
-  | .[]' "$LEDGER")
+  | .[]' "$LEDGER") || die "rule 3 (receipt references) could not be evaluated: malformed theorem/leg shape"
 [ -n "$missing" ] && die "unresolved receipt reference(s):"$'\n'"$missing"
 
 badr=$(jq -r '
@@ -75,7 +81,8 @@ badr=$(jq -r '
       (if ($v.evidence // "" | length) > 0 then empty else "\($k): no evidence pointer" end),
       (if ($v.state // "" | test("^(current|superseded|regressed)$")) then empty else "\($k): state must be current|superseded|regressed (8.4 rule 5)" end),
       (if ($v | has("axioms")) then empty else "\($k): no axioms list (8.4 rule 6 — axioms travel with the grade)" end) ]
-  | .[]' "$LEDGER")
+  | .[]' "$LEDGER") \
+  || die "rule 3 (receipt completeness) could not be evaluated over this ledger: malformed theorem/leg/receipt shape"
 [ -n "$badr" ] && die "incomplete receipt(s):"$'\n'"$badr"
 
 # --- 4. closed vocabularies ----------------------------------------------
@@ -86,7 +93,8 @@ badtok=$(jq -r '
     | ($t.legs | to_entries[])
     | select((.value.token // "") | test("^(PROVEN|PROVEN-WITH-AXIOMS|TESTED|ASSUMED|OPEN)$") | not)
     | "\($t.id)/\(.key): token \(.value.token)" ]
-  | .[]' "$LEDGER")
+  | .[]' "$LEDGER") \
+  || die "rule 4 (section 5 tokens) could not be evaluated over this ledger: malformed theorem/leg/receipt shape"
 [ -n "$badtok" ] && die "token(s) outside the section 5 closed vocabulary:"$'\n'"$badtok"
 
 badstate=$(jq -r '
@@ -94,7 +102,8 @@ badstate=$(jq -r '
     | ($t.legs | to_entries[])
     | select((.value.state // "") | test("^(AGDA-PENDING|AGDA-VERIFIED|COQ-CHECKED|LEAN-CHECKED|BRIDGE-PENDING|RECONCILED|COUNTEREXAMPLE|QUARANTINED|NOT-INVENTORIED)$") | not)
     | "\($t.id)/\(.key): state \(.value.state)" ]
-  | .[]' "$LEDGER")
+  | .[]' "$LEDGER") \
+  || die "rule 4 (2.2 states) could not be evaluated over this ledger: malformed theorem/leg/receipt shape"
 [ -n "$badstate" ] && die "2.2 correspondence state(s) outside the closed vocabulary:"$'\n'"$badstate"
 
 badroute=$(jq -r '
@@ -102,11 +111,17 @@ badroute=$(jq -r '
     | ($t.legs | to_entries[])
     | select((.value.route // "") | test("^(transported|re-proved|waived|unavailable)$") | not)
     | "\($t.id)/\(.key): route \(.value.route)" ]
-  | .[]' "$LEDGER")
+  | .[]' "$LEDGER") \
+  || die "rule 4 (8.5 routes) could not be evaluated over this ledger: malformed theorem/leg/receipt shape"
 [ -n "$badroute" ] && die "leg route(s) outside the 8.5 vocabulary:"$'\n'"$badroute"
 
 # --- 5. the published table and census are the derived ones ---------------
-if [ -f "$STATUS" ]; then
+# A missing status file used to skip rule 5 silently and still print "published
+# table and census match". Renaming the file was therefore enough to forge every
+# grade in it and pass the gate.
+if [ ! -f "$STATUS" ]; then
+  die "no published status file at docs/status/PROOF-STATUS.adoc — rule 5 cannot be checked. A deleted or moved status file is drift, not a pass."
+else
   want_table=$(bash "$DERIVE" --ledger "$LEDGER" --table) || die "pwg-derive --table failed"
   want_census=$(bash "$DERIVE" --ledger "$LEDGER" --census) || die "pwg-derive --census failed"
   got_table=$(awk '/^\/\/ PWG-TABLE:BEGIN/{f=1;next} /^\/\/ PWG-TABLE:END/{f=0} f' "$STATUS")
@@ -122,7 +137,7 @@ if [ -f "$STATUS" ]; then
 fi
 
 if [ "$fail" -eq 0 ]; then
-  n=$(jq '.theorems | length' "$LEDGER")
+  n=$(jq -e '.theorems | length' "$LEDGER") || die "the ledger has no .theorems array"
   echo "PASS: PWG ledger well-formed, no asserted grades, $n obligation(s) derived, published table and census match"
 fi
 exit "$fail"
