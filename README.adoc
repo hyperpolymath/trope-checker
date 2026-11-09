@@ -149,7 +149,11 @@ claimed lemmas (the Lean results rest on the standard library's `propext`/`Quot.
 and `Classical.choice` in three theorems). On the ratified carrier (ADR 0004, R-2026-07-07) the grade algebra is a commutative
 monoid with the three deceptive bottoms as two-sided zeros; L1–L6, conicality, the
 cancellation boundary (left-cancellative iff ε), the Honest Generation and
-Veridicality theorems are proved across Agda, Idris2 and Lean. The atom
+Veridicality theorems are proved across Agda, Idris2 and Lean — with one
+exception worth naming here rather than only in the status file: *L4 in full* is
+not. Agda covers the fate coordinate and the fidelity dimension, Lean covers
+fate, and the bond, merge and grade-level lifting have an Idris2 restatement
+only, which PROOF-POLICY §8.1 keeps off the Proof Witness Grade ladder. The atom
 factorisation (O1's carrier half, proved on the ratified `GradeR` in
 `EffectAtomsRatified.lean`; O1-coord stays open) and the tropical factorisations
 — pre-ratification `GradeFactorisation.lean` veridicality-blind, ratified

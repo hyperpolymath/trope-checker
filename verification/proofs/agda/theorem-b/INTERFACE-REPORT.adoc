@@ -231,7 +231,9 @@ transfinitely deep `fix` nesting is inexpressible in finitary syntax. The lfp's
 fidelity endpoint lands in the
 ▷-fixed absorbing tops `{total, unknown}`, so the *grade* is tier-stable; the
 unproven part is the operational unfold-preserves-tier step. This obstruction is
-the missing operational semantics + O4, NOT a defect of the grade algebra.
+the missing operational semantics, NOT a defect of the grade algebra. (O4 is no
+longer part of it: ADR 0004 resolved the limit-carrier question, as the paragraph
+above records.)
 
 === Target 4 — Honest Generation (HC-*) and Veridicality (L*) — *PROVED* (reached because 1–3 landed)
 

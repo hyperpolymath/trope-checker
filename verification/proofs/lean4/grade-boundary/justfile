@@ -17,7 +17,10 @@ falsify:
     # "sorry-free" prose in the module docstrings.
     @fail=0; \
      for f in *.lean; do \
-       stripped=$(awk -f ../../../../tests/lib/strip-proof-comments.awk "$f"); \
+       stripped=$(awk -f ../../../../tests/lib/strip-proof-comments.awk "$f") || { \
+         echo "FAIL: could not strip comments from $f — refusing to scan partial output"; \
+         fail=1; continue; \
+       }; \
        if grep -nE '(^|[^[:alnum:]_.])(sorry|admit|unsafe)([^[:alnum:]_]|$)|\bnative_decide\b|\bsorryAx\b|\bofReduceBool\b|\bextern\b|\bimplemented_by\b|\baddDecl\b|\baxiomDecl\b' <<<"$stripped"; then \
          echo "FAIL: forbidden Lean construct in $f"; fail=1; \
        fi; \
