@@ -28,6 +28,20 @@ Lean-only. The O1-carrier evidence cell cites the emitted axiom lines and names 
 receipt's commit instead of the inert in-source `+#print axioms+` directive, with
 the carry-forward from `+4ecba4f+` stated and the proof trees shown identical. The
 history section no longer reads as if O1 itself were closed.
+* *Theorem B reaches `+PWG-3+`, the estate's first graded theory theorem
+(2026-11-09).* It was recorded as `+ungraded+` earlier the same day, for want of
+a receipt rather than a proof: the flags in force already were the PROOF-POLICY
+§2.1 invocation, but every written-up Agda result here said
+`+--safe --without-K+` only, and §2.1 declassifies prior successes under that
+profile. Dispatching `+proofs.yml+` on `+main+` supplied the missing record —
+run 42623339243 at `+c0eb4f1+`, log ending `+PASS: All.agda + Smoke.agda
+typecheck (--safe --without-K --cubical-compatible; --safe => postulate-free by
+construction)+`, with Agda 2.7.0.1 and `+agda-stdlib+` v2.0 pinned by SHA-256
+and the §1.1 import cone now recorded. Nothing about the mathematics changed.
+`+PWG-3+` is not a discharge (§8.4 rule 1): §2's recheck obligation is owed in
+full and is unreachable until a Rocq development exists. The same run was green
+on both Lean packages at the current commit, so every receipt in this file now
+names `+c0eb4f1+` and no row carries a carry-forward.
 * *The (B′) tropical-factorisation row stated its own theorem backwards
 (2026-11-09).* It read "any sighted homomorphism squashes `+Unknown+` to the
 deceptive top". `+Unknown+` *is* the deceptive top of the fidelity carrier, and
