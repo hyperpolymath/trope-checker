@@ -79,7 +79,7 @@ toc::[]
 
 | Tier-2 membership, exhaustive
 | In the unquotiented model, every honest-but-lossy element is individually witnessed non-cancellative (finite attenuation regains cancellation on A3 normal forms), `Withheld` and `Fused` included; the per-element witnesses feed the iff.
-| Lean `TierTwoComplete.lean`: `Bond.withheld_honest_not_cancel`, `Merge.fused_honest_not_cancel`, `Fate.atten_not_cancel`, the `*.leftCancelWitness` family, `Grade.grade_leftCancel_iff`.
+| Lean `TierTwoComplete.lean`: `Bond.withheld_honest_not_cancel`, `Merge.fused_honest_not_cancel`, `Fate.atten_not_cancel`, the `*.leftCancelWitness` family, `Grade.grade_leftCancel_iff`. Agda states six of the per-element witnesses and the positive right-cancellation, all in `TB.Tier`: `unknown-not-cancel`, `total-honest-not-cancel`, `falsified-not-cancel`, `dropped-honest-not-cancel`, `predicated-honest-not-cancel`, `severed-honest-not-cancel`, `Q-cancelʳ`. What Agda does *not* state is the exhaustive step: there is no Agda counterpart of `grade_leftCancel_iff`, and no Agda witness on the merge coordinate, which is why the ledger's Agda token for this row is `OPEN` rather than the row being Lean-only.
 
 | C3 (partition; tier closure is not a homomorphism)
 | `Dropped`, `Total`, `Severed`, `Predicated`, `Withheld`, `Fused` are honest non-cancellative elements; `Falsified`, `Misbound`, `Conflated`, `Unknown` are the deceptive ones. `tierOf (g ▷ h) = tierOf g ⊓ tierOf h` is false on fate; tier preservation is closure.
@@ -234,7 +234,7 @@ leg, so they can neither raise nor lower a grade.
 | Tier-2 membership, exhaustive
 | `ungraded`
 | 0 of 2
-| unavailable · `OPEN` · `AGDA-PENDING` · unavailable · `OPEN` · `NOT-INVENTORIED` · re-proved · `PROVEN-WITH-AXIOMS` · `BRIDGE-PENDING`
+| re-proved · `OPEN` · `AGDA-PENDING` · unavailable · `OPEN` · `NOT-INVENTORIED` · re-proved · `PROVEN-WITH-AXIOMS` · `BRIDGE-PENDING`
 
 | C3 (partition; tier closure is not a homomorphism)
 | `3`
@@ -299,10 +299,18 @@ Read the census as the policy intends: seventeen obligations have a kernel-check
 Agda witness with a complete §8.2 receipt at the current commit, and *none* has a
 counting recheck leg. `PWG-3` is not a discharge (§8.4 rule 1) — every one of the
 seventeen still owes both its §2 legs. The seven `ungraded` rows split three ways,
-and the distinction is the useful part: three are Lean-only (no Agda source, §8.1),
-three are Idris2-only (an engineering restatement is not a leg, §8.1), and one —
-the retention order — has an Agda leg that proves reflexivity but not transitivity
-or decidability, so its Agda token is `OPEN`.
+and the distinction is the useful part. *Two* are Lean-only with no Agda source at
+all: the O1 atom factorisation and the tropical (B′) sighting. *Three* are
+Idris2-only, where an engineering restatement is not a leg (§8.1). *Two* have a
+real but incomplete Agda leg, so the Agda token is `OPEN`: the retention order
+proves reflexivity but neither transitivity nor decidability, and tier-2 membership
+proves six of the non-cancellativity witnesses (`TB.Tier`, fate and bond) plus the
+positive `Q-cancelʳ`, but not the exhaustive characterisation — there is no Agda
+counterpart of `grade_leftCancel_iff`, and no Agda witness on the merge coordinate.
+§8.1 makes all three causes `ungraded` alike; only the second is about engineering
+provers. A missing Agda source and a partial one are different debts, and the
+ledger records which one each row carries rather than flattening both to
+"Lean-only".
 
 Nothing can reach `PWG-2i`, `PWG-2ii` or `PWG-1` from where this tree stands: no
 Rocq development exists in this repository at all, so the ladder has a missing
