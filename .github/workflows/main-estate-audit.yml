@@ -1,5 +1,55 @@
-# This workflow is managed by gh actions-lock.
 # SPDX-License-Identifier: MPL-2.0
+# This workflow is managed by gh actions-lock.
+#
+# Central Estate CI/CD Audit — a THIN CALLER of the shared estate audit.
+#
+# This file used to be an expanded copy of the audit: one job of 26 steps, each
+# a direct `uses:` of a hyperpolymath/cicd-suite composite. A copy freezes the
+# repository at whatever suite commit its actions.lock happened to hold, so
+# upstream fixes never arrive, and it had drifted four ways:
+#
+#   * It still ran `prat-check` and `semantic-audit-check`, which upstream
+#     removed as stubs that passed unconditionally (README, known defect 5:
+#     a green tick that credited assurance nothing checked).
+#   * It still ran `contractile-validation-check` and `proof-runner-check`,
+#     removed upstream for pass-on-absence (known defect 7): each printed
+#     "passed" when the tool it exists to run was absent — the normal case on
+#     a hosted runner — so they could only ever certify scans that never ran.
+#   * One job stopped at its first failing gate, so a single red hid the other
+#     25 and every failure read "estate-audit: failing after 8s" with no gate
+#     named. The shared workflow reports five component checks (governance,
+#     hygiene, manifests, languages, advisory), each gate its own step, and
+#     keeps running the remaining gates after one fails.
+#   * Every step named `hyperpolymath/cicd-suite`, the suite's PRE-RENAME
+#     coordinate. Measured on this branch (runs 42603702962 / 42603704212,
+#     2026-11-09): a reusable-workflow call under the old name starts with ZERO
+#     jobs and reports only "failure", while the same pin under the canonical
+#     name starts all five component checks. Resolving the old coordinate via
+#     the API still succeeds because REST follows the transfer redirect — the
+#     redirect is exactly what made the failure invisible. This repository's
+#     own workflow-linter re-resolution step flags it 24 times.
+#
+# So the audit is called, not copied:
+#
+#   * Pin is a full branch-reachable commit SHA on the suite's default branch
+#     (2026-11-09 main). Never `@main` or a tag: the account enforces
+#     sha_pinning_required, and a branch ref would change the gates in every
+#     consuming repository at once. Never a blob SHA.
+#   * Caller job id stays `estate-audit`, and the workflow name is unchanged,
+#     so the required context keeps the prefix it had. The component checks
+#     report as `estate-audit / governance`, `estate-audit / hygiene`,
+#     `estate-audit / manifests`, `estate-audit / languages`,
+#     `estate-audit / advisory`.
+#   * DE-ONBOARDED from actions.lock: this file's entry lists no step-level
+#     action refs (the reusable call is a job-level `uses:`, which
+#     gh actions-lock does not track). An onboarded cross-repo reusable call
+#     under sha_pinning_required is the zero-job startup failure measured
+#     above. Regenerate the lock with `gh actions-lock` — do not hand-edit it.
+#
+# The Affirmation Document Gate now comes from the shared workflow. This
+# repository's local repair (.github/affirmation-trusted/) remains the
+# reference implementation for the upstream defect it documents; see that
+# directory's README.
 
 name: Central Estate CI/CD Audit
 
@@ -9,132 +59,10 @@ on:
   pull_request:
     branches: [ "main" ]
 
-# Least privilege: every gate below is a read-only check over the tree.
+# Least privilege: the called workflow only reads this repository's tree.
 permissions:
   contents: read
 
 jobs:
   estate-audit:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      # fetch-depth: 0 is load-bearing for the Affirmation Document Gate: it
-      # classifies the signature on the commit that last changed
-      # AFFIRMATION.adoc. In the default depth-1 checkout that "commit" is
-      # the shallow boundary (on a PR, GitHub's test-merge commit), so the
-      # gate graded a checkout artefact, not the affirming commit. The local
-      # check treats unavailable public keys as notices and still rejects bad
-      # signatures; the current GitHub key is in .github/affirmation-trusted/.
-      - uses: actions/checkout@v7.0.1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Required Files Gate
-        if: ${{ !cancelled() }}
-        uses: hyperpolymath/cicd-suite/actions/required-files-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-
-      - name: Code Hygiene Gate
-        if: ${{ !cancelled() }}
-        uses: hyperpolymath/cicd-suite/actions/code-hygiene-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-
-      - name: Manifest Validation Gate
-        if: ${{ !cancelled() }}
-        uses: hyperpolymath/cicd-suite/actions/manifest-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-
-      - name: Idris2 ABI Purity Gate
-        if: ${{ !cancelled() }}
-        uses: hyperpolymath/cicd-suite/actions/idris2-abi-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-
-      - name: Zig UnifiedApiAdapter API Gate
-        if: ${{ !cancelled() }}
-        uses: hyperpolymath/cicd-suite/actions/zig-unified-api-adapter-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-
-      - name: Contractile Validation Gate
-        if: ${{ !cancelled() }}
-        uses: hyperpolymath/cicd-suite/actions/contractile-validation-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-
-      - name: Recipes Set Validation Gate
-        if: ${{ !cancelled() }}
-        uses: hyperpolymath/cicd-suite/actions/recipes-set-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-
-      - name: Affirmation Document Gate
-        if: ${{ !cancelled() }}
-        run: bash .github/affirmation-trusted/check.sh
-
-      - name: Academic Referencing Gate
-        if: ${{ !cancelled() }}
-        uses: hyperpolymath/cicd-suite/actions/referencing-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-
-      - name: Semantic Audit Gate
-        if: ${{ !cancelled() }}
-        uses: hyperpolymath/cicd-suite/actions/semantic-audit-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-
-      - name: SPDX License Gate
-        if: ${{ !cancelled() }}
-        uses: hyperpolymath/cicd-suite/actions/spdx-license-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-
-      - name: Proof Runner Gate
-        if: ${{ !cancelled() }}
-        uses: hyperpolymath/cicd-suite/actions/proof-runner-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-
-      - name: PRAT Testing Gate
-        if: ${{ !cancelled() }}
-        uses: hyperpolymath/cicd-suite/actions/prat-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-
-      # No "Panic Attack & Pons" step here (removed 2026-10-28): the
-      # cicd-suite custom-tools-check composite prints "validation passed"
-      # when neither tool is on PATH — which is always — so it certified
-      # scans that never ran. panic-attack and pons-asinorum evidence is
-      # produced exactly once per trigger by the standards Hypatia lane
-      # (fork-governance.yml on PRs, hypatia-scan.yml on push/schedule)
-      # as verdict-grid rows with status envelopes; a presence proxy in
-      # this audit would only be a second, weaker claim to reconcile.
-
-      - name: WWW & Well-Known Compliance Gate
-        if: ${{ !cancelled() }}
-        uses: hyperpolymath/cicd-suite/actions/www-compliance-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-
-      - name: BoJ Cartridge Validation Gate
-        if: ${{ !cancelled() }}
-        uses: hyperpolymath/cicd-suite/actions/boj-cartridge-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-
-      - name: Formatting Validation Gate
-        if: ${{ !cancelled() }}
-        uses: hyperpolymath/cicd-suite/actions/formatting-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-
-      - name: Accreditations & Badges Gate
-        if: ${{ !cancelled() }}
-        uses: hyperpolymath/cicd-suite/actions/badges-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-
-      - name: Metrics Extraction Gate
-        if: ${{ !cancelled() }}
-        uses: hyperpolymath/cicd-suite/actions/metrics-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-
-      - name: Linguist & Banned Languages Gate
-        if: ${{ !cancelled() }}
-        uses: hyperpolymath/cicd-suite/actions/linguist-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-
-      - name: Test & Benchmarks Dashboard Gate
-        if: ${{ !cancelled() }}
-        uses: hyperpolymath/cicd-suite/actions/tests-benches-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-
-      - name: Hosting & Site Status Gate
-        if: ${{ !cancelled() }}
-        uses: hyperpolymath/cicd-suite/actions/hosting-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-
-      - name: Git-Sea Analytics Gate
-        if: ${{ !cancelled() }}
-        uses: hyperpolymath/cicd-suite/actions/gitsea-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-
-      - name: Trust & Humans Validation Gate
-        if: ${{ !cancelled() }}
-        uses: hyperpolymath/cicd-suite/actions/trust-humans-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-
-      - name: Are We UnAPI Gate (Secret Scanning)
-        if: ${{ !cancelled() }}
-        uses: hyperpolymath/cicd-suite/actions/secrets-check@bf7dd95cf49733019343ff485c2f45c6b261839c
-
-      - name: Reasonably Good Token Validation Gate
-        if: ${{ !cancelled() }}
-        uses: hyperpolymath/cicd-suite/actions/vaulted-tokens-check@bf7dd95cf49733019343ff485c2f45c6b261839c
+    uses: hyperpolymath/proven-cicd-and-workflows/.github/workflows/main-estate-audit.yml@3120495390635096552935d904652789253938e8 # suite main, 2026-11-09
