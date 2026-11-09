@@ -26,6 +26,8 @@ LEDGER="$ROOT/verification/pwg.json"
 STATUS="$ROOT/docs/status/PROOF-STATUS.adoc"
 DERIVE="$ROOT/scripts/pwg-derive.sh"
 fail=0
+# Report the message arguments on stdout and mark the gate as failed without
+# exiting, so subsequent checks can report further failures.
 die() { echo "::error::pwg-check: $*"; fail=1; }
 
 command -v jq >/dev/null || { echo "::error::pwg-check: jq is required"; exit 2; }
