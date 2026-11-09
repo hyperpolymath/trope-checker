@@ -23,11 +23,17 @@ aspirational.
 +
 The record is now per *obligation* rather than two coarse groups, and the picture
 is far more informative: of 24 theory obligations, **17 are `+PWG-3+`** and 7 are
-`+ungraded+` — and the seven split three ways. Three are Lean-only (no Agda
-source), three are Idris2-only (an engineering restatement is not a leg, §8.1),
-and one is the retention order, whose Agda leg proves reflexivity but not
-transitivity or decidability. Verdict soundness is reclassified engineering, so
-§8.1 puts it off the ladder entirely.
+`+ungraded+` — and the seven split three ways. *Two* are Lean-only with no Agda
+source at all (the O1 atom factorisation and the tropical (B′) sighting).
+*Three* are Idris2-only, where an engineering restatement is not a leg (§8.1).
+*Two* have a real but partial Agda leg, so the Agda token is `+OPEN+`: the
+retention order, whose Agda leg proves reflexivity but neither transitivity nor
+decidability, and tier-2 membership, where `+TB.Tier+` states six of the
+per-element non-cancellativity witnesses and the positive `+Q-cancelʳ+` but not
+the exhaustive characterisation — there is no Agda counterpart of
+`+grade_leftCancel_iff+` and no Agda witness on the merge coordinate. A missing
+Agda source and a partial one are different debts. Verdict soundness is
+reclassified engineering, so §8.1 puts it off the ladder entirely.
 +
 Wired: `+just pwg+` (census and per-obligation grades), `+just pwg-render+`
 (regenerates the table between the `+PWG-TABLE+` markers, verified idempotent),

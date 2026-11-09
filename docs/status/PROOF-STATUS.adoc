@@ -328,7 +328,8 @@ full, for the Agda leg:
 * *Flags in force*: `--safe --without-K --cubical-compatible`, from
   `theorem-b.agda-lib`'s `flags:` block plus the per-module `OPTIONS` pragma,
   which additionally carry `--exact-split` and `--warning=error`. CI passes the
-  same three on the command line (`proofs.yml:167`).
+  same three on the command line, in `proofs.yml`'s "Typecheck Theorem B" step
+  (named rather than numbered: a line reference goes stale on the next edit).
 * *Postulate count*: zero. `--safe` refuses `postulate` outright; independently,
   a comment-aware scan of the whole subtree (`hyperpolymath/mathesis`,
   `scripts/census/proof-holes.sh`) run over `verification/proofs/agda` at
@@ -352,8 +353,12 @@ keeps Mathlib and keeps its purpose — finding and stress-testing theorems — 
 its results are then restated in core Agda, which is what becomes gradeable. The
 Mathlib cone therefore never enters the trusted base, and no Lean row here is or
 will be a §2 recheck leg. The ledger records every Lean leg as
-`route: re-proved, state: BRIDGE-PENDING`, which does not count (§2.2, §8.2); the
-three Lean-only obligations stay `ungraded` until their Agda restatement lands.
+`route: re-proved, state: BRIDGE-PENDING`, which does not count (§2.2, §8.2). The
+two Lean-only obligations — the O1 atom factorisation and the tropical (B′)
+sighting — stay `ungraded` until an Agda statement of them exists at all; tier-2
+membership has its Agda witnesses already and stays `ungraded` only until the
+exhaustive step joins them. The census at the head of this section is the
+authoritative split.
 The amendment to ADR 0005 D4 implementing this is tracked separately; until it
 lands, the ADR and the policy disagree on paper and this paragraph is the
 operative reading.
