@@ -27,6 +27,10 @@ on:
     paths:
       - 'verification/proofs/lean4/**'
       - 'verification/proofs/agda/**'
+      - 'verification/pwg.json'
+      - 'scripts/pwg-derive.sh'
+      - 'scripts/pwg-check.sh'
+      - 'docs/status/PROOF-STATUS.adoc'
       - 'tests/lib/strip-proof-comments.awk'
       - '.github/workflows/proofs.yml'
   pull_request:
@@ -43,6 +47,25 @@ jobs:
   # Pure grep over the Lean sources: no toolchain, seconds to run, and it is the
   # gate that makes "sorry-free" checkable rather than merely stated. Mirrors the
   # `verify-all` recipe in build/just/proofs.just — keep the two in step.
+  # The Proof Witness Grade record. PROOF-POLICY §8.4 rule 2: a grade is computed
+  # from the receipts and the §2.2 records, and "a gate or a bot may recompute it
+  # at any time and reports the computed value". This job is that recomputation.
+  # It needs no prover: the kernels already ran, and their receipts are the input.
+  pwg-record:
+    name: "PWG record: derived, not asserted"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Derive every grade and fail on drift
+        run: |
+          set -euo pipefail
+          bash scripts/pwg-check.sh
+          echo
+          bash scripts/pwg-derive.sh --census
+      - name: Prove the gate can fail (canonical-wrongness canaries)
+        run: bash scripts/test-gate-falsifiability.sh
+
   lean-source-honesty:
     name: "Lean sources: no sorry / admit / native_decide / user axiom"
     runs-on: ubuntu-latest

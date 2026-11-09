@@ -124,8 +124,81 @@ c_secret() {
   else bad "hardcoded secret NOT detected — the security gate is blind to it"; fi
 }
 
+# --- canaries 10-16: the PWG gate must reject each kind of grade drift ------
+#
+# PROOF-POLICY 8.4 rule 2 makes a hand-written grade "drift". That is only
+# enforceable if the gate actually catches it, so each canary below plants one
+# species of drift in a COPY of the real ledger and asserts scripts/pwg-check.sh
+# rejects it. Two of them (missing import_cone, a leg flipped to RECONCILED) are
+# the load-bearing ones: they change nothing except the DERIVED grade, so they
+# only fire if the derivation is genuinely what the published table comes from.
+PWG_GATE="$ROOT/scripts/pwg-check.sh"
+
+# Build a throwaway repo root carrying the real derive script, the real status
+# file and a ledger transformed by the given jq program, then run the real gate.
+pwg_case() {
+  local want="$1" label="$2" jqprog="$3"
+  local d got
+  d=$(scratch)
+  mkdir -p "$d/scripts" "$d/verification" "$d/docs/status"
+  cp "$ROOT/scripts/pwg-derive.sh" "$d/scripts/" 2>/dev/null || { rm -rf "$d"; bad "$label (no pwg-derive.sh to copy)"; return; }
+  cp "$ROOT/scripts/pwg-check.sh"  "$d/scripts/" 2>/dev/null || { rm -rf "$d"; bad "$label (no pwg-check.sh to copy)"; return; }
+  cp "$ROOT/docs/status/PROOF-STATUS.adoc" "$d/docs/status/" 2>/dev/null || true
+  if [ "$jqprog" = "IDENTITY" ]; then
+    cp "$ROOT/verification/pwg.json" "$d/verification/pwg.json"
+  elif [ "$jqprog" = "PRETTY" ]; then
+    # valid JSON, but not canonical JCS: pretty-printed with unsorted keys
+    jq . "$ROOT/verification/pwg.json" > "$d/verification/pwg.json"
+  else
+    jq -cS "$jqprog" "$ROOT/verification/pwg.json" > "$d/verification/pwg.json"
+  fi
+  if bash "$d/scripts/pwg-check.sh" "$d" >/dev/null 2>&1; then got=accept; else got=reject; fi
+  rm -rf "$d"
+  if [ "$got" = "$want" ]; then ok "$label"; else bad "$label (gate said $got, expected $want)"; fi
+}
+
+pwg_canaries() {
+  [ -x "$PWG_GATE" ] || { bad "scripts/pwg-check.sh is missing — the PWG gate cannot be falsified"; return; }
+
+  # Control first: a suite that always fires proves nothing.
+  pwg_case accept "the real PWG ledger and status file are ACCEPTED" IDENTITY
+
+  # 1. A grade asserted in the evidence file is drift by construction.
+  pwg_case reject "a hand-asserted pwg on a theorem is rejected" \
+    '.theorems[0].pwg = "1"'
+
+  # 2. Canonical JCS is the estate's JSON serialisation (owner ruling D306).
+  pwg_case reject "a non-canonical (pretty-printed) ledger is rejected" PRETTY
+
+  # 3. Section 5's vocabulary is closed.
+  pwg_case reject "a section 5 token outside the closed vocabulary is rejected" \
+    '.theorems[0].legs.agda.token = "MOSTLY-PROVEN"'
+
+  # 4. So is 2.2's.
+  pwg_case reject "a 2.2 correspondence state outside the closed vocabulary is rejected" \
+    '.theorems[0].legs.lean.state = "LOOKS-FINE"'
+
+  # 5. 8.2 requires the receipt to name the full 40-character commit.
+  pwg_case reject "a receipt with a short commit is rejected" \
+    '.receipts["agda-c0eb4f1"].commit = "c0eb4f1"'
+
+  # 6. LOAD-BEARING: drop the import cone and the Agda leg no longer satisfies
+  #    8.2's PWG-3 receipt requirement, so every derived grade that rested on it
+  #    falls to ungraded and the published table stops matching. This fires only
+  #    if the table really is derived.
+  pwg_case reject "removing the import cone changes the derived grades and is rejected" \
+    '.receipts["agda-c0eb4f1"].import_cone = ""'
+
+  # 7. LOAD-BEARING the other way: flip a BRIDGE-PENDING Lean leg to RECONCILED
+  #    and it starts to count, lifting that obligation to PWG-2i. The published
+  #    table must stop matching.
+  pwg_case reject "flipping a Lean leg to RECONCILED changes the grade and is rejected" \
+    '(.theorems[] | select(.id == "L1") | .legs.lean.state) |= "RECONCILED"'
+}
+
 wellknown_canaries; valid_canary; live_canary
 c_weak_crypto; c_plaintext_http; c_secret
+pwg_canaries
 echo
 if [ "$FAIL" -gt 0 ]; then
   echo "gate falsifiability canaries: $PASS/$((PASS+FAIL)) — FAILED"

@@ -8,6 +8,40 @@ https://semver.org/spec/v2.0.0.html[Semantic Versioning].
 
 === [Unreleased]
 
+==== Added
+
+* *The PWG record is now derived from an evidence ledger, and gated
+(2026-11-09).* Owner ruling: a machine-readable ledger rather than prose rows.
+`+verification/pwg.json+` holds evidence only — per obligation, each leg's route,
+its §5 token, its §2.2 correspondence state and its receipts — and *no grade*.
+`+scripts/pwg-derive.sh+` is the only thing that turns evidence into a grade,
+implementing §8.1–§8.3 clause by clause; `+scripts/pwg-check.sh+` re-derives on
+every run and fails if the published table or census is not what the evidence
+yields. A `+pwg+` key in the ledger is itself a gate failure, which is how
+§8.4 rule 2 ("grades are derived, not asserted") becomes enforceable rather than
+aspirational.
++
+The record is now per *obligation* rather than two coarse groups, and the picture
+is far more informative: of 24 theory obligations, **17 are `+PWG-3+`** and 7 are
+`+ungraded+` — and the seven split three ways. Three are Lean-only (no Agda
+source), three are Idris2-only (an engineering restatement is not a leg, §8.1),
+and one is the retention order, whose Agda leg proves reflexivity but not
+transitivity or decidability. Verdict soundness is reclassified engineering, so
+§8.1 puts it off the ladder entirely.
++
+Wired: `+just pwg+` (census and per-obligation grades), `+just pwg-render+`
+(regenerates the table between the `+PWG-TABLE+` markers, verified idempotent),
+`+just pwg-check+`, the gate inside `+just verify-all+`, and a `+pwg-record+`
+job in `+proofs.yml+` that needs no prover because the kernels already ran.
++
+Falsified, not assumed: `+scripts/test-gate-falsifiability.sh+` gains seven PWG
+canaries plus a control, and the suite now runs 18/18. Two are load-bearing —
+removing the import cone collapses all 17 `+PWG-3+` to `+ungraded+` (census
+`+ungraded+` 24), and flipping one Lean leg to `+RECONCILED+` lifts that
+obligation to `+PWG-2i+` — so they fire only if the published table really is
+derived. Exercising the whole ladder: with both legs counting and current
+receipts, the derivation returns `+PWG-1+`.
+
 ==== Changed
 
 * *Proof Witness Grades recorded, and the proof records reconciled with the
