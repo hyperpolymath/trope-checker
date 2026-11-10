@@ -9,27 +9,69 @@ commit-signing public key:
 * fetched 2026-10-28 from `gh api users/web-flow/gpg_keys`
   (the entry with `key_id` `B5690EEEBB952194`)
 
+`github-web-flow-previous.gpg` is the expired key it replaced
+(`5DE3E0509C47EA3CF04A42D34AEE18F83AFDEB23`), kept so historical commits can
+still be classified.
+
 == Why it exists
 
-The Affirmation Document Gate (`hyperpolymath/cicd-suite`
-`actions/affirmation-check`, run from `main-estate-audit.yml`) classifies the
-signature on the commit that last changed `AFFIRMATION.adoc`. The copy of the
-web-flow key vendored inside that action is GitHub's *previous* key
+The Affirmation Document Gate (`actions/affirmation-check`) attempts to classify
+the signature on the commit that last changed `AFFIRMATION.adoc`, using the
+available Git history. The copy of the web-flow key vendored inside that action
+is GitHub's *previous* key
 (`5DE3E0509C47EA3CF04A42D34AEE18F83AFDEB23`, expired 2024-01-16) — the action's
 own fingerprint allowlist names the new key, but the new key is not in its
-keyring. Every GitHub-signed commit (web merges, squash landings, and the
-test-merge commit a shallow PR checkout consists of) therefore classified as
-`E` ("cannot be checked"), which the gate treats as "bad, revoked, or failed
-verification" and fails on. That was the `estate-audit` failure on PR #102.
+keyring. A GitHub-signed commit whose key the keyring lacks (web merges, squash
+landings, and the test-merge commit a shallow PR checkout consists of)
+classifies as `E` ("cannot be checked"), which the action treats as "bad,
+revoked, or failed verification" and fails on. That was the `estate-audit`
+failure on PR #102.
 
-The workflow now runs `.github/affirmation-trusted/check.sh`, vendored from
-`cicd-suite@bf7dd95cf49733019343ff485c2f45c6b261839c` with a local repair:
-`E` accompanied by GnuPG's `NO_PUBKEY` is a notice; bad, revoked, and other failed
+`check.sh` in this directory is that action's script vendored from
+`cicd-suite@bf7dd95cf49733019343ff485c2f45c6b261839c` with a local repair: `E`
+accompanied by GnuPG's `NO_PUBKEY` is a notice; bad, revoked, and other failed
 verifications still fail. The local script imports both the current and
 historical vendored GitHub keys and rejects them unless their primary
-fingerprints match the two pinned above. This is a contained workaround, not
-the durable trust boundary: gate code in a pull-request checkout is necessarily
-reviewed code, whereas the root fix belongs in `cicd-suite`, whose pinned
-external action can then be restored. If GitHub rotates the web-flow key
-again, re-fetch it the same way and update the fingerprint above in the same
-commit.
+fingerprints match the two pinned above.
+
+== Current status (2026-11-09)
+
+`main-estate-audit.yml` is now a thin caller of the suite's shared reusable
+workflow, so the gate that runs on this repository is *upstream's*
+`actions/affirmation-check` at the suite's own pin — not the local script. The
+local script is no longer wired into CI.
+
+That gate checks out at depth 1, so the commit whose signature it classifies is
+the *checkout boundary*. On a pull request that is the test-merge commit; on a
+push it is the branch tip. Neither is necessarily the commit that last changed
+`AFFIRMATION.adoc`. The gate emits a notice naming the boundary commit. Even
+when that commit's signature verifies, CI may not have checked the signature
+on the commit that last changed `AFFIRMATION.adoc`. A passing gate can also
+report that the boundary commit's signature could not be verified.
+Measured on this repository 2026-11-09: the gate passes in both shapes
+(`estate-audit / governance` on PR run 42605863386; a depth-1 push-shape run
+over the GitHub-signed landing commit `c0eb4f1` exited 0 with "verified with a
+trusted key: GitHub <noreply@github.com>"), and it classifies the boundary
+commit in both.
+
+The local script is kept because:
+
+* it is the reference implementation of the fix the upstream action still
+  needs. Re-checked 2026-11-09: the suite's vendored `github-web-flow.gpg` is
+  byte-identical to `github-web-flow-previous.gpg` here — its only key is the
+  2017 primary `5DE3E050…`, not the 2024 key `968479A1…` that signed this
+  repository's recent landings. Upstream's verification of those landings
+  therefore depends on resolving a key that is not in the file it ships (it
+  succeeded on the runner, which has network), which is precisely the fragile
+  path the local repair hardens: it ships both keys and turns a `NO_PUBKEY`
+  into a notice instead of a failure;
+* `tests/workflows/review_regressions_test.sh` exercises it, so the repair
+  cannot rot silently;
+* if the shared gate ever starts failing on a key it cannot classify, this
+  script is the local oracle to diagnose it — run
+  `bash .github/affirmation-trusted/check.sh` from the repository root.
+
+This was always a contained workaround, not the durable trust boundary: gate
+code in a pull-request checkout is necessarily reviewed code, and the root fix
+belongs upstream. If GitHub rotates the web-flow key again, re-fetch it the
+same way and update the fingerprint above in the same commit.
