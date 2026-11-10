@@ -8,25 +8,184 @@ https://semver.org/spec/v2.0.0.html[Semantic Versioning].
 
 === [Unreleased]
 
+==== Fixed
+
+* *A comment marker inside a string literal is no longer read as a comment
+(2026-11-09).* `+tests/lib/strip-proof-comments.awk+` tracked block comments with
+no notion of string literals, so `+def m : String := "/-"+` opened a block
+comment that swallowed the rest of the file — and awk still exited `+0+`. An
+`+axiom+` declared after such a line was invisible to *every* gate that scans
+through the stripper. Measured: three shapes reproduce it (`+"/-"+`, the raw
+string `+r"/-"+`, and the hash-delimited `+r#"/-"#+`), and the swallow reached
+five call sites, two of them in CI — `+proofs.yml+`'s `+lean-source-honesty+` job
+(which exited `+0+` on a planted tree) and its `+declared-axioms+` extraction,
+which produced an EMPTY list and so fed the deep axiom audit's own
+"never excused" guard with nothing.
++
+Strings are now consumed as units and emitted as `+""+`, which also means a
+string whose *content* is the word `+sorry+` can no longer trip the gate. Char
+literals are skipped whole, guarded so that primed identifiers (`+h'+`, `+n'+`)
+are untouched — that clause is load-bearing, not cosmetic: without it the
+`+'"'+` in `+src/idris2/Checker/Json.idr+` opens a string and re-creates the hole
+in a different file. An unterminated comment or string is now a loud `+exit 1+`:
+a truncated scan must never be reported as a clean one. `+tests/aspect_tests.sh+`
+had one `+|| true+` covering the whole pipeline, which would have swallowed that
+exit; it now covers the `+find+` and the `+grep+` (no match is the good case) but
+never the awk.
++
+Verified: all three exploit shapes now expose the `+axiom+`; the eight real
+Lean proof files produce byte-identical stripper output; 38 scanned files produce
+no new failure; `+Admitted+` planted behind a string is caught where it was
+previously hidden. Lean 4's *nested* block comments are a known remaining
+limitation, recorded in the file — that direction fails loudly, not open, so it
+is a separable change.
+
+* *Three fail-open paths in this PR's own gates (2026-11-09).* All three were
+mine, found by review and reproduced before being fixed.
++
+`+scripts/pwg-check.sh+` skipped rule 5 silently when the status file was
+absent, and still printed "published table and census match". Renaming
+`+PROOF-STATUS.adoc+` was therefore enough to forge *every* grade in it and exit
+`+0+`; an empty ledger `+{}+` passed the same way, because rules 2–4 read a
+`+jq+` failure as "nothing wrong". A missing status file is now drift, every
+rule whose verdict comes from a command substitution fails when it fails, and
+the control-character check no longer depends on `+grep -P+` being compiled in
+(`+2>/dev/null+` had turned a `+grep+` without `+-P+` into a silent pass).
++
+`+scripts/test-gate-falsifiability.sh+` did not check its *own* fixtures. A
+canary whose `+jq+` program failed wrote an empty ledger, the gate rejected it
+for being invalid JSON rather than for the planted drift, and the canary scored
+PASS without exercising its target — measured on all six `+jq+`-driven canaries.
+A program that silently selected nothing (a renamed receipt key) left the ledger
+unchanged and passed the same way. Each canary now fails if its own transform
+fails, fails if the transform changes nothing, and — for a reject case —
+declares the reason it expects, so a rejection for an unrelated reason no longer
+counts. A dropped canary group used to report `+10/10+` and exit `+0+`; the case
+count is now part of the claim.
++
+Added canary 19, the *meta-canary*: it breaks one canary's own `+jq+` program and
+asserts the suite reports FAILURE. It fails against the pre-fix harness, which
+is what makes it evidence rather than decoration. The suite is *19/19*, and all
+four breakages — a corrupted transform, a no-op fixture, a dropped group, and a
+suite that cannot see its own breakage — were each confirmed to fail it.
+
+==== Added
+
+* *The PWG record is now derived from an evidence ledger, and gated
+(2026-11-09).* Owner ruling: a machine-readable ledger rather than prose rows.
+`+verification/pwg.json+` holds evidence only — per obligation, each leg's route,
+its §5 token, its §2.2 correspondence state and its receipts — and *no grade*.
+`+scripts/pwg-derive.sh+` is the only thing that turns evidence into a grade,
+implementing §8.1–§8.3 clause by clause; `+scripts/pwg-check.sh+` re-derives on
+every run and fails if the published table or census is not what the evidence
+yields. A `+pwg+` key in the ledger is itself a gate failure, which is how
+§8.4 rule 2 ("grades are derived, not asserted") becomes enforceable rather than
+aspirational.
++
+The record is now per *obligation* rather than two coarse groups, and the picture
+is far more informative: of 24 theory obligations, **17 are `+PWG-3+`** and 7 are
+`+ungraded+` — and the seven split three ways. *Two* are Lean-only with no Agda
+source at all (the O1 atom factorisation and the tropical (B′) sighting).
+*Three* are Idris2-only, where an engineering restatement is not a leg (§8.1).
+*Two* have a real but partial Agda leg, so the Agda token is `+OPEN+`: the
+retention order, whose Agda leg proves reflexivity but neither transitivity nor
+decidability, and tier-2 membership, where `+TB.Tier+` states six of the
+per-element non-cancellativity witnesses and the positive `+Q-cancelʳ+` but not
+the exhaustive characterisation — there is no Agda counterpart of
+`+grade_leftCancel_iff+` and no Agda witness on the merge coordinate. A missing
+Agda source and a partial one are different debts. Verdict soundness is
+reclassified engineering, so §8.1 puts it off the ladder entirely.
++
+Wired: `+just pwg+` (census and per-obligation grades), `+just pwg-render+`
+(regenerates the table between the `+PWG-TABLE+` markers, verified idempotent),
+`+just pwg-check+`, the gate inside `+just verify-all+`, and a `+pwg-record+`
+job in `+proofs.yml+` that needs no prover because the kernels already ran.
++
+Falsified, not assumed: `+scripts/test-gate-falsifiability.sh+` gains seven PWG
+canaries plus a control, and the suite now runs 18/18. Two are load-bearing —
+removing the import cone collapses all 17 `+PWG-3+` to `+ungraded+` (census
+`+ungraded+` 24), and flipping one Lean leg to `+RECONCILED+` lifts that
+obligation to `+PWG-2i+` — so they fire only if the published table really is
+derived. Exercising the whole ladder: with both legs counting and current
+receipts, the derivation returns `+PWG-1+`.
+
 ==== Changed
 
-* *Estate audit is called, not copied (2026-11-09).*
-`.github/workflows/main-estate-audit.yml` is now a thin caller of
-`+hyperpolymath/proven-cicd-and-workflows`'s shared reusable audit at a full
-branch-reachable commit SHA (`+3120495+`), instead of an expanded 26-step copy of
-`+hyperpolymath/cicd-suite+`. The copy pinned the suite's pre-rename coordinate —
-a reusable call under the old name starts with **zero jobs** and reports only
-`+failure+` — and it still ran four gates upstream removed as stubs or
-pass-on-absence checks. The audit now reports five component checks
-(`+estate-audit / governance+`, `+hygiene+`, `+manifests+`, `+languages+`,
-`+advisory+`) so one red gate no longer hides the rest. Workflow name and caller
-job id are unchanged, so the required context keeps its prefix.
-`+actions.lock+` was regenerated with the supported tooling in the same change.
-* *Affirmation trust material records its own status.*
-`+.github/affirmation-trusted/README.adoc+` now states that the gate running in CI
-is upstream's composite, that the local `+check.sh+` repair is retained as the
-reference implementation and local oracle, and that the suite's vendored
-web-flow keyring still holds only the expired key (re-checked 2026-11-09).
+* *Proof Witness Grades recorded, and the proof records reconciled with the
+sources (2026-11-09).* `+docs/status/PROOF-STATUS.adoc+` gains the §8.5 PWG record
+that `+PROOF-POLICY.adoc+` §8 (owner ruling 2026-11-04) requires, with both theory
+groups derived as `+ungraded+` — Theorem B for want of a §2.1-conformant *receipt*
+(its flags in force already are §2.1), the Lean-witnessed results for want of an
+Agda *source* — plus the §1.1 import-cone record and a census in the form §8.4
+rule 7 allows. Four published rows narrowed to what the provers actually state: L3
+(two-sidedness is stated only for `+Falsified+` in Agda), L4 (Agda covers fate and
+fidelity; Lean covers fate; bond, merge and the grade-level lifting have an Idris2
+leg only, which §8.1 excludes from the ladder), Target 3 (`+_↝_+` has two
+ε-argument rules, no congruence, preservation definitional, no progress theorem),
+and C3 (now cites the ratified `+FateA.dropped_still_not_cancel+`; the
+pre-ratification `+dropped_absorbing+` is marked history). The README no longer
+attributes the atom and tropical factorisations to Agda and Idris2 — they are
+Lean-only. The O1-carrier evidence cell cites the emitted axiom lines and names its
+receipt's commit instead of the inert in-source `+#print axioms+` directive, with
+the carry-forward from `+4ecba4f+` stated and the proof trees shown identical. The
+history section no longer reads as if O1 itself were closed.
+* *"Axiom-clean" was an overclaim, and two neighbouring table rows were stale
+(2026-11-09).* `+README.adoc+`'s layout table called the Lean grade-boundary
+package "sorry-free, axiom-clean", and `+docs/proof-debt.adoc+`'s standing
+position said the Idris2 core, the Lean ground truth and the Agda metatheory
+"are all axiom-clean for their claimed lemmas". The kernel reports `+propext+`
+and `+Quot.sound+`, and `+Classical.choice+` in three theorems, so both now use
+the wording already adopted in `+PROOF-STATUS.adoc+` — no `+sorryAx+`, no user
+axiom, resting on those three — which is what PROOF-POLICY §8.4 rule 6 requires
+to travel with the claim. In the same table, the grade-factorisation verdict
+`+(B)+` now says "on the *pre-ratification* carrier" and points at `+(B′)+` and
+`+GradeFactorisationR.lean+`, and the Theorem B row names the full §2.1
+invocation rather than `+--safe --without-K+`.
+* *Theorem B reaches `+PWG-3+`, the estate's first graded theory theorem
+(2026-11-09).* It was recorded as `+ungraded+` earlier the same day, for want of
+a receipt rather than a proof: the flags in force already were the PROOF-POLICY
+§2.1 invocation, but every written-up Agda result here said
+`+--safe --without-K+` only, and §2.1 declassifies prior successes under that
+profile. Dispatching `+proofs.yml+` on `+main+` supplied the missing record —
+run 42623339243 at `+c0eb4f1+`, log ending `+PASS: All.agda + Smoke.agda
+typecheck (--safe --without-K --cubical-compatible; --safe => postulate-free by
+construction)+`, with Agda 2.7.0.1 and `+agda-stdlib+` v2.0 pinned by SHA-256
+and the §1.1 import cone now recorded. Nothing about the mathematics changed.
+`+PWG-3+` is not a discharge (§8.4 rule 1): §2's recheck obligation is owed in
+full and is unreachable until a Rocq development exists. The same run was green
+on both Lean packages at the current commit, so every receipt in this file now
+names `+c0eb4f1+` and no row carries a carry-forward.
+* *The (B′) tropical-factorisation row stated its own theorem backwards
+(2026-11-09).* It read "any sighted homomorphism squashes `+Unknown+` to the
+deceptive top". `+Unknown+` *is* the deceptive top of the fidelity carrier, and
+`+sighted_forces_squash+` concludes the opposite — `+f (atten Delta.unknown) ≠
+Delta.unknown+` — i.e. a sighted homomorphism must send it *away* from that
+value. The row now states the theorem, and names the repair that performs the
+move (`+squash_top+`, `+squash_ne_unknown+`, `+squash_add+`). The row and the
+PWG Lean leg also now name their receipts, as the O1-carrier row already did.
+* *`+Trope.Order+` no longer cites Python as the provenance of proof content
+(2026-11-09).* Two transitivity lemmas' docstrings read "exhaustive;
+Python-verified", naming a language on the estate deny-list as what checked a
+proof. What actually enforces exhaustiveness is Idris2's coverage checker under
+`+%default total+`, where a missing case is a compile error; the docstrings now
+say that. Comments only; no proof term changed.
+* *Theorem B interface report brought back to the ratified carrier (2026-11-09).*
+`+verification/proofs/agda/theorem-b/INTERFACE-REPORT.adoc+` stated
+`+dropped ▷f falsified = dropped+` as the live tier-homomorphism-failure witness.
+Amendment (A1) reversed that equation; the report now gives the witness the Agda
+actually proves (`+dropped ▷f atten unknown+` against the tier meet) and no longer
+claims the retired `+fate-L4-fails+` is a compiled guard theorem. Target 2's verdict
+no longer advertises a sharpness refutation that ratification retired, the
+toolchain and spec pointers match the pins (Agda 2.7.0.1, stdlib v2.0, spec v0.2),
+and the `+fix+` obstruction count is one, not two, per ADR 0004.
+* *Local Lean source gate strengthened to match CI (2026-11-09).*
+`+verification/proofs/lean4/grade-boundary/justfile+`'s `+falsify+` recipe grepped
+raw source and matched `+axiom+` only at line start, so it missed
+`+private axiom foo+` and tripped on the honest "sorry-free" prose in the module
+docstrings. It now uses the same comment-stripping pass and the same token-based
+regexes as `+.github/workflows/proofs.yml+`. Demonstrated on a planted probe: the
+old form missed the private axiom and false-positived on comment prose; the new
+form catches the axiom, ignores the prose, and still catches a real `+sorry+`.
 * *Status surfaces reconciled with the spec on O1-carrier (2026-11-04).*
 `+docs/status/PROOF-STATUS.adoc+`, `+docs/status/ROADMAP.adoc+` and the README status
 paragraph now say what

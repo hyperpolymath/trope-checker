@@ -236,4 +236,34 @@ verify-all: build-lean build-agda
         if grep -nE '(^|[^[:alnum:]_.])axiom([^[:alnum:]_]|$)' <<<"$stripped"; then
             echo "FAIL: user axiom declared in $f"; exit 1; fi
     done
-    echo "PASS: verify-all — Lean green & axiom-clean; Agda strict-flags green."
+    echo "=== verify-all: Proof Witness Grade record ==="
+    bash scripts/pwg-check.sh
+    echo "PASS: verify-all — Lean green, no sorryAx and no user axiom; Agda strict-flags green; PWG record derived and in step."
+
+# Derive every Proof Witness Grade from verification/pwg.json and show the census.
+# The ledger holds EVIDENCE only; PROOF-POLICY §8.4 rule 2 says the grade is
+# computed from it, never written by hand.
+pwg:
+    @bash scripts/pwg-derive.sh --census
+    @echo
+    @bash scripts/pwg-derive.sh --json | jq -r '.[] | "  \(.pwg)\t\(.id)\t\(.title)"'
+
+# Regenerate the PWG table inside docs/status/PROOF-STATUS.adoc from the ledger.
+# Rewrites only the region between the PWG-TABLE:BEGIN/END markers.
+pwg-render:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    f=docs/status/PROOF-STATUS.adoc
+    grep -q '^// PWG-TABLE:BEGIN' "$f" || { echo "FAIL: $f has no PWG-TABLE:BEGIN marker"; exit 1; }
+    grep -q '^// PWG-TABLE:END'   "$f" || { echo "FAIL: $f has no PWG-TABLE:END marker"; exit 1; }
+    tmp=$(mktemp)
+    awk '/^\/\/ PWG-TABLE:BEGIN/{print; exit} {print}' "$f" > "$tmp"
+    bash scripts/pwg-derive.sh --table >> "$tmp"
+    awk 'f{print} /^\/\/ PWG-TABLE:END/{if(!f){print; f=1}}' "$f" >> "$tmp"
+    mv "$tmp" "$f"
+    echo "regenerated the PWG table in $f"
+
+# 🔴 GATE: the ledger is well-formed, asserts no grade, and the published table
+# and census are the derived ones. Falsified by scripts/test-gate-falsifiability.sh.
+pwg-check:
+    @bash scripts/pwg-check.sh

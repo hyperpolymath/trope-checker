@@ -51,8 +51,11 @@ Consequences for this report:
 == What this is
 
 Theorem B is the deferred metatheory of the trope-particularity *calculus* (spec
-`spec/calculus.adoc`, `:revnumber: 0.1`) over the grade algebra. It is developed
-*intrinsically* in Agda 2.8.0 + agda-stdlib, `--safe --without-K`, in
+`spec/calculus.adoc`, `:revnumber: 0.2`) over the grade algebra. It is developed
+*intrinsically* in Agda 2.7.0.1 + agda-stdlib v2.0 (both pinned by URL and SHA-256
+in `.github/workflows/proofs.yml`), under `--safe --without-K --cubical-compatible`
+— the PROOF-POLICY §2.1 invocation, which CI passes at `proofs.yml:167` and the
+local recipe at `build/just/proofs.just:87,212` — in
 `verification/proofs/agda/theorem-b/`, REUSING the echo-types graded-reindexing
 *style* (`echo-types/proofs/agda/EchoGraded.agda` — the thin-poset reindexing
 modality; `EchoIndexed.agda` — indexed functoriality; these are the
@@ -90,7 +93,7 @@ deceptive (`falsified`/`misbound`/`conflated`/`unknown`, left zeros ⇒ L5 irrev
 ⊊ finite-fidelity cancellative core (Q embeds (ℕ,+,0), cancels).
 |===
 
-Fences respected: spec is v0.1 (O1 seven-effects completeness OUT OF SCOPE,
+Fences respected: spec is v0.2, ratified carrier R-2026-07-07 (O1 seven-effects completeness OUT OF SCOPE,
 untouched); "CF" (cancellative+conical ⇒ special-Frobenius) NOT assumed — it is
 refuted-as-universal by both F2 and L5.
 
@@ -148,7 +151,7 @@ rule `(g₁ ⊔ g₂) ▷ label` is recorded but not built (orthogonal lattice m
 no bearing on F2/F4). These are deliberate scoping choices, stated loudly, not
 silent weakenings.
 
-=== Target 2 — substitution-admissibility / reindexing ("tropes follow values through cut") — *PROVED + sharpness refutation*
+=== Target 2 — substitution-admissibility / reindexing ("tropes follow values through cut") — *PROVED (grade-exact); the v0.1 sharpness refutation is RETIRED*
 
 The substitution lemma `subst : Subst Γ Δ → Γ ⊢ A ! g → Δ ⊢ A ! g` preserves the
 grade `g` *EXACTLY* — the conclusion's grade is the same `g`, no ▷ reorder anywhere.
@@ -156,12 +159,17 @@ This is the machine-checked form of "tropes follow values through cut". It is
 insensitive to F2 precisely because a value (and a variable) carries ε, the
 two-sided unit of ▷; single substitution `_[_]` inherits exactness.
 
-The F2 boundary is itself a *theorem*, not a gap: `cut-left-grade` pins the oriented
-cut grade `g₁ ▷ g₂`; `cut-orientation-matters` exhibits computations whose forward
-composition differs from the swapped one (witness `dropped`/`falsified`); and
-`cut-symmetric-fails` refutes any orientation-free computational-cut law. So the
-value lemma is *sharp* — F2 forbids its symmetric generalisation. This is exactly
-the predicted F2 wall, delivered as a refutation rather than an unproven obligation.
+HISTORICAL (pre-ratification, v0.1 carrier): the F2 boundary was itself a theorem —
+`cut-orientation-matters` exhibited computations whose forward composition differed
+from the swapped one (witness `dropped`/`falsified`), and `cut-symmetric-fails`
+refuted any orientation-free computational-cut law, so the value lemma was *sharp*.
+
+On the ratified carrier that wall is gone. Amendment (A1) made ▷ commutative, both
+theorems were retired, and they are REPLACED by `TB.Substitution.cut-grade-comm : ∀
+(g₁ g₂ : Grade) → g₁ ▷ g₂ ≡ g₂ ▷ g₁`, proved from `grade-comm`. Neither
+`cut-orientation-matters` nor `cut-symmetric-fails` occurs in any source; the cut is
+reorderable, so the symmetric generalisation the v0.1 development forbade is now
+available. `cut-left-grade` still pins the oriented cut grade.
 
 === Target 3 — subject reduction respecting the three-tier F4 boundary — *PARTIAL (β/let core PROVED; `fix` NOT-REACHED)*
 
@@ -191,23 +199,57 @@ and cancels), and the six `*-not-cancel` witnesses (three-tier strictness).
 .FINDING (F2×F4): tier-preservation is CLOSURE, not a homomorphism
 ====
 The naive single-tier meet-homomorphism `tierOf (g ▷ h) ≡ tierOf g ⊓ tierOf h` is
-*FALSE* on the fate coordinate — `fate-tier-meet-hom-fails`: `dropped ▷f falsified
-= dropped` (honest), but `fateTier dropped ⊓ fateTier falsified = deceptive`. The
-honest left-absorbing head `dropped` *shields* a later deceptive `falsified`. This
-is the same non-commutativity phenomenon (F2) as the L4-monotonicity failure
-(`fate-L4-fails`, ported from `Soundness.idr`). It is *why* tier-preservation had to
-be stated as set-membership closure and *why* the ⊑/L4 route is unsound — both are
-kept as compiled guard theorems so no later work re-introduces the wrong route.
+*FALSE* on the fate coordinate. On the ratified carrier the witness is
+`fate-tier-meet-hom-fails` (`TB.Tier`): `dropped ▷f atten unknown = dropped`
+(honestLossy), but `fateTier dropped ⊓ᵗ fateTier (atten unknown) = honestLossy ⊓
+deceptive = deceptive`. The honest-but-lossy left-absorbing head `dropped` *shields*
+a later deceptive fidelity top.
+
+NOTE: an earlier revision of this box gave the witness as
+`dropped ▷f falsified = dropped`. That is the *pre-ratification* equation. Amendment
+(A1) of R-2026-07-07 reversed it: `TB.Grade` now computes
+`dropped ▷f falsified = falsified` ("the lie survives the drop",
+`TB.Grade.dropped▷falsified`), so the old pair agrees with the meet and is no longer
+a witness. The failure above is the residual, fate-internal one, and it does not
+launder the grade-level `Deceptive` predicate — `TB.Tier.deceptive-absorbs-▷` is
+total.
+
+The two live together because they are *different notions of deceptive*, and it is
+worth being exact about which one closes. The tier classifier is deceptive on
+`atten unknown`, since `fateTier (atten unknown) = dTier unknown = deceptive`. The
+`Deceptive` predicate is not: it is a predicate on *grades*, defined by equality to
+the genuine zeros — `falsified` on any of the four fate coordinates, `misbound` on
+the bond, `conflated` on the merge — so a grade carrying `atten unknown` and no
+other deceptive coordinate does not satisfy it. (The four coordinates are
+`Fate`-typed; "fidelity" in this development is the `Δ` *inside* `atten`, which is
+exactly why the two notions come apart here.) Hence the *tier* class is not closed
+under stem:[\triangleright]: `dropped ▷f atten unknown = dropped`, whose tier is
+`honestLossy`, while the meet of the two tiers is `deceptive`. And hence
+`deceptive-absorbs-▷` is not weakened by that: it establishes closure for the
+narrower `Deceptive` predicate, which such a grade was never in. A claim that
+"deceptive is closed" is true of the predicate and false of the tier class, so this
+report always names which.
+
+This is *why* tier-preservation had to be stated as set-membership closure. The L4
+guard it used to be paired with, `fate-L4-fails`, is RETIRED by R-2026-07-07 and is
+not compiled: L4 is restored on the ratified carrier, with positive proofs in both
+arguments at `TB.Order.fateL4MonoR` and `TB.Order.fateL4MonoL`. Only
+`fate-tier-meet-hom-fails` is a live guard theorem.
 ====
 
 NOT-REACHED — subject reduction through `fix`/lfp (calculus §7). Honestly
-characterised in `TB.Reduction` (and *not postulated*): two things are genuinely
-missing — (1) an operational model (no ↝ rule for `fix`, no observed-retention ρ;
-the spec is a type discipline), and (2) the O4 limit carrier for ordering iterated
-attenuation beyond ω (Conat-vs-tag). The lfp's fidelity endpoint lands in the
+characterised in `TB.Reduction` (and *not postulated*): one thing is genuinely
+missing — an operational model (no ↝ rule for `fix`, no observed-retention ρ; the
+spec is a type discipline). What was once listed as a second obstruction, the O4
+limit carrier for ordering iterated attenuation beyond ω (Conat-vs-tag), is
+RESOLVED by ADR 0004: the finitary carrier ℕ ∪ {∞, ⊤} suffices, because
+transfinitely deep `fix` nesting is inexpressible in finitary syntax. The lfp's
+fidelity endpoint lands in the
 ▷-fixed absorbing tops `{total, unknown}`, so the *grade* is tier-stable; the
 unproven part is the operational unfold-preserves-tier step. This obstruction is
-the missing operational semantics + O4, NOT a defect of the grade algebra.
+the missing operational semantics, NOT a defect of the grade algebra. (O4 is no
+longer part of it: ADR 0004 resolved the limit-carrier question, as the paragraph
+above records.)
 
 === Target 4 — Honest Generation (HC-*) and Veridicality (L*) — *PROVED* (reached because 1–3 landed)
 

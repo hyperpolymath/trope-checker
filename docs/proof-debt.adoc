@@ -47,8 +47,12 @@ or *(FP)* a false positive (convention comment — construct forbidden, not used
 == Standing position
 
 * No escape hatch is admitted into the trusted base. The verified Idris2 core, the
-  Lean grade-algebra ground truth, and the Agda metatheory are all axiom-clean for
-  their claimed lemmas.
+  Lean grade-algebra ground truth and the Agda metatheory carry no `sorryAx` and no
+  user axiom behind their claimed lemmas. "Axiom-clean" would say more than that and
+  is not used here: the Lean results rest on the standard library's `propext` and
+  `Quot.sound`, and on `Classical.choice` in three theorems, which PROOF-POLICY
+  §8.4 rule 6 requires to travel with the claim. The Agda is postulate-free by
+  construction under `--safe`.
 * The convention comments are retained deliberately: they document the prohibition
   at the point of work. The *root* fix for the scanner mismatch is to make
   `check-trusted-base.sh` comment-aware upstream in `hyperpolymath/standards`

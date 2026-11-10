@@ -90,15 +90,39 @@ fi
 # So it failed the repo for documenting that it is clean. Now: proof source
 # extensions only, comment lines stripped, and `sorry` must not be part of
 # `sorry-free`.
+# This block used to end with one `|| true` covering the WHOLE substitution, which
+# masked three different non-zero statuses at once. Each now gets what it deserves:
+#   - the `find`: an absent directory is not a finding          -> || true
+#   - the `grep`: no match is the GOOD case, not a failure      -> || true
+#   - the `awk`:  a non-zero stripper means it scanned a TRUNCATED file, so a
+#     clean grep over its output proves nothing. That must NOT be masked; it is
+#     recorded per file and raised as a hard failure below. Swallowing it would
+#     reproduce the exact fail-open this scan exists to prevent.
+# `set -euo pipefail` is in force, so the grep's no-match status would otherwise
+# abort the script through the assignment.
+STRIP_FAILED=""
+STRIP_FAIL_LOG="${TMPDIR:-/tmp}/aspect-strip-failed.$$"
 DANGEROUS_PROOF=$(
   while IFS= read -r f; do
-    awk -f tests/lib/strip-proof-comments.awk "$f" 2>/dev/null \
+    if ! stripped=$(awk -f tests/lib/strip-proof-comments.awk "$f"); then
+      printf '%s\n' "$f" >> "$STRIP_FAIL_LOG"
+      continue
+    fi
+    printf '%s\n' "$stripped" \
       | grep -nE '\bAdmitted\b|\bsorry\b|\bunsafeCoerce\b|\bObj\.magic\b' \
-      | sed "s|^|$f:|"
+      | sed "s|^|$f:|" || true
   done < <(find src verification -type f \
                \( -name '*.v' -o -name '*.lean' -o -name '*.agda' \
-                  -o -name '*.idr' -o -name '*.thy' -o -name '*.rs' -o -name '*.zig' \) 2>/dev/null) || true
+                  -o -name '*.idr' -o -name '*.thy' -o -name '*.rs' -o -name '*.zig' \) 2>/dev/null || true)
 )
+if [ -f "$STRIP_FAIL_LOG" ]; then
+  STRIP_FAILED=$(cat "$STRIP_FAIL_LOG")
+  rm -f "$STRIP_FAIL_LOG"
+fi
+if [ -n "$STRIP_FAILED" ]; then
+  fail "Comment stripper could not scan these files (truncated input, not a clean scan):"
+  printf '%s\n' "$STRIP_FAILED" | head -5
+fi
 if [ -n "$DANGEROUS_PROOF" ]; then
     fail "Dangerous proof patterns found:"
     echo "$DANGEROUS_PROOF" | head -5
