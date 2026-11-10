@@ -71,9 +71,12 @@ rejects them at validation, naming the offending coordinate. The alternative
 | `src/rust/`                 | The Rust fast-core: a dep-free (std-only) second checker, validated against the Idris2 reference via the conformance corpus.
 | `tests/conformance/`        | The machine conformance suite: `cases.json` + `fixtures/` + `schema-invalid/`.
 | `verification/proofs/idris2/` | The verified core (Idris2): grade algebra + L1/L2/⊑/veridicality/generation.
-| `verification/proofs/lean4/grade-boundary/` | The grade-algebra ground truth (Lean 4 + Mathlib, sorry-free, axiom-clean): the three-tier honest/deceptive cancellation boundary.
-| `verification/proofs/lean4/grade-factorisation/` | The tropical factorisation probe (Lean 4 + Mathlib): imports the carrier and decides whether the grade admits a commutative cost-quotient — verdict *(B) factors but veridicality-blind*. A precondition only; does not address recursion (CO-1).
-| `verification/proofs/agda/theorem-b/` | Theorem B — the deferred calculus metatheory (Agda `--safe --without-K`, zero postulates): intrinsic graded calculus, value-substitution, subject reduction (β/let; `fix` open), Honest Generation.
+| `verification/proofs/lean4/grade-boundary/` | The grade-algebra ground truth (Lean 4 + Mathlib): the three-tier honest/deceptive cancellation boundary. No `sorryAx` and no user axiom; the kernel reports `propext` and `Quot.sound`, and `Classical.choice` in three theorems.
+| `verification/proofs/lean4/grade-factorisation/` | The tropical factorisation probe (Lean 4 + Mathlib): imports the carrier and decides whether the grade admits a commutative cost-quotient. Verdict *(B) factors but veridicality-blind* on the *pre-ratification* carrier; re-run on the ratified carrier it becomes *(B′) sighted on the fate axis* — `piR`
+separates honest `Dropped` from deceptive `Falsified`, and reads the four fate slots
+only; `psiBond` separates honest from deceptive bonds
+(`GradeFactorisation.lean`). A precondition only; does not address recursion (CO-1).
+| `verification/proofs/agda/theorem-b/` | Theorem B — the deferred calculus metatheory (Agda `--safe --without-K --cubical-compatible`, the PROOF-POLICY §2.1 invocation; zero postulates): intrinsic graded calculus, value-substitution, subject reduction (β/let; `fix` open), Honest Generation.
 | `verification/proofs/INTEGRATION-REPORT.adoc` | How the three streams reconcile: the unified R-id ↔ Lean ↔ Agda ↔ status table, the convergence (central open problem), and the divergence adjudication.
 | `docs/CONTRIBUTING-A-FRONTEND.adoc` | How a new front-end targets the IR (the portability contract).
 | `docs/status/PROOF-STATUS.adoc` | What is proved vs. stubbed-and-named vs. deferred.
@@ -147,12 +150,28 @@ Alpha. The IR schema, the executable checker and the conformance suite are green
 and the verified developments carry no `sorryAx` and no user axiom behind their
 claimed lemmas (the Lean results rest on the standard library's `propext`/`Quot.sound`,
 and `Classical.choice` in three theorems). On the ratified carrier (ADR 0004, R-2026-07-07) the grade algebra is a commutative
-monoid with the three deceptive bottoms as two-sided zeros; L1–L6, conicality, the
-cancellation boundary (left-cancellative iff ε), the Honest Generation and
-Veridicality theorems, the atom factorisation (O1's carrier half, proved on the ratified `GradeR` in
-`EffectAtomsRatified.lean`; O1-coord stays open) and the tropical factorisations — pre-ratification
-`GradeFactorisation.lean` veridicality-blind, ratified `GradeFactorisationR.lean`
-veridicality-sighted — are proved across Agda, Idris2 and Lean; Theorem B gives
+monoid with the three deceptive bottoms as two-sided zeros. L1–L6, conicality,
+the Honest Generation and Veridicality theorems *all carry an Agda proof*, but coverage differs per result.
+The grade-level cancellation boundary (left-cancellative iff ε on the
+unquotiented carrier) is proved in Lean; Agda proves finite-fidelity cancellation
+and selected non-cancellation counterexamples, not the exhaustive iff.
+`docs/status/PROOF-STATUS.adoc` and
+`verification/pwg.json` are the per-result record, and they agree row for row.
+Only *L1* and *L4* carry a statement in all three, and of the ten results *eight*
+lack one entirely. Lean does not state L2, L5, Honest Generation or Veridicality;
+Idris2 does not state L3, L6, conicality or the cancellation boundary; L5 is
+Agda-only. Where Idris2 does restate a result, PROOF-POLICY §8.1 keeps it off the
+Proof Witness Grade ladder as an engineering restatement — the ledger records it
+under `reference`, never as a leg, so it can neither raise nor lower a grade.
+And *L4 in full* is proved by none of the three: Agda covers the fate coordinate
+and the fidelity dimension, Lean covers fate, and bond and merge have an Idris2
+restatement only. Idris2 establishes coordinate-level monotonicity only; the
+lifting for `gradeCompose` is not mechanised in Idris2. The atom
+factorisation (O1's carrier half, proved on the ratified `GradeR` in
+`EffectAtomsRatified.lean`; O1-coord stays open) and the tropical factorisations
+— pre-ratification `GradeFactorisation.lean` veridicality-blind, ratified
+`GradeFactorisationR.lean` fate-axis veridicality-sighted — are Lean-only: neither carries
+an Agda or an Idris2 statement. Theorem B gives
 grade-exact substitution and β/let subject reduction. The
 named open problems are *CO-1* — the operational model for `fix` is designed
 (`spec/notes/2026-07-07-co1-operational-model.adoc`) and awaits mechanisation,

@@ -95,7 +95,9 @@ fateLteTrans Dropped Predicated Falsified _ q = absurd q
 fateLteTrans Dropped Dropped c _ q = q
 fateLteTrans Dropped Falsified c p _ = absurd p
 
-||| Transitivity of ⊑ on Bond (exhaustive; Python-verified).
+||| Transitivity of ⊑ on Bond. The clause table below is exhaustive, and
+||| Idris2's coverage checker under `%default total` is what enforces that:
+||| a missing case is a compile error, not a silent gap.
 export
 bondLteTrans : (a, b, d : Bond) -> bondLte a b = True -> bondLte b d = True -> bondLte a d = True
 bondLteTrans Intact Intact Intact _ _ = Refl
@@ -163,7 +165,9 @@ bondLteTrans Misbound Misbound Withheld _ _ = Refl
 bondLteTrans Misbound Misbound Severed _ _ = Refl
 bondLteTrans Misbound Misbound Misbound _ _ = Refl
 
-||| Transitivity of ⊑ on Merge (exhaustive; Python-verified).
+||| Transitivity of ⊑ on Merge. The clause table below is exhaustive, and
+||| Idris2's coverage checker under `%default total` is what enforces that:
+||| a missing case is a compile error, not a silent gap.
 export
 mergeLteTrans : (a, b, d : Merge) -> mergeLte a b = True -> mergeLte b d = True -> mergeLte a d = True
 mergeLteTrans Single Single Single _ _ = Refl

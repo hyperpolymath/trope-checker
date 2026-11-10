@@ -11,8 +11,24 @@ build *args:
 # the development is not sorry-free, smuggles axioms/native_decide, or stops building.
 falsify:
     @echo "[falsify] no forbidden tactics/axioms in source…"
-    @! grep -nE '(:=|by|;|<;>|=>|\|)[[:space:]]*(sorry|admit)\b|\bnative_decide\b' *.lean || (echo "FAIL: forbidden tactic" && exit 1)
-    @! grep -nE '^[[:space:]]*axiom\b' *.lean || (echo "FAIL: user axiom declared" && exit 1)
+    # Same pipeline as .github/workflows/proofs.yml: strip -- and /- -/ comments
+    # first (line numbers preserved), then match bare TOKENS. Line-initial and
+    # raw-source matching missed `private axiom foo` and tripped on the honest
+    # "sorry-free" prose in the module docstrings.
+    @fail=0; \
+     for f in *.lean; do \
+       stripped=$(awk -f ../../../../tests/lib/strip-proof-comments.awk "$f") || { \
+         echo "FAIL: could not strip comments from $f — refusing to scan partial output"; \
+         fail=1; continue; \
+       }; \
+       if grep -nE '(^|[^[:alnum:]_.])(sorry|admit|unsafe)([^[:alnum:]_]|$)|\bnative_decide\b|\bsorryAx\b|\bofReduceBool\b|\bextern\b|\bimplemented_by\b|\baddDecl\b|\baxiomDecl\b' <<<"$stripped"; then \
+         echo "FAIL: forbidden Lean construct in $f"; fail=1; \
+       fi; \
+       if grep -nE '(^|[^[:alnum:]_.])axiom([^[:alnum:]_]|$)' <<<"$stripped"; then \
+         echo "FAIL: user axiom declared in $f"; fail=1; \
+       fi; \
+     done; \
+     [ "$fail" -eq 0 ] || exit 1
     @echo "[falsify] build is green…"
     lake build
     @echo "[falsify] axiom audit contains no sorryAx…"
