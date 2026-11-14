@@ -8,9 +8,9 @@
 (repo-deed
   :schema-version  "1.0.0"
   :canonical-name  "trope-checker"
-  :beholding-chora #uuid"0889b37b-defb-831f-973c-e119500db00e"
+  :beholding-chora #u8"chora:estate/github.com/hyperpolymath"
 
-  :repo-uuid       #uuid"fd873bbf-1cfc-863e-b6fe-53a1335709c1"
+  :repo-uuid       #u8"gv-clade-index:github.com/hyperpolymath/trope-checker"
 
   (identity :primary-forge github
             :owner          "hyperpolymath"
