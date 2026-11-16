@@ -92,7 +92,16 @@ DERIVE='
     and ($leg.route != "waived" and $leg.route != "unavailable")
     and usable_receipt([$leg.receipts[] | $receipts[.]]);
 
-  .receipts as $R
+  # 8.2 PWG-1 / 8.5.2: a receipt DESCRIBES the source commit when its commit is
+  # the source commit of the ledger. (8.5.2 also admits an echo chain to it; this
+  # ledger records no echoes, so a receipt from any other commit does not
+  # describe it -- the conservative reading, and it still counts toward 3/2i/2ii.)
+  def describes($rs; $src): $rs
+    | map(select(.state == "current" and .result == "pass" and .commit == $src))
+    | length > 0;
+
+  .commit as $src
+  | .receipts as $R
   | .theorems
   | map(
       . as $t
@@ -110,9 +119,13 @@ DERIVE='
           elif $legs == 0 then "3"
           elif $legs == 1 then "2i"
           else
-            (if (usable_receipt($ar)
-                 and usable_receipt([$c.receipts[] | $R[.]])
-                 and usable_receipt([$l.receipts[] | $R[.]]))
+            # Both legs count, so every conjunct of usable_receipt already holds
+            # for all three witnesses: testing it here (as this branch once did)
+            # made "2ii" unreachable and granted PWG-1 on PWG-2ii evidence. The
+            # rung above 2ii is about WHICH COMMIT the receipts describe.
+            (if (describes($ar; $src)
+                 and describes([$c.receipts[] | $R[.]]; $src)
+                 and describes([$l.receipts[] | $R[.]]; $src))
              then "1" else "2ii" end)
           end
         ) as $grade

@@ -278,6 +278,37 @@ pwg_canaries() {
     "resolve to no declaration"
 }
 
+# --- the top of the ladder: PWG-2ii and PWG-1 are different rungs ----------
+# The table-drift gate cannot tell 1 from 2ii (either way the published row stops
+# matching), so these canaries read the DERIVED grade directly. Both legs of L1
+# are made to count; the only variable is the commit the receipts record.
+# Measured 2026-11-16: against the pre-fix derivation a receipt commit of all
+# f's derived PWG-1 -- "2ii" was unreachable, because the branch tested only
+# conjuncts that counting had already implied. The 2ii canary FAILS against it.
+derive_case() {
+  local want="$1" label="$2" commit="$3" d got
+  d=$(scratch)
+  if ! jq -cS --arg c "$commit" '
+      .receipts["rocq-canary"] = (.receipts["lean-boundary-c0eb4f1"] + {commit: $c})
+      | .receipts["lean-boundary-c0eb4f1"].commit = $c
+      | (.theorems[] | select(.id == "L1") | .legs) |=
+          (.lean.state = "RECONCILED"
+           | .rocq = {declarations: [], receipts: ["rocq-canary"], route: "re-proved", state: "RECONCILED", token: "PROVEN"})' \
+      "$ROOT/verification/pwg.json" > "$d/pwg.json" 2>/dev/null; then
+    rm -rf "$d"; bad "$label (the canary's OWN jq transform failed)"; return
+  fi
+  got=$(bash "$ROOT/scripts/pwg-derive.sh" --ledger "$d/pwg.json" --json 2>/dev/null | jq -r '.[] | select(.id == "L1") | .pwg')
+  rm -rf "$d"
+  if [ "$got" = "$want" ]; then ok "$label"; else bad "$label (derived PWG-$got, expected PWG-$want)"; fi
+}
+ladder_canaries() {
+  local src
+  src=$(jq -r '.commit' "$ROOT/verification/pwg.json")
+  derive_case 1 "both legs counting, receipts on the source commit, derive PWG-1 (control)" "$src"
+  derive_case 2ii "both legs counting, receipts on another commit, derive PWG-2ii, not PWG-1" \
+    "$(printf '%040d' 0 | tr 0 f)"
+}
+
 # --- META (R10 applied to R10): the suite must detect breakage in ITS OWN fixtures.
 # A canary whose jq program is broken writes an empty ledger; the gate then rejects
 # it for being invalid JSON rather than for the planted drift, and the canary passes
@@ -304,12 +335,12 @@ meta_canary() {
 
 wellknown_canaries; valid_canary; live_canary
 c_weak_crypto; c_plaintext_http; c_secret
-pwg_canaries
+pwg_canaries; ladder_canaries
 meta_canary
 echo
 # A canary group that silently stops running used to report "10/10" and exit 0.
 # The count is part of the claim.
-EXPECTED_CASES=26
+EXPECTED_CASES=28
 if [ "$((PASS+FAIL))" -ne "$EXPECTED_CASES" ]; then
   echo "gate falsifiability canaries: $((PASS+FAIL)) cases ran, $EXPECTED_CASES expected — a canary group did not run"
   exit 1
