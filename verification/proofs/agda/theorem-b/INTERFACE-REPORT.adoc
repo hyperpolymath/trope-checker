@@ -63,7 +63,8 @@ modality; `EchoIndexed.agda` — indexed functoriality; these are the
 
 It sits ON TOP of the *FROZEN INTERFACE* — the grade algebra established in Lean 4
 (`verification/proofs/lean4/grade-boundary/GradeBoundary.lean`, sorry-free, axioms
-`propext`/`Quot.sound` only). The four established facts are re-established in Agda
+at most Lean/Mathlib's standard axioms `propext`, `Classical.choice` and
+`Quot.sound`, as that file's own axiom-audit footer states). The four established facts are re-established in Agda
 here as the foundation (`TB.Grade`), then the calculus metatheory is built over them.
 
 [IMPORTANT]
@@ -95,7 +96,7 @@ deceptive (`falsified`/`misbound`/`conflated`/`unknown`, left zeros ⇒ L5 irrev
 
 Fences respected: spec is v0.2, ratified carrier R-2026-07-07 (O1 seven-effects completeness OUT OF SCOPE,
 untouched); "CF" (cancellative+conical ⇒ special-Frobenius) NOT assumed — it is
-refuted-as-universal by both F2 and L5.
+refuted-as-universal by L5 (and, on the pre-ratification carrier only, by F2).
 
 == Module → fact → status map (the merge key)
 
@@ -130,10 +131,21 @@ refuted-as-universal by both F2 and L5.
 
 == Per-target verdict
 
-=== Target 1 — encode the grade as a NON-COMMUTATIVE graded structure (intrinsic) — *PROVED*
+=== Target 1 — encode the grade as a graded structure (intrinsic) — *PROVED*
+
+[NOTE]
+====
+As first set, this target read "NON-COMMUTATIVE". On the ratified carrier
+(R-2026-07-07) the product is commutative (`grade-comm`) and
+`dropped ▷f falsified = falsified` (`TB/Grade.agda`, the `_▷f_` clause marked
+(A1)). The sentences below that present F2 or a non-commutative ▷ as current
+describe the pre-ratification carrier and are kept as the record of it; the
+rest of the paragraph (the intrinsic calculus) is current.
+====
 
 `TB.Grade` ports the carrier (Δ, Fate, Bond, Merge, Grade) and ▷ clause-for-clause
-from the Lean, with first-argument-match so F2 holds *definitionally*
+from the Lean, with first-argument-match so F2 held *definitionally* on the
+pre-ratification carrier
 (`dropped ▷f falsified = dropped ≠ falsified = falsified ▷f dropped`). F1/F2/F3 and
 the F4 absorbing lemmas are re-established. `TB.Syntax` is the *intrinsic* calculus
 `Γ ⊢ A ! g` (a derivation is a well-typed-and-well-graded term): variables carry ε;
@@ -257,7 +269,7 @@ above records.)
 lemmas, `deceptiveDuals = (falsified, misbound, conflated)`) and Generation
 (`Move`, `moveFate/Bond/Merge`, `movesHonest*`, `genFate/genBond/genMerge`) from the
 Idris ground truth. The new content is the *calculus metatheorem*: honesty is closed
-under the non-commutative ▷ (`honest-closed-▷`, via per-coordinate
+under ▷ (`honest-closed-▷`, via per-coordinate
 `fate/bond/merge-honest`), and every writable effect atom is honest
 (`ε/atten/drop/sever/predicate-atom-honest`). Therefore a term built from the
 writable effects can NEVER produce a deceptive grade
@@ -276,8 +288,13 @@ realised dynamically: the deceptive states are unreachable by construction.
 * F2 (non-commutativity) is *mandatory* and live: `grade-not-comm` is a pinned
   theorem; ▷ is a bare non-commutative function; no commutative bundle is
   instantiated for `Grade`/`Fate`; the substitution refutation
-  (`cut-symmetric-fails`) and the tier finding (`fate-tier-meet-hom-fails`) both
-  DEPEND on F2 and would be false under a commutative model.
+  (`cut-symmetric-fails`) depended on F2. [CORRECTED 2026-11-16] None of
+  `grade-not-comm` and `cut-symmetric-fails` exists any more (they are
+  replaced by `grade-comm` and `cut-grade-comm`). The tier finding
+  `fate-tier-meet-hom-fails` is *not* among the F2-dependent results: it is
+  proved on the ratified, COMMUTATIVE carrier with a new witness
+  (`dropped ▷f atten unknown = dropped`; collapse discards the fidelity
+  coordinate), so it holds under a commutative model.
 * F4 (three-tier boundary) is preserved as a *structure* subject reduction respects:
   the cancellative core is closed and cancels; the GRADE-LEVEL deceptive predicate
   is closed under `▷` in its LEFT argument (`deceptive-absorbs-▷`, total — L5);
