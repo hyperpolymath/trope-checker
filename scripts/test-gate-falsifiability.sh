@@ -156,6 +156,15 @@ pwg_case() {
   cp "$ROOT/scripts/pwg-derive.sh" "$d/scripts/" 2>/dev/null || { rm -rf "$d"; bad "$label (no pwg-derive.sh to copy)"; return; }
   cp "$ROOT/scripts/pwg-check.sh"  "$d/scripts/" 2>/dev/null || { rm -rf "$d"; bad "$label (no pwg-check.sh to copy)"; return; }
   cp "$ROOT/docs/status/PROOF-STATUS.adoc" "$d/docs/status/" 2>/dev/null || { rm -rf "$d"; bad "$label (no PROOF-STATUS.adoc to copy — rule 5 would be untested)"; return; }
+  # Rule 6 resolves witness names against the real sources: carry the inventory
+  # script, the comment stripper it reads through, and the Agda/Lean sources.
+  cp "$ROOT/scripts/pwg-names.sh" "$d/scripts/" 2>/dev/null || { rm -rf "$d"; bad "$label (no pwg-names.sh to copy — rule 6 would be untested)"; return; }
+  mkdir -p "$d/tests/lib" "$d/verification/proofs/agda/theorem-b"
+  if ! { cp "$ROOT/tests/lib/strip-proof-comments.awk" "$d/tests/lib/" \
+         && cp -r "$ROOT/verification/proofs/agda/theorem-b/TB" "$d/verification/proofs/agda/theorem-b/" \
+         && (cd "$ROOT/verification/proofs" && find lean4 -name '*.lean' -not -path '*/.lake/*' -print0 | xargs -0 cp --parents -t "$d/verification/proofs/"); }; then
+    rm -rf "$d"; bad "$label (could not copy the sources rule 6 resolves against)"; return
+  fi
   if [ "$jqprog" = "IDENTITY" ]; then
     cp "$ROOT/verification/pwg.json" "$d/verification/pwg.json"
   elif [ "$jqprog" = "PRETTY" ]; then
@@ -255,6 +264,18 @@ pwg_canaries() {
   pwg_case reject "a section 5 token with a trailing newline is rejected" \
     '.theorems[0].legs.agda.token += "\n"' \
     "section 5 closed vocabulary"
+  # R12. A witness must name something. Measured against main 0dceab6: 13 of 91
+  # distinct witness names resolved to no declaration (L2's only Agda witness
+  # among them) and the gate passed, because nothing read `declarations`. Both
+  # canaries FAIL against the pre-rule-6 gate. The first plants the exact ASCII
+  # transliteration that was live on main; the second a Lean name whose
+  # namespace exists but holds no such declaration.
+  pwg_case reject "an Agda witness spelled in ASCII (|> for ▷) does not resolve" \
+    '(.theorems[] | select(.id == "L3") | .legs.agda.declarations) |= map(sub("▷"; "|>"))' \
+    "resolve to no declaration"
+  pwg_case reject "a Lean witness in the wrong namespace does not resolve" \
+    '(.theorems[] | select(.id == "L1") | .legs.lean.declarations) = ["Trope.Bond.comp_assoc"]' \
+    "resolve to no declaration"
 }
 
 # --- META (R10 applied to R10): the suite must detect breakage in ITS OWN fixtures.
@@ -288,7 +309,7 @@ meta_canary
 echo
 # A canary group that silently stops running used to report "10/10" and exit 0.
 # The count is part of the claim.
-EXPECTED_CASES=24
+EXPECTED_CASES=26
 if [ "$((PASS+FAIL))" -ne "$EXPECTED_CASES" ]; then
   echo "gate falsifiability canaries: $((PASS+FAIL)) cases ran, $EXPECTED_CASES expected — a canary group did not run"
   exit 1

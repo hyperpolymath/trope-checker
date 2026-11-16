@@ -16,7 +16,9 @@
 #      fields 8.2 requires, including a full 40-character commit;
 #   4. every section 5 token and every 2.2 state comes from its closed vocabulary;
 #   5. the table and census published in docs/status/PROOF-STATUS.adoc are
-#      byte-identical to what scripts/pwg-derive.sh produces.
+#      byte-identical to what scripts/pwg-derive.sh produces;
+#   6. every agda and lean witness name the ledger cites resolves to a
+#      declaration in the sources (scripts/pwg-names.sh).
 #
 # Fails loudly and says which rule broke. Usage: pwg-check.sh [REPO_ROOT]
 set -uo pipefail
@@ -138,8 +140,48 @@ else
   fi
 fi
 
+# --- 6. every cited witness names a declaration that exists ----------------
+# Measured 2026-11-16 against main 0dceab6: 13 of the ledger's 91 distinct
+# witness names resolved to nothing in the sources -- ASCII transliterations
+# (`|>` for `▷`, `beta-` for `β-`), a kebab-case spelling of a camelCase name, a
+# lemma split in two (`gmonoid-unit` vs `gmonoid-unitL`/`-unitR`), a wrong Lean
+# namespace -- including L2's ONLY Agda witness, on a row published PWG-3. The
+# grade was derived from tokens and receipts; nothing checked that the token's
+# witness existed. scripts/pwg-names.sh inventories the declared names; this rule
+# resolves every agda and lean leg's `declarations` against it. Agda names must
+# match exactly (a module name is also a valid citation); a Lean name may omit a
+# leading namespace prefix, so it resolves if some declaration equals it or ends
+# with `.<name>`. Name resolution, not proof: the receipt still carries that.
+NAMES="$ROOT/scripts/pwg-names.sh"
+if [ ! -f "$NAMES" ]; then
+  die "scripts/pwg-names.sh is missing -- rule 6 (witness names resolve) cannot be checked"
+elif ! inventory=$(bash "$NAMES" "$ROOT" 2>&1); then
+  die "rule 6 could not build the declaration inventory:"$'\n'"$inventory"
+else
+  dangling=$(jq -r '
+      .theorems[] as $t
+      | ($t.legs | to_entries[]) | select(.key == "agda" or .key == "lean")
+      | .key as $l | (.value.declarations // [])[]
+      | "\($l)\t\($t.id)\t\(.)"' "$LEDGER" \
+    | INV="$inventory" awk -F'\t' '
+        BEGIN {
+          n = split(ENVIRON["INV"], rows, "\n")
+          for (i = 1; i <= n; i++) { split(rows[i], f, "\t"); have[f[1] "\t" f[2]] = 1; if (f[1] == "lean") lean[++ln] = f[2] }
+        }
+        {
+          ok = (($1 "\t" $3) in have)
+          if (!ok && $1 == "lean")
+            for (i = 1; i <= ln && !ok; i++) {
+              L = lean[i]; m = length($3)
+              if (length(L) > m && substr(L, length(L) - m) == "." $3) ok = 1
+            }
+          if (!ok) print $2 "/" $1 ": " $3
+        }') || die "rule 6 (witness names resolve) could not be evaluated over this ledger"
+  [ -n "$dangling" ] && die "witness name(s) that resolve to no declaration in the sources:"$'\n'"$dangling"
+fi
+
 if [ "$fail" -eq 0 ]; then
   n=$(jq -e '.theorems | length' "$LEDGER") || die "the ledger has no .theorems array"
-  echo "PASS: PWG ledger well-formed, no asserted grades, $n obligation(s) derived, published table and census match"
+  echo "PASS: PWG ledger well-formed, no asserted grades, every witness name resolves, $n obligation(s) derived, published table and census match"
 fi
 exit "$fail"
