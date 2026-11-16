@@ -38,7 +38,7 @@ jobs:
     # After the fleet job whatever its result: a dead fleet job renders as
     # orange fleet rows, never as a missing gate.
     needs: [fleet]
-    if: ${{ always() }}
+    if: ${{ !cancelled() }}
     # Explicit on the calling job (a job-level block replaces, never merges
     # with, the workflow-level one). The previous pin (cc58c0c…) no longer
     # exists in standards, so this gate failed at startup with zero jobs —
