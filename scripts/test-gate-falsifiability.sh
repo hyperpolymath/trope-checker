@@ -276,6 +276,12 @@ pwg_canaries() {
   pwg_case reject "a Lean witness in the wrong namespace does not resolve" \
     '(.theorems[] | select(.id == "L1") | .legs.lean.declarations) = ["Trope.Bond.comp_assoc"]' \
     "resolve to no declaration"
+  # A real name with a tab and text appended. The first rule-6 version split
+  # the citation on the tab and resolved the real prefix, ignoring the rest;
+  # this canary FAILS against it. Review on #119.
+  pwg_case reject "a witness with a tab-joined suffix does not resolve" \
+    '(.theorems[] | select(.id == "L1") | .legs.agda.declarations) |= map(. + "\tjunk")' \
+    "resolve to no declaration"
 }
 
 # --- the top of the ladder: PWG-2ii and PWG-1 are different rungs ----------
@@ -340,7 +346,7 @@ meta_canary
 echo
 # A canary group that silently stops running used to report "10/10" and exit 0.
 # The count is part of the claim.
-EXPECTED_CASES=28
+EXPECTED_CASES=29
 if [ "$((PASS+FAIL))" -ne "$EXPECTED_CASES" ]; then
   echo "gate falsifiability canaries: $((PASS+FAIL)) cases ran, $EXPECTED_CASES expected — a canary group did not run"
   exit 1

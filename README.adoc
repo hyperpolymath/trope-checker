@@ -174,8 +174,9 @@ restatement only. Idris2 establishes coordinate-level monotonicity only; the
 lifting for `gradeCompose` is mechanised in no prover. The ledger therefore
 grades L4 as four obligations (`L4-fate` and `L4-fidelity` at `PWG-3`;
 `L4-bond-merge` and `L4-lifting` ungraded), and A2 as two (`A2-directions` at
-`PWG-3`; `A2-chain` ungraded, because transitivity and antisymmetry are
-mechanised in no prover). The atom
+`PWG-3`; `A2-chain` ungraded, because no ladder prover states the whole chain:
+Lean has totality and reflexivity, Idris2 transitivity off the ladder, and
+antisymmetry is cited nowhere). The atom
 factorisation (O1's carrier half, proved on the ratified `GradeR` in
 `EffectAtomsRatified.lean`; O1-coord stays open) and the tropical factorisations
 — pre-ratification `GradeFactorisation.lean` veridicality-blind, ratified
