@@ -225,6 +225,22 @@ pwg_canaries() {
   pwg_case reject "flipping a Lean leg to RECONCILED changes the grade and is rejected" \
     '(.theorems[] | select(.id == "L1") | .legs.lean.state) |= "RECONCILED"' \
     "not the derived one"
+  # R11. A grade may not outlive the run that earned it. Measured against main
+  # 0dceab6 these two PASSED the gate: the derivation read .state but never
+  # .result, so a receipt recording the checker REJECTING the development still
+  # carried 17 PWG-3 grades, and an unrecognised result was not a pass but was
+  # not an error either. Both canaries FAIL against the pre-fix scripts.
+  # "fail" is a LEGITIMATE recorded value, so rule 3 admits it; the rejection
+  # must come from the grades themselves collapsing. Measured 2026-11-16: with
+  # the Agda receipt at result=fail the census goes PWG-3 17 -> 0 and ungraded
+  # 7 -> 24, so the published table is no longer the derived one. Against the
+  # pre-fix scripts the census was byte-identical and this canary did not fire.
+  pwg_case reject "a receipt that records result=fail cannot support a grade" \
+    '.receipts["agda-c0eb4f1"].result = "fail"' \
+    "not the derived one"
+  pwg_case reject "a receipt result outside the closed vocabulary is rejected" \
+    '.receipts["agda-c0eb4f1"].result = "probably-fine"' \
+    "result must be pass|fail"
 }
 
 # --- META (R10 applied to R10): the suite must detect breakage in ITS OWN fixtures.
@@ -234,10 +250,17 @@ pwg_canaries() {
 # reports FAILURE. Measured: this canary FAILS against the pre-fix harness.
 meta_canary() {
   local out
-  out=$( PASS=0; FAIL=0
-         pwg_case reject "meta-probe (expected to be reported as FAILING)" '.theorems[0].pwg = ' >/dev/null 2>&1
-         printf 'FAILCOUNT=%s' "$FAIL" )
-  if printf '%s' "$out" | grep -q 'FAILCOUNT=1'; then
+  # Isolation by subshell is the POINT: the meta-probe is MEANT to fail, and its
+  # failure must not reach the suite tally. Read its VERDICT LINE rather than a
+  # counter. An earlier version shadowed PASS/FAIL inside the substitution to
+  # discard them; that worked, but ShellCheck then marked every later read of
+  # those names SC2031 across the whole tally block, and silencing ten warnings
+  # on the real counters to keep one deliberate shadow is a bad trade -- it
+  # blinds the check where it would do genuine work. Nothing is assigned here
+  # that the outer shell reads, so the warnings go away by construction instead
+  # of by suppression.
+  out=$( pwg_case reject "meta-probe (expected to be reported as FAILING)" '.theorems[0].pwg = ' 2>&1 )
+  if printf '%s\n' "$out" | grep -q '^FAIL '; then
     ok "a canary whose own jq program is broken is reported as FAILURE (meta-canary)"
   else
     bad "a BROKEN canary still reported PASS — the suite cannot detect its own breakage"
@@ -251,7 +274,7 @@ meta_canary
 echo
 # A canary group that silently stops running used to report "10/10" and exit 0.
 # The count is part of the claim.
-EXPECTED_CASES=19
+EXPECTED_CASES=21
 if [ "$((PASS+FAIL))" -ne "$EXPECTED_CASES" ]; then
   echo "gate falsifiability canaries: $((PASS+FAIL)) cases ran, $EXPECTED_CASES expected — a canary group did not run"
   exit 1

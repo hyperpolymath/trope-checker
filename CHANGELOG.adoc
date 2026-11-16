@@ -10,6 +10,35 @@ https://semver.org/spec/v2.0.0.html[Semantic Versioning].
 
 ==== Fixed
 
+* *A receipt that records FAILURE no longer supports a grade (2026-11-16).*
+`+scripts/pwg-derive.sh+` read a receipt's `+state+` but never its `+result+`.
+Measured against `+main+` `+0dceab6+`: flipping this repository's Agda receipt to
+`+"result": "fail"+` while leaving `+"state": "current"+` left the derived census
+*byte-identical* — 17 `+PWG-3+` grades still published on a receipt recording the
+checker *rejecting* the development — and `+scripts/pwg-check.sh+` exited `+0+`.
+A grade may not outlive the run that earned it; a regressed run is §8.2 evidence
+of the opposite. `+usable_receipt+` and `+pwg3_receipt+` now both require
+`+result == "pass"+`, and rule 3 constrains `+result+` to the closed vocabulary
+`+pass|fail+` so an unrecognised value is an error rather than a silent
+non-pass. With the fix the same planted receipt collapses the census to
+`+PWG-3+` 0, `+ungraded+` 24. Canaries 20 and 21 plant exactly these two cases
+and were confirmed to FAIL against the pre-fix scripts; the suite is now
+*21/21*.
++
+Two things this change did *not* do are worth recording, because each was tried
+and rejected on evidence. The ShellCheck `+SC1112+` warning on `+pwg-derive.sh+`
+could not be fixed the obvious way: that comment sits inside the single-quoted
+`+jq+` program, so replacing the Unicode right-quote with a plain apostrophe
+*terminated the string* and broke the script — caught immediately by the suite's
+own live-ledger canary. The comment is reworded to contain no apostrophe at all,
+and the block now carries a warning saying why. And `+SC2030+`/`+SC2031+` were
+not silenced: the meta-canary shadowed `+PASS+`/`+FAIL+` inside a command
+substitution to discard the probe's deliberate failure, which tainted *ten*
+later reads of the real counters. It now reads the probe's verdict line instead,
+so the warnings go away by construction rather than by suppression.
+`+shellcheck 0.11.0 --severity=style+` — the version and severity CI pins — is
+clean over every tracked `+*.sh+`, with no disable added.
+
 * *A comment marker inside a string literal is no longer read as a comment
 (2026-11-09).* `+tests/lib/strip-proof-comments.awk+` tracked block comments with
 no notion of string literals, so `+def m : String := "/-"+` opened a block
@@ -65,7 +94,8 @@ count is now part of the claim.
 +
 Added canary 19, the *meta-canary*: it breaks one canary's own `+jq+` program and
 asserts the suite reports FAILURE. It fails against the pre-fix harness, which
-is what makes it evidence rather than decoration. The suite is *19/19*, and all
+is what makes it evidence rather than decoration. The suite stands at *21/21*
+once the receipt-result canaries recorded below are counted, and all
 four breakages — a corrupted transform, a no-op fixture, a dropped group, and a
 suite that cannot see its own breakage — were each confirmed to fail it.
 
@@ -102,7 +132,8 @@ Wired: `+just pwg+` (census and per-obligation grades), `+just pwg-render+`
 job in `+proofs.yml+` that needs no prover because the kernels already ran.
 +
 Falsified, not assumed: `+scripts/test-gate-falsifiability.sh+` gains seven PWG
-canaries plus a control, and the suite now runs 18/18. Two are load-bearing —
+canaries plus a control, taking the suite to 18 cases at that point (it stands at
+*21/21* after the later entries in this same block). Two are load-bearing —
 removing the import cone collapses all 17 `+PWG-3+` to `+ungraded+` (census
 `+ungraded+` 24), and flipping one Lean leg to `+RECONCILED+` lifts that
 obligation to `+PWG-2i+` — so they fire only if the published table really is
@@ -113,11 +144,15 @@ receipts, the derivation returns `+PWG-1+`.
 
 * *Proof Witness Grades recorded, and the proof records reconciled with the
 sources (2026-11-09).* `+docs/status/PROOF-STATUS.adoc+` gains the §8.5 PWG record
-that `+PROOF-POLICY.adoc+` §8 (owner ruling 2026-11-04) requires, with both theory
-groups derived as `+ungraded+` — Theorem B for want of a §2.1-conformant *receipt*
-(its flags in force already are §2.1), the Lean-witnessed results for want of an
-Agda *source* — plus the §1.1 import-cone record and a census in the form §8.4
-rule 7 allows. Four published rows narrowed to what the provers actually state: L3
+that `+PROOF-POLICY.adoc+` §8 (owner ruling 2026-11-04) requires, plus the §1.1
+import-cone record and a census in the form §8.4 rule 7 allows. *As first
+drafted this entry read "both theory groups derived as `+ungraded+`"; that
+reading was superseded within this same block* by the evidence ledger below,
+which records the §2.1-conformant Agda receipt the first reading treated as
+missing, and so derives `+PWG-3+` for 17 of the 24 theory obligations and
+`+ungraded+` for 7 — on the two §8.1 grounds originally named: no
+§2.1-conformant receipt, or no Agda source at all. The published census is the
+derived one, and `+scripts/pwg-check.sh+` fails on any drift between them. Four published rows narrowed to what the provers actually state: L3
 (two-sidedness is stated only for `+Falsified+` in Agda), L4 (Agda covers fate and
 fidelity; Lean covers fate; bond, merge and the grade-level lifting have an Idris2
 leg only, which §8.1 excludes from the ladder), Target 3 (`+_↝_+` has two

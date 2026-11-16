@@ -79,7 +79,7 @@ badr=$(jq -r '
       (if ($v.checker_version // "" | length) > 0 then empty else "\($k): no checker_version (8.2)" end),
       (if ($v.invocation // "" | length) > 0 then empty else "\($k): no invocation (8.2)" end),
       (if ($v.inputs_digest // "" | length) > 0 then empty else "\($k): no inputs_digest (8.2)" end),
-      (if ($v.result // "" | length) > 0 then empty else "\($k): no result (8.2)" end),
+      (if ($v.result // "" | test("^(pass|fail)$")) then empty else "\($k): result must be pass|fail (8.2 -- the derivation reads it; an unrecognised value must not be treated as a pass)" end),
       (if ($v.evidence // "" | length) > 0 then empty else "\($k): no evidence pointer" end),
       (if ($v.state // "" | test("^(current|superseded|regressed)$")) then empty else "\($k): state must be current|superseded|regressed (8.4 rule 5)" end),
       (if ($v | has("axioms")) then empty else "\($k): no axioms list (8.4 rule 6 — axioms travel with the grade)" end) ]
