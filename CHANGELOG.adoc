@@ -155,7 +155,7 @@ job in `+proofs.yml+` that needs no prover because the kernels already ran.
 +
 Falsified, not assumed: `+scripts/test-gate-falsifiability.sh+` gains seven PWG
 canaries plus a control, taking the suite to 18 cases at that point (it stands at
-*21/21* after the later entries in this same block). Two are load-bearing —
+*22/22* after the later entries in this same block). Two are load-bearing —
 removing the import cone collapses all 17 `+PWG-3+` to `+ungraded+` (census
 `+ungraded+` 24), and flipping one Lean leg to `+RECONCILED+` lifts that
 obligation to `+PWG-2i+` — so they fire only if the published table really is
@@ -172,9 +172,11 @@ drafted this entry read "both theory groups derived as `+ungraded+`"; that
 reading was superseded within this same block* by the evidence ledger below,
 which records the §2.1-conformant Agda receipt the first reading treated as
 missing, and so derives `+PWG-3+` for 17 of the 24 theory obligations and
-`+ungraded+` for 7 — on the two §8.1 grounds originally named: no
-§2.1-conformant receipt, or no Agda source at all. The published census is the
-derived one, and `+scripts/pwg-check.sh+` fails on any drift between them. Four published rows narrowed to what the provers actually state: L3
+`+ungraded+` for 7 — on three §8.1 grounds: no §2.1-conformant receipt, no
+Agda source at all, or an incomplete Agda leg. The last applies to
+`+retention-order+` and `+tier2-membership+`: their Agda token is `+OPEN+`
+despite a current, passing Agda receipt, as the ledger and breakdown above record.
+The published census is the derived one, and `+scripts/pwg-check.sh+` fails on any drift between them. Four published rows narrowed to what the provers actually state: L3
 (two-sidedness is stated only for `+Falsified+` in Agda), L4 (Agda covers fate and
 fidelity; Lean covers fate; bond, merge and the grade-level lifting have an Idris2
 leg only, which §8.1 excludes from the ladder), Target 3 (`+_↝_+` has two
