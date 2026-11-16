@@ -76,11 +76,12 @@ rejects them at validation, naming the offending coordinate. The alternative
 separates honest `Dropped` from deceptive `Falsified`, and reads the four fate slots
 only; on the bond axis `psiBond` is proved to separate the honest `severed` from
 the deceptive `misbound` (`psiBond_separates_honest_deceptive`, via
-`total ≠ unknown`, in `GradeFactorisation.lean`). That is the *one pair* the file
-states; the general "separates every honest bond from every deceptive one" is
-believed and is a single `cases` away — `psiBond intact = psiBond withheld = Q 0`
-and `Q_ne_unknown` is already in the file — but it is not currently a theorem,
-so it is not claimed here. A precondition only; does not address recursion (CO-1).
+`total ≠ unknown`, in `GradeFactorisation.lean`), and in general: every honest
+bond is separated from `misbound`, the only deceptive one
+(`psiBond_separates_all_honest`, by `cases`: `intact` and `withheld` cost `Q 0`,
+`severed` costs `total`, and neither equals `unknown`). The general form was added
+2026-11-16; its kernel check is the CI `lean-build` job (`lake build --wfail`,
+leanchecker and the axiom audit), which is the receipt this claim rests on. A precondition only; does not address recursion (CO-1).
 | `verification/proofs/agda/theorem-b/` | Theorem B — the deferred calculus metatheory (Agda `--safe --without-K --cubical-compatible`, the PROOF-POLICY §2.1 invocation; zero postulates): intrinsic graded calculus, value-substitution, subject reduction (β/let; `fix` open), Honest Generation.
 | `verification/proofs/INTEGRATION-REPORT.adoc` | How the three streams reconcile: the unified R-id ↔ Lean ↔ Agda ↔ status table, the convergence (central open problem), and the divergence adjudication.
 | `docs/CONTRIBUTING-A-FRONTEND.adoc` | How a new front-end targets the IR (the portability contract).
