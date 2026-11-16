@@ -246,6 +246,15 @@ pwg_canaries() {
   pwg_case reject "a receipt result with a trailing newline is rejected" \
     '.receipts["agda-c0eb4f1"].result = "pass\n"' \
     "result must be pass[|]fail"
+  # The same defect in the seven sibling anchors: jq's $ accepts a final
+  # newline, so a 40-hex commit + "\n" and a token + "\n" were admitted. The
+  # anchors are now \\A...\\z. Both canaries FAIL against the pre-fix scripts.
+  pwg_case reject "a receipt commit with a trailing newline is rejected" \
+    '.receipts["agda-c0eb4f1"].commit += "\n"' \
+    "not a full 40-char sha"
+  pwg_case reject "a section 5 token with a trailing newline is rejected" \
+    '.theorems[0].legs.agda.token += "\n"' \
+    "section 5 closed vocabulary"
 }
 
 # --- META (R10 applied to R10): the suite must detect breakage in ITS OWN fixtures.
@@ -279,7 +288,7 @@ meta_canary
 echo
 # A canary group that silently stops running used to report "10/10" and exit 0.
 # The count is part of the claim.
-EXPECTED_CASES=22
+EXPECTED_CASES=24
 if [ "$((PASS+FAIL))" -ne "$EXPECTED_CASES" ]; then
   echo "gate falsifiability canaries: $((PASS+FAIL)) cases ran, $EXPECTED_CASES expected — a canary group did not run"
   exit 1

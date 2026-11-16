@@ -62,7 +62,7 @@ DERIVE='
   # and scripts/pwg-check.sh exited 0. A grade may not outlive the run that
   # earned it; a regressed run is 8.2 evidence of the opposite.
   def usable_receipt($rs): $rs
-    | map(select(.state == "current" and .result == "pass" and (.commit | test("^[0-9a-f]{40}$"))))
+    | map(select(.state == "current" and .result == "pass" and (.commit | test("\\A[0-9a-f]{40}\\z"))))
     | length > 0;
 
   # 8.2 PWG-3 additionally requires the receipt to record the checker version,
@@ -71,7 +71,7 @@ DERIVE='
     | map(select(
         .state == "current"
         and .result == "pass"
-        and (.commit | test("^[0-9a-f]{40}$"))
+        and (.commit | test("\\A[0-9a-f]{40}\\z"))
         and (.checker_version // "" | length > 0)
         and (.stdlib_pin // "" | length > 0)
         and (.import_cone // "" | length > 0)

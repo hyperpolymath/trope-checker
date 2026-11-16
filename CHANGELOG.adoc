@@ -44,8 +44,17 @@ of the opposite. `+usable_receipt+` and `+pwg3_receipt+` now both require
 `+pass|fail+` so an unrecognised value is an error rather than a silent
 non-pass. With the fix the same planted receipt collapses the census to
 `+PWG-3+` 0, `+ungraded+` 24. Canaries 20 and 21 plant exactly these two cases
-and were confirmed to FAIL against the pre-fix scripts; the suite is now
-*21/21*.
+and were confirmed to FAIL against the pre-fix scripts. Canary 22 plants a
+`+result+` of `+"pass\n"+`: jq's `+$+` anchor matches before a final newline, so
+the rule-3 check admitted it. Rule 3 now compares `+result+` by exact equality.
++
+The same defect sat in the seven sibling anchors: the commit check in rule 3
+and in both derivation predicates, and the `+state+`, token, §2.2-state and route
+vocabularies. Measured: a 40-hex commit followed by a newline passed the *whole*
+gate, derivation included, so a malformed provenance field could carry a grade.
+All seven are now anchored with `+\A…\z+`. Canaries 23 and 24 plant a trailing newline on a
+commit and on a token; both FAIL against the pre-fix scripts and PASS against
+the fix. The suite is now *24/24*.
 +
 Two things this change did *not* do are worth recording, because each was tried
 and rejected on evidence. The ShellCheck `+SC1112+` warning on `+pwg-derive.sh+`
@@ -116,7 +125,7 @@ count is now part of the claim.
 +
 Added canary 19, the *meta-canary*: it breaks one canary's own `+jq+` program and
 asserts the suite reports FAILURE. It fails against the pre-fix harness, which
-is what makes it evidence rather than decoration. The suite stands at *21/21*
+is what makes it evidence rather than decoration. The suite stands at *24/24*
 once the receipt-result canaries recorded below are counted, and all
 four breakages — a corrupted transform, a no-op fixture, a dropped group, and a
 suite that cannot see its own breakage — were each confirmed to fail it.
@@ -155,7 +164,7 @@ job in `+proofs.yml+` that needs no prover because the kernels already ran.
 +
 Falsified, not assumed: `+scripts/test-gate-falsifiability.sh+` gains seven PWG
 canaries plus a control, taking the suite to 18 cases at that point (it stands at
-*22/22* after the later entries in this same block). Two are load-bearing —
+*24/24* after the later entries in this same block). Two are load-bearing —
 removing the import cone collapses all 17 `+PWG-3+` to `+ungraded+` (census
 `+ungraded+` 24), and flipping one Lean leg to `+RECONCILED+` lifts that
 obligation to `+PWG-2i+` — so they fire only if the published table really is

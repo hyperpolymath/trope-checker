@@ -74,14 +74,14 @@ missing=$(jq -r '
 badr=$(jq -r '
   .receipts | to_entries[]
   | .key as $k | .value as $v
-  | [ (if ($v.commit // "" | test("^[0-9a-f]{40}$")) then empty else "\($k): commit is not a full 40-char sha" end),
+  | [ (if ($v.commit // "" | test("\\A[0-9a-f]{40}\\z")) then empty else "\($k): commit is not a full 40-char sha" end),
       (if ($v.checker // "" | length) > 0 then empty else "\($k): no checker" end),
       (if ($v.checker_version // "" | length) > 0 then empty else "\($k): no checker_version (8.2)" end),
       (if ($v.invocation // "" | length) > 0 then empty else "\($k): no invocation (8.2)" end),
       (if ($v.inputs_digest // "" | length) > 0 then empty else "\($k): no inputs_digest (8.2)" end),
       (if ($v.result == "pass" or $v.result == "fail") then empty else "\($k): result must be pass|fail (8.2 -- the derivation reads it; an unrecognised value must not be treated as a pass)" end),
       (if ($v.evidence // "" | length) > 0 then empty else "\($k): no evidence pointer" end),
-      (if ($v.state // "" | test("^(current|superseded|regressed)$")) then empty else "\($k): state must be current|superseded|regressed (8.4 rule 5)" end),
+      (if ($v.state // "" | test("\\A(current|superseded|regressed)\\z")) then empty else "\($k): state must be current|superseded|regressed (8.4 rule 5)" end),
       (if ($v | has("axioms")) then empty else "\($k): no axioms list (8.4 rule 6 — axioms travel with the grade)" end) ]
   | .[]' "$LEDGER") \
   || die "rule 3 (receipt completeness) could not be evaluated over this ledger: malformed theorem/leg/receipt shape"
@@ -93,7 +93,7 @@ badr=$(jq -r '
 badtok=$(jq -r '
   [ .theorems[] as $t
     | ($t.legs | to_entries[])
-    | select((.value.token // "") | test("^(PROVEN|PROVEN-WITH-AXIOMS|TESTED|ASSUMED|OPEN)$") | not)
+    | select((.value.token // "") | test("\\A(PROVEN|PROVEN-WITH-AXIOMS|TESTED|ASSUMED|OPEN)\\z") | not)
     | "\($t.id)/\(.key): token \(.value.token)" ]
   | .[]' "$LEDGER") \
   || die "rule 4 (section 5 tokens) could not be evaluated over this ledger: malformed theorem/leg/receipt shape"
@@ -102,7 +102,7 @@ badtok=$(jq -r '
 badstate=$(jq -r '
   [ .theorems[] as $t
     | ($t.legs | to_entries[])
-    | select((.value.state // "") | test("^(AGDA-PENDING|AGDA-VERIFIED|COQ-CHECKED|LEAN-CHECKED|BRIDGE-PENDING|RECONCILED|COUNTEREXAMPLE|QUARANTINED|NOT-INVENTORIED)$") | not)
+    | select((.value.state // "") | test("\\A(AGDA-PENDING|AGDA-VERIFIED|COQ-CHECKED|LEAN-CHECKED|BRIDGE-PENDING|RECONCILED|COUNTEREXAMPLE|QUARANTINED|NOT-INVENTORIED)\\z") | not)
     | "\($t.id)/\(.key): state \(.value.state)" ]
   | .[]' "$LEDGER") \
   || die "rule 4 (2.2 states) could not be evaluated over this ledger: malformed theorem/leg/receipt shape"
@@ -111,7 +111,7 @@ badstate=$(jq -r '
 badroute=$(jq -r '
   [ .theorems[] as $t
     | ($t.legs | to_entries[])
-    | select((.value.route // "") | test("^(transported|re-proved|waived|unavailable)$") | not)
+    | select((.value.route // "") | test("\\A(transported|re-proved|waived|unavailable)\\z") | not)
     | "\($t.id)/\(.key): route \(.value.route)" ]
   | .[]' "$LEDGER") \
   || die "rule 4 (8.5 routes) could not be evaluated over this ledger: malformed theorem/leg/receipt shape"
