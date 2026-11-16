@@ -171,7 +171,11 @@ under `reference`, never as a leg, so it can neither raise nor lower a grade.
 And *L4 in full* is proved by none of the three: Agda covers the fate coordinate
 and the fidelity dimension, Lean covers fate, and bond and merge have an Idris2
 restatement only. Idris2 establishes coordinate-level monotonicity only; the
-lifting for `gradeCompose` is not mechanised in Idris2. The atom
+lifting for `gradeCompose` is mechanised in no prover. The ledger therefore
+grades L4 as four obligations (`L4-fate` and `L4-fidelity` at `PWG-3`;
+`L4-bond-merge` and `L4-lifting` ungraded), and A2 as two (`A2-directions` at
+`PWG-3`; `A2-chain` ungraded, because transitivity and antisymmetry are
+mechanised in no prover). The atom
 factorisation (O1's carrier half, proved on the ratified `GradeR` in
 `EffectAtomsRatified.lean`; O1-coord stays open) and the tropical factorisations
 — pre-ratification `GradeFactorisation.lean` veridicality-blind, ratified

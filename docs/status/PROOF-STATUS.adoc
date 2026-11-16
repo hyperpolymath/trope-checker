@@ -36,7 +36,7 @@ toc::[]
 | Agda `TB.Grade.{falsified-absorbL,falsified-absorbR,misbound-absorbL,conflated-absorbL,unknown-absorbL,total-absorb-Q}`, `TB.Tier.deceptive-absorbs-▷`; Lean `FateA.falsified_two_sided_zero`, `GradeR.gBotR_two_sided_zero`.
 
 | L4 (monotonicity), in full
-| stem:[\triangleright] is monotone in both arguments w.r.t. stem:[\sqsubseteq] on every coordinate of the ratified carrier. Coverage differs by prover: the Agda covers the fate coordinate (`fateL4Mono{R,L}`) and the fidelity dimension (`dplusMono{R,L}`) only; the bond and merge coordinates have an Idris2 restatement only. Idris2 establishes coordinate-level monotonicity only; the grade-level lifting for `gradeCompose` that spec §7's Knaster–Tarski argument invokes is not mechanised in Idris2. Per PROOF-POLICY §8.1 Idris2 is an engineering prover and is not on the PWG ladder, so bond, merge and the grade-level lifting currently have no gradeable theory leg.
+| stem:[\triangleright] is monotone in both arguments w.r.t. stem:[\sqsubseteq] on every coordinate of the ratified carrier. Coverage differs by prover: the Agda covers the fate coordinate (`fateL4Mono{R,L}`) and the fidelity dimension (`dplusMono{R,L}`) only; the bond and merge coordinates have an Idris2 restatement only. Idris2 establishes coordinate-level monotonicity only; the grade-level lifting for `gradeCompose` that spec §7's Knaster–Tarski argument invokes is mechanised in no prover. Per PROOF-POLICY §8.1 Idris2 is an engineering prover and is not on the PWG ladder, so bond, merge and the grade-level lifting currently have no gradeable theory leg. The PWG ledger therefore grades L4 as four obligations, `L4-fate`, `L4-fidelity`, `L4-bond-merge` and `L4-lifting` (owner ruling 2026-11-16); L4 in full is their conjunction.
 | Idris2 `Trope.Soundness.{fateL4MonoR,fateL4MonoL}`, `Trope.Order.{bondComposeMono,mergeComposeMono}`; Agda `TB.Order.{fateL4MonoR,fateL4MonoL}`; Lean `FateA.{comp_mono_right,comp_mono_left}` (fate coordinate only; `FateA.le` is defined on `Fate` alone and the Lean tree carries no `Bond`, `Merge` or `GradeR` order).
 
 | L5 (deception infectiousness)
@@ -52,7 +52,7 @@ toc::[]
 | Idris2 `Trope.Laws.decGradeLte`, `Trope.Coords.{fateLteRefl,bondLteRefl,mergeLteRefl}`, `Trope.Fidelity.dLteRefl`, `Trope.Order.{fateLteTrans,bondLteTrans,mergeLteTrans,dLteTrans}`, `Trope.Soundness.gradeLteTrans`.
 
 | Fate is a chain (A2)
-| `Dropped ⊑ Predicated` and `Predicated ⋢ Dropped`; the v0.1 antichain is dissolved in the stated direction only.
+| `Dropped ⊑ Predicated` and `Predicated ⋢ Dropped`; the v0.1 antichain is dissolved in the stated direction only. That `Fate` is a chain (a total order) is not mechanised: Lean states totality and reflexivity (`FateA.le_total`, `FateA.le_refl`), and transitivity and antisymmetry are proved in no prover. The PWG ledger grades the two directional facts (`A2-directions`) and the chain (`A2-chain`, ungraded) separately (owner ruling 2026-11-16).
 | Idris2 `Trope.Soundness.{fateDroppedLtePredicated,fatePredicatedNotLteDropped}`; Agda `TB.Order.{fateDroppedLtePredicated,fatePredicatedNotLteDropped}`.
 
 | Veridicality Derivation
@@ -181,10 +181,25 @@ leg, so they can neither raise nor lower a grade.
 | 0 of 2
 | re-proved · `PROVEN` · `AGDA-VERIFIED` · unavailable · `OPEN` · `NOT-INVENTORIED` · re-proved · `PROVEN-WITH-AXIOMS` · `BRIDGE-PENDING`
 
-| L4 (monotonicity), in full
+| L4 (monotonicity): fate coordinate
 | `3`
 | 0 of 2
 | re-proved · `PROVEN` · `AGDA-VERIFIED` · unavailable · `OPEN` · `NOT-INVENTORIED` · re-proved · `PROVEN-WITH-AXIOMS` · `BRIDGE-PENDING`
+
+| L4 (monotonicity): fidelity dimension
+| `3`
+| 0 of 2
+| re-proved · `PROVEN` · `AGDA-VERIFIED` · unavailable · `OPEN` · `NOT-INVENTORIED` · unavailable · `OPEN` · `NOT-INVENTORIED`
+
+| L4 (monotonicity): bond and merge coordinates
+| `ungraded`
+| 0 of 2
+| unavailable · `OPEN` · `AGDA-PENDING` · unavailable · `OPEN` · `NOT-INVENTORIED` · unavailable · `OPEN` · `NOT-INVENTORIED`
+
+| L4 (monotonicity): grade-level lifting for gradeCompose
+| `ungraded`
+| 0 of 2
+| unavailable · `OPEN` · `AGDA-PENDING` · unavailable · `OPEN` · `NOT-INVENTORIED` · unavailable · `OPEN` · `NOT-INVENTORIED`
 
 | L5 (deception infectiousness)
 | `3`
@@ -201,10 +216,15 @@ leg, so they can neither raise nor lower a grade.
 | 0 of 2
 | re-proved · `OPEN` · `AGDA-PENDING` · unavailable · `OPEN` · `NOT-INVENTORIED` · unavailable · `OPEN` · `NOT-INVENTORIED`
 
-| Fate is a chain (A2)
+| A2 directional facts: Dropped below Predicated, not conversely
 | `3`
 | 0 of 2
-| re-proved · `PROVEN` · `AGDA-VERIFIED` · unavailable · `OPEN` · `NOT-INVENTORIED` · re-proved · `PROVEN-WITH-AXIOMS` · `BRIDGE-PENDING`
+| re-proved · `PROVEN` · `AGDA-VERIFIED` · unavailable · `OPEN` · `NOT-INVENTORIED` · unavailable · `OPEN` · `NOT-INVENTORIED`
+
+| Fate is a chain (A2)
+| `ungraded`
+| 0 of 2
+| unavailable · `OPEN` · `AGDA-PENDING` · unavailable · `OPEN` · `NOT-INVENTORIED` · re-proved · `OPEN` · `BRIDGE-PENDING`
 
 | Veridicality Derivation
 | `3`
@@ -293,7 +313,7 @@ leg, so they can neither raise nor lower a grade.
 |===
 // PWG-TABLE:END
 
-*Census* (PROOF-POLICY §8.4 rule 7, never a percentage): of 24 theory obligations in this repository, `PWG-3` 17, `PWG-2i` 0, `PWG-2ii` 0, `PWG-1` 0, `ungraded` 7. No obligation here carries `+foundation-diverse` (§8.3).
+*Census* (PROOF-POLICY §8.4 rule 7, never a percentage): of 28 theory obligations in this repository, `PWG-3` 18, `PWG-2i` 0, `PWG-2ii` 0, `PWG-1` 0, `ungraded` 10. No obligation here carries `+foundation-diverse` (§8.3).
 
 Read the census as the policy intends: seventeen obligations have a kernel-checked
 Agda witness with a complete §8.2 receipt at the current commit, and *none* has a

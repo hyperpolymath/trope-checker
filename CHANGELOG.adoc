@@ -10,6 +10,47 @@ https://semver.org/spec/v2.0.0.html[Semantic Versioning].
 
 ==== Fixed
 
+* *Every PWG witness name now resolves, the ladder's top two rungs are
+distinct, and L4 and A2 are graded by their parts (2026-11-16).*
++
+_Witness names._ Nothing read the ledger's `+declarations+`: 13 of 91 distinct
+witness names named nothing in the sources — ASCII transliterations
+(`+|>+` for `+▷+`, `+|=+` for `+⊑+`, `+beta-+` for `+β-+`, `+-r+` for `+ʳ+`),
+kebab-case spellings of camelCase lemmas, `+gmonoid-unit+` for the pair
+`+gmonoid-unitL+`/`+gmonoid-unitR+`, and a Lean name in the wrong namespace. L2's
+only Agda witness and all three veridicality-derivation witnesses were among them,
+on rows published `+PWG-3+`. `+scripts/pwg-names.sh+` inventories the declared
+names (through the comment stripper) and `+scripts/pwg-check.sh+` rule 6 resolves
+every Agda and Lean witness against it. The 13 are corrected; no grade moved.
+Canaries 25–26 fail against the pre-rule-6 gate.
++
+_Ladder._ With both recheck legs counting, the derivation's `+PWG-1+` test
+re-checked conjuncts counting already implied, so `+PWG-2ii+` was unreachable and
+`+PWG-1+` was granted on `+PWG-2ii+` evidence (measured: receipts recording commit
+`+ffff…+` derived `+PWG-1+`). §8.2/§8.5.2 make `+PWG-1+` a question of which commit
+the receipts describe; the branch now requires each counted witness's receipt to
+record the ledger's source commit. Latent — no obligation has two counting legs.
+Canaries 27–28 read the derived grade; 28 fails against the pre-fix derivation.
+The suite stands at *28/28*.
++
+_L4 and A2, split (owner ruling 2026-11-16)._ "L4 (monotonicity), in full" and
+"Fate is a chain (A2)" derived `+PWG-3+` from Agda legs whose own notes conceded they
+covered only part of the statement. L4 is now four obligations — `+L4-fate+` and
+`+L4-fidelity+` (`+PWG-3+`), `+L4-bond-merge+` and `+L4-lifting+` (ungraded) — and A2
+two: `+A2-directions+` (`+PWG-3+`) and `+A2-chain+` (ungraded; transitivity and
+antisymmetry are mechanised in no prover, so its Lean leg is `+OPEN+` too). The
+census moves from 24 theory obligations (`+PWG-3+` 17, ungraded 7) to 28
+(`+PWG-3+` 18, ungraded 10). The denominator changed because the obligations
+did; no evidence changed.
++
+_INTERFACE-REPORT._ It said `+fate-tier-meet-hom-fails+` "would be false under a
+commutative model"; the carrier is commutative (`+grade-comm+`) and the theorem
+holds on it. It named `+grade-not-comm+` and `+cut-symmetric-fails+` as live (both
+replaced), stated the retired clause `+dropped ▷f falsified = dropped+` as
+definitional (the ratified clause is `+= falsified+`), and gave
+`+GradeBoundary.lean+`'s axiom bound as `+propext+`/`+Quot.sound+` only, where the
+file's own footer names three. All corrected; prose only.
+
 * *Two prose claims narrowed to what the provers actually state (2026-11-16).*
 Both were raised in review on #114 and merged unaddressed.
 +
