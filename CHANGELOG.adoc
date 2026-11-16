@@ -22,7 +22,10 @@ only Agda witness and all three veridicality-derivation witnesses were among the
 on rows published `+PWG-3+`. `+scripts/pwg-names.sh+` inventories the declared
 names (through the comment stripper) and `+scripts/pwg-check.sh+` rule 6 resolves
 every Agda and Lean witness against it. The 13 are corrected; no grade moved.
-Canaries 25–26 fail against the pre-rule-6 gate.
+Canaries 25–26 fail against the pre-rule-6 gate. Review then found that a
+citation with a tab and text appended split into an extra field the resolver
+ignored, so the real prefix resolved; each field is now JSON-escaped before
+resolution, and canary 29 (which fails against the first version) plants it.
 +
 _Ladder._ With both recheck legs counting, the derivation's `+PWG-1+` test
 re-checked conjuncts counting already implied, so `+PWG-2ii+` was unreachable and
@@ -31,14 +34,15 @@ re-checked conjuncts counting already implied, so `+PWG-2ii+` was unreachable an
 the receipts describe; the branch now requires each counted witness's receipt to
 record the ledger's source commit. Latent — no obligation has two counting legs.
 Canaries 27–28 read the derived grade; 28 fails against the pre-fix derivation.
-The suite stands at *28/28*.
+The suite stands at *29/29*.
 +
 _L4 and A2, split (owner ruling 2026-11-16)._ "L4 (monotonicity), in full" and
 "Fate is a chain (A2)" derived `+PWG-3+` from Agda legs whose own notes conceded they
 covered only part of the statement. L4 is now four obligations — `+L4-fate+` and
 `+L4-fidelity+` (`+PWG-3+`), `+L4-bond-merge+` and `+L4-lifting+` (ungraded) — and A2
-two: `+A2-directions+` (`+PWG-3+`) and `+A2-chain+` (ungraded; transitivity and
-antisymmetry are mechanised in no prover, so its Lean leg is `+OPEN+` too). The
+two: `+A2-directions+` (`+PWG-3+`) and `+A2-chain+` (ungraded; Lean states only
+totality and reflexivity, transitivity is proved in Idris2 off the ladder, and
+antisymmetry is cited nowhere, so its Lean leg is `+OPEN+` too). The
 census moves from 24 theory obligations (`+PWG-3+` 17, ungraded 7) to 28
 (`+PWG-3+` 18, ungraded 10). The denominator changed because the obligations
 did; no evidence changed.

@@ -162,12 +162,19 @@ else
       .theorems[] as $t
       | ($t.legs | to_entries[]) | select(.key == "agda" or .key == "lean")
       | .key as $l | (.value.declarations // [])[]
-      | "\($l)\t\($t.id)\t\(.)"' "$LEDGER" \
+      # Lossless: each field is JSON-escaped (quotes dropped), so a tab or
+      # newline inside a citation stays INSIDE its field as a visible \t / \n
+      # and the name then matches nothing. Interpolating raw let a citation
+      # with "\tjunk" appended split into an extra field the resolver ignored,
+      # and the original name resolved. Ordinary names, Unicode included,
+      # come through @json unchanged.
+      | [$l, $t.id, .] | map(@json | .[1:-1]) | join("\t")' "$LEDGER" \
     | INV="$inventory" awk -F'\t' '
         BEGIN {
           n = split(ENVIRON["INV"], rows, "\n")
           for (i = 1; i <= n; i++) { split(rows[i], f, "\t"); have[f[1] "\t" f[2]] = 1; if (f[1] == "lean") lean[++ln] = f[2] }
         }
+        NF != 3 { print "malformed citation record: " $0; next }
         {
           ok = (($1 "\t" $3) in have)
           if (!ok && $1 == "lean")
