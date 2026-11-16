@@ -10,6 +10,28 @@ https://semver.org/spec/v2.0.0.html[Semantic Versioning].
 
 ==== Fixed
 
+* *Two prose claims narrowed to what the provers actually state (2026-11-16).*
+Both were raised in review on #114 and merged unaddressed.
++
+`+README.adoc+` said `+psiBond+` "separates honest from deceptive bonds". The Lean
+file states one pair: `+psiBond_separates_honest_deceptive+` is
+`+psiBond Bond.severed ≠ psiBond Bond.misbound+`, by `+total ≠ unknown+`. The
+general claim is believed and is a single `+cases+` away — `+psiBond intact+` and
+`+psiBond withheld+` are both `+Q 0+`, and `+Q_ne_unknown+` is already in the same
+file — but it is *not* a theorem today, so the README no longer asserts it. It is
+not added here because no Lean toolchain was available to check it, and an
+unverified theorem in a proof file is the thing these gates exist to stop.
++
+`+INTERFACE-REPORT.adoc+`'s F4 checklist said "the deceptive tier is
+forward-closed (L5)". The checklist refutes that two bullets above: the fate
+*tier* is not closed under `+▷+` on the right, and `+fate-tier-meet-hom-fails+` is
+the witness — `+dropped ▷f atten unknown+` reduces to `+dropped+`, which is
+`+honestLossy+`, although `+atten unknown+` is tier-deceptive. What Agda proves is
+`+deceptive-absorbs-▷+`: the grade-level *predicate*, closed in its *left*
+argument. Both qualifications now appear, with the distinction `+TB/Tier.agda+`
+already drew in a comment ("does not launder the GRADE-level deceptive
+predicate") lifted into the report.
+
 * *A receipt that records FAILURE no longer supports a grade (2026-11-16).*
 `+scripts/pwg-derive.sh+` read a receipt's `+state+` but never its `+result+`.
 Measured against `+main+` `+0dceab6+`: flipping this repository's Agda receipt to
