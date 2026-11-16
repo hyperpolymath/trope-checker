@@ -27,17 +27,21 @@
 #
 # Handles: (* *)  /- -/  {- -}  /* */  plus the line forms -- and //
 #
-# KNOWN LIMITATION, deliberately not fixed here: Lean 4 block comments NEST, and
-# this stripper closes on the first `-/`. That direction is fail-LOUD (an honest
-# file can be failed for text inside a nested comment), not fail-open, so it is a
-# separable change rather than a hole. Tracked separately.
-BEGIN { inblk = 0; instr = 0 }
+# Block comments NEST where the language says they do: Lean 4 `/- -/`, Agda and
+# Idris2 `{- -}`, Coq/Rocq `(* *)`. C-style `/* */` does not nest. Until
+# 2026-11-16 this stripper closed on the first close token, so text after an inner
+# `-/` was read as code: fail-LOUD (an honest file failed for words inside a
+# nested comment), and the remaining outer close token could then open nothing
+# while the real remainder of the comment leaked into the scan. A depth counter
+# per open token now matches each language's own rule.
+BEGIN { inblk = 0; depth = 0; instr = 0 }
 {
   line = $0; out = ""; i = 1; n = length(line)
   while (i <= n) {
     two = substr(line, i, 2)
     if (inblk) {
-      if (two == close_tok) { inblk = 0; i += 2; continue }
+      if (two == close_tok) { depth--; if (depth == 0) inblk = 0; i += 2; continue }
+      if (nests && two == open_tok) { depth++; i += 2; continue }
       i++; continue
     }
     if (instr) {
@@ -46,10 +50,10 @@ BEGIN { inblk = 0; instr = 0 }
       if (c == "\"") { instr = 0; i++; continue }
       i++; continue
     }
-    if (two == "(*") { inblk = 1; close_tok = "*)"; i += 2; continue }
-    if (two == "/-") { inblk = 1; close_tok = "-/"; i += 2; continue }
-    if (two == "{-") { inblk = 1; close_tok = "-}"; i += 2; continue }
-    if (two == "/*") { inblk = 1; close_tok = "*/"; i += 2; continue }
+    if (two == "(*") { inblk = 1; depth = 1; nests = 1; open_tok = two; close_tok = "*)"; i += 2; continue }
+    if (two == "/-") { inblk = 1; depth = 1; nests = 1; open_tok = two; close_tok = "-/"; i += 2; continue }
+    if (two == "{-") { inblk = 1; depth = 1; nests = 1; open_tok = two; close_tok = "-}"; i += 2; continue }
+    if (two == "/*") { inblk = 1; depth = 1; nests = 0; open_tok = two; close_tok = "*/"; i += 2; continue }
     if (two == "--" || two == "//") { break }
     c = substr(line, i, 1)
     if (c == "'" && substr(line, i - 1, 1) !~ /[A-Za-z0-9_'?!]/) {

@@ -309,6 +309,32 @@ ladder_canaries() {
     "$(printf '%040d' 0 | tr 0 f)"
 }
 
+# --- the comment stripper every dangerous-construct gate reads through ------
+# Lean /- -/, Agda/Idris2 {- -} and Coq (* *) block comments NEST. Measured
+# 2026-11-16 against the pre-fix stripper: a forbidden word inside a nested
+# comment leaked into the scan (fail-loud), and an unterminated NESTED comment
+# exited 0 -- a truncated scan reported as complete. Both canaries FAIL against
+# the pre-fix stripper. The fixture words are assembled at runtime (see the
+# header: a literal would trip the very scanners these canaries guard).
+strip_canaries() {
+  local d strip="$ROOT/tests/lib/strip-proof-comments.awk" w
+  w="so""rry"
+  d=$(scratch)
+  printf '/- outer /- inner -/ %s stays inside -/\ntheorem t : True := trivial\n' "$w" > "$d/nested.lean"
+  if awk -f "$strip" "$d/nested.lean" 2>/dev/null | grep -qw "$w"; then
+    bad "a word inside a NESTED Lean comment leaks into the scan"
+  else
+    ok "a word inside a NESTED Lean comment is stripped"
+  fi
+  printf '{- a {- b -} c\nx : Set\n' > "$d/open.agda"
+  if awk -f "$strip" "$d/open.agda" >/dev/null 2>&1; then
+    bad "an unterminated NESTED Agda comment was reported as a complete scan"
+  else
+    ok "an unterminated NESTED Agda comment fails the stripper loudly"
+  fi
+  rm -rf "$d"
+}
+
 # --- META (R10 applied to R10): the suite must detect breakage in ITS OWN fixtures.
 # A canary whose jq program is broken writes an empty ledger; the gate then rejects
 # it for being invalid JSON rather than for the planted drift, and the canary passes
@@ -335,12 +361,12 @@ meta_canary() {
 
 wellknown_canaries; valid_canary; live_canary
 c_weak_crypto; c_plaintext_http; c_secret
-pwg_canaries; ladder_canaries
+pwg_canaries; ladder_canaries; strip_canaries
 meta_canary
 echo
 # A canary group that silently stops running used to report "10/10" and exit 0.
 # The count is part of the claim.
-EXPECTED_CASES=28
+EXPECTED_CASES=30
 if [ "$((PASS+FAIL))" -ne "$EXPECTED_CASES" ]; then
   echo "gate falsifiability canaries: $((PASS+FAIL)) cases ran, $EXPECTED_CASES expected — a canary group did not run"
   exit 1
