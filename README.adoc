@@ -162,7 +162,9 @@ The grade-level cancellation boundary (left-cancellative iff ε on the
 unquotiented carrier) is proved in Lean; Agda proves finite-fidelity cancellation
 and selected non-cancellation counterexamples, not the exhaustive iff.
 `docs/status/PROOF-STATUS.adoc` and
-`verification/pwg.json` are the per-result record, and they agree row for row.
+`verification/pwg.json` are the per-result record. `scripts/pwg-check.sh` checks that the
+grade table and census published in the first are the ones derived from the second; the
+prose rows of the status file are written by hand and are not checked against the ledger.
 Only *L1* and *L4* carry a statement in all three, and of the ten results *eight*
 lack one entirely. Lean does not state L2, L5, Honest Generation or Veridicality;
 Idris2 does not state L3, L6, conicality or the cancellation boundary; L5 is
