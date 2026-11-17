@@ -10,6 +10,44 @@ https://semver.org/spec/v2.0.0.html[Semantic Versioning].
 
 ==== Fixed
 
+* *The aspect lane runs, grades stand only on what the policy admits, and four
+status claims are narrowed (2026-11-17).*
++
+_Aspect lane._ `+just aspect+` was the mint template: it ran nothing and printed
+"Aspect tests passed!", and `+test-all+` depends on it. `+tests/aspect_tests.sh+` was
+invoked by nothing, so the hardening of it recorded further down this file was to
+a script no lane ran. Its Idris2 scan read `+src/interface/Abi/+` only (3 of 16
+files) and dropped every hit containing "test". The recipe and the quality
+workflow now run the script; the scan reads every Idris2 source through the
+comment stripper, adds `+assert_smaller+`, `+unsafePerformIO+`, `+idris_crash+` and
+`+postulate+`, and fails when it finds no Idris2 file. Canaries 32–34.
++
+_Grade derivation_ (`+scripts/pwg-derive.sh+`). No published grade moves; the
+census stays `+PWG-3+` 18, `+ungraded+` 10 of 28. (a) A leg whose current receipt
+reports an axiom counts only when each axiom has disposition `+c+`, recorded on
+the receipt as `+axiom_dispositions+`; none recorded means inadmissible (§8.4
+rule 6, §8.5.1). No disposition is recorded on the live Lean receipts: that is a
+trusted-base decision for the owner, and those legs are `+BRIDGE-PENDING+` either
+way. (b) The derived axiom list is the union over every witness the grade stands
+on, where it was the Agda receipt's alone. (c) Each `+agda+` command in a recorded
+invocation must be exactly the three §2.1 flags and one module, where one
+canonical command used to vouch for a second with no flags. (d)
+`+foundation-diverse+` needs an accepted, `+RECONCILED+`, receipted witness, where
+any non-null value used to publish it (§8.3). `+scripts/pwg-check.sh+` rejects a
+disposition outside `+c|b|debt+` and one for an axiom the receipt does not report.
+Canaries 35–43; each fails against the code before it. The suite stands at
+*43/43*.
++
+_Status claims._ `+deceptiveDuals+` is a tuple value and is no longer cited as
+evidence for "exactly three". `+verdictSound+` is stated over a grade-shaped floor,
+as its source says, not over the use-model floor. The tier-2 row names the
+ratified iff. The README no longer says `+PROOF-STATUS.adoc+` and `+pwg.json+` "agree
+row for row": the gate checks the grade table and census, not the prose rows.
+In `+grade-factorisation+`, the README verdict is marked as the pre-ratification
+result and lists `+GradeFactorisationR.lean+`, and `+REPORT.adoc+` states the measured
+axiom bound (`+propext+` and `+Quot.sound+` over 184 declarations, CI run
+43981767344) where it had quoted the audit's allowlist.
+
 * *The comment stripper nests where the languages nest, and `+psiBond+` separation
 is stated in general (2026-11-16).* Lean `+/- -/+`, Agda and Idris2 `+{- -}+` and Coq
 `+(* *)+` block comments nest; `+tests/lib/strip-proof-comments.awk+` closed on the
@@ -18,7 +56,7 @@ dangerous-construct scan, and an unterminated nested comment exited `+0+` (a
 truncated scan reported as complete). A depth counter per open token fixes both;
 C-style `+/* */+` stays flat, and over all 38 tracked sources the output is
 unchanged. Canaries 30–31 plant both cases and fail against the old stripper; the
-suite stands at *31/31*. Separately, `+psiBond_separates_all_honest+`
+suite stood at *31/31* at that point (43/43 after the entry above). Separately, `+psiBond_separates_all_honest+`
 (`+GradeFactorisation.lean+`) states that every bond other than `+misbound+` is
 separated from it, by `+cases+` over `+Q_ne_unknown+` and `+total_ne_unknown+`, with a
 `+#print axioms+` line; its kernel check is the CI `+lean-build+` job.
