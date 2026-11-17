@@ -174,9 +174,9 @@ under `reference`, never as a leg, so it can neither raise nor lower a grade.
 Both are rechecked in Rocq (`verification/proofs/rocq/`) and in core Lean with no
 Mathlib (`verification/proofs/lean4/ratified-order/`). The ledger grades L4 as
 four obligations and A2 as two (owner ruling 2026-11-16). All six, and the
-retention order (a decidable preorder), derive `PWG-2ii`. Whether the core-Lean
-leg may count is put to the owner (PROOF-STATUS, *Recheck legs of the order
-laws and L4*). Completeness of the chain, which spec §7 also uses, is proved in
+retention order (a decidable preorder), derive `PWG-2ii`. The core-Lean leg counts
+by owner ruling of 2026-11-17, which ADR 0005 records in its amendment: Lean with
+Mathlib stays a generator, never a leg. Completeness of the chain, which spec §7 also uses, is proved in
 no prover. The atom
 factorisation (O1's carrier half, proved on the ratified `GradeR` in
 `EffectAtomsRatified.lean`; O1-coord stays open) and the tropical factorisations
