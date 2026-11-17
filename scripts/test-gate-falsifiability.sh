@@ -341,6 +341,47 @@ strip_canaries() {
   rm -rf "$d"
 }
 
+# --- the aspect lane (`just aspect`, tests/aspect_tests.sh) --------------------
+# Measured 2026-11-17 against the pre-fix tree: the Idris2 scan read
+# src/interface/Abi/ only and dropped every hit containing "test", so a banned
+# construct in src/idris2/Checker/ passed; a tree with no Idris2 at all passed;
+# and the `aspect` recipe ran nothing and printed a pass. All three canaries
+# FAIL against the pre-fix tree. The fixture word is assembled at runtime.
+aspect_case() {
+  # $1 = scratch root already holding src/; copies the scan in and runs it.
+  mkdir -p "$1/tests/lib"
+  cp "$ROOT/tests/aspect_tests.sh" "$1/tests/"
+  cp "$ROOT/tests/lib/strip-proof-comments.awk" "$1/tests/lib/"
+  bash "$1/tests/aspect_tests.sh" >/dev/null 2>&1
+}
+aspect_canaries() {
+  local d w body
+  w="believe""_me"
+  d=$(scratch); mkdir -p "$d/src/idris2/Checker"
+  printf -- '-- SPDX-License-Identifier: MPL-2.0\nmodule Checker.Selftest\nbad : a -> b\nbad = %s\n' "$w" > "$d/src/idris2/Checker/Selftest.idr"
+  if aspect_case "$d"; then
+    bad "a banned Idris2 construct outside src/interface/Abi, in a path containing 'test', passes the aspect scan"
+  else
+    ok "a banned Idris2 construct in any Idris2 source fails the aspect scan"
+  fi
+  rm -rf "$d"
+  d=$(scratch); mkdir -p "$d/src"
+  if aspect_case "$d"; then
+    bad "an aspect scan that read no Idris2 file reported a pass"
+  else
+    ok "an aspect scan that finds no Idris2 file fails"
+  fi
+  rm -rf "$d"
+  # The recipe body: every line after `aspect:` up to the next blank line.
+  body=$(awk '/^aspect:/{on=1; next} on && /^$/{exit} on' "$ROOT/Justfile")
+  if printf '%s\n' "$body" | grep -q 'tests/aspect_tests\.sh' \
+     && ! printf '%s\n' "$body" | grep -qi 'echo.*passed'; then
+    ok "the aspect recipe runs the scan and prints no unconditional pass"
+  else
+    bad "the aspect recipe does not run tests/aspect_tests.sh, or prints a pass it did not earn"
+  fi
+}
+
 # --- META (R10 applied to R10): the suite must detect breakage in ITS OWN fixtures.
 # A canary whose jq program is broken writes an empty ledger; the gate then rejects
 # it for being invalid JSON rather than for the planted drift, and the canary passes
@@ -368,11 +409,12 @@ meta_canary() {
 wellknown_canaries; valid_canary; live_canary
 c_weak_crypto; c_plaintext_http; c_secret
 pwg_canaries; ladder_canaries; strip_canaries
+aspect_canaries
 meta_canary
 echo
 # A canary group that silently stops running used to report "10/10" and exit 0.
 # The count is part of the claim.
-EXPECTED_CASES=31
+EXPECTED_CASES=34
 if [ "$((PASS+FAIL))" -ne "$EXPECTED_CASES" ]; then
   echo "gate falsifiability canaries: $((PASS+FAIL)) cases ran, $EXPECTED_CASES expected — a canary group did not run"
   exit 1
