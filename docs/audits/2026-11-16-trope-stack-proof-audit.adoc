@@ -1,8 +1,7 @@
 // SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 // SPDX-License-Identifier: CC-BY-SA-4.0
 = Trope Stack Proof Audit
-:toc: macro
-:toc-placement: preamble
+:toc: preamble
 :revdate: 2026-11-16
 
 Proof audit · 16 November 2026
