@@ -25,6 +25,18 @@ open import TB.Order using
   ; dplusMonoR ; dplusMonoL                                 -- fidelity monotonicity
   ; fateL4MonoR ; fateL4MonoL )                             -- L4, both arguments
 
+-- A2-chain + retention-order: Fate is a chain (a total order), and ⊑ is a
+-- decidable preorder on grades.
+open import TB.OrderLaws using
+  ( fateLte-trans ; fateLte-antisym ; fateLte-total ; fate-isTotalOrder  -- A2: chain
+  ; dLte-isTotalOrder                                                      -- fidelity chain
+  ; ⊑-trans ; ⊑-dec ; ⊑-isPreorder )                                      -- decidable preorder
+
+-- L4 in full: bond and merge coordinates, and the grade-level lifting.
+open import TB.Monotone using
+  ( bondL4MonoR ; bondL4MonoL ; mergeL4MonoR ; mergeL4MonoL  -- L4-bond-merge
+  ; gradeL4MonoR ; gradeL4MonoL ; ▷-mono )                  -- L4-lifting
+
 -- F4 — the three-tier boundary, dynamically (closure, NOT homomorphism).
 open import TB.Tier using
   ( Tier ; tierOf ; _⊓ᵗ_
