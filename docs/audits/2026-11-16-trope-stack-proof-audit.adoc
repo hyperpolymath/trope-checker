@@ -781,3 +781,17 @@ Snapshot taken on 16 November 2026 at about 22:00 UTC, when the audit thread han
 How this was produced: a read-only audit workflow ran one auditor per area, reading declarations and their stated types against every claim made of them. Each candidate finding then went to two independent verifiers, and a final pass wrote the synthesis. Sections 1 to 5 reproduce that synthesis verbatim. The header, the kernel note, the findings layout and the handoff notes were added for this page.
 
 Paths are given relative to each repository. Policy citations in findings 25 to 29 point at a copy of PROOF-POLICY read on 16 November 2026, so their line numbers may not match the current file.
+
+'''''
+
+[[transcriber-notes]]
+== Transcriber's verification notes (2026-11-17)
+
+This section is not part of the audit. Everything above it is the owner's 16 November report, transcribed verbatim, and no sentence of it is changed. These notes record three review points raised by CodeRabbit on trope-checker#121, each checked against the source after transcription. They say how far three of the audit's sentences hold. No grade, finding number or recommendation changes.
+
+The audit read trope-checker at the head of #117. Its line references (`pwg-derive.sh:64`, `:125`, `:128`) match that tree, not `main` at `0dceab6`. Each note names the tree it was checked on.
+
+[arabic]
+. *"Byte-matches the derived census" (section 1, "What is sound"; section 4, the §8.4 rule 7 row).* Not a byte match. On #117 and on `main`, `pwg-check.sh:136` (`:138` on #119) tests the census with `grep -qF "$want_census" "$STATUS"`. That is a fixed-string search over the whole status file. It is not a comparison with the census line at `PROOF-STATUS.adoc:296`. A line that holds the derived census plus extra text passes, and so does a copy anywhere else in the file. The PWG table, by contrast, is compared as an exact string (`:132`).
+. *"`usable_receipt` … tests … `result == "pass"`" (section 1, weakness c).* Correct for the tree the audit read. On #117, `usable_receipt` (`pwg-derive.sh:64-66`) requires `.result == "pass"`, and `pwg-check.sh:82` limits `result` to `pass|fail`. Neither holds on `main` at `0dceab6`. There, `usable_receipt` (`pwg-derive.sh:49-51`) and `pwg3_receipt` (`:55-66`) never read `result`, and `pwg-check.sh:82` only requires a non-empty value. So on `main`, a current receipt that records `result: "fail"` can still support a grade, until #117 merges.
+. *"Live today" for the dropped Rocq/Lean axioms (section 4, the §8.4 rule 6 row; section 5, item 13).* Latent, like the other gaps in item 13. The derived `axioms` field (`pwg-derive.sh:128` on #117) reads only the Agda receipts, so Rocq and Lean axioms never reach it. L1's Lean leg, cited as the live example, is `BRIDGE-PENDING`, so `counts()` rejects it. On #117 no Rocq or Lean leg counts for any obligation. The L1 example shows the omission in the derived output, but no counted witness loses its axioms, which is the case §8.4 rule 6 governs. On #119, fourteen Rocq and Lean legs count. Every one of their receipts lists no axioms, so the gap is still latent there.
