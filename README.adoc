@@ -30,9 +30,12 @@ IR schema, the verified core, and the conformance suite.
 The checker MUST NOT parse, import, execute, or depend on any source language.
 It is a pure function _of the IR_, and the IR (its JSON schema) is the trust
 boundary. A front-end's grade annotations are *claims*; the checker validates
-their *composition*, not their origin. `Rust` (Haec) is the first front-end
-that lowers to the IR — dogfooding without coupling — but a static analyser for
-an existing language could emit the same IR and be checked by the same checker.
+their *composition*, not their origin. Haec is the first language designed to
+lower to the IR. It has no compiler yet: its examples are lowered by hand and
+round-trip through this checker. The producers that emit the IR today are
+Vocarium's `voc invoke` and Hermeneia's `invoke`, the latter from its stub
+store. A static analyser for an existing language
+could emit the same IR and be checked by the same checker.
 ====
 
 == The three firewalls (HC-2 — never let code launder them)

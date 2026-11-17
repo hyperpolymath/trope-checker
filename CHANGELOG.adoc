@@ -78,6 +78,11 @@ reusable workflow installed. Both callers move to a revision that installs OTP
 +
 Five new canaries; the four that are not controls fail against the code before
 them. The suite stands at *48/48*.
++
+_README._ It said "`Rust` (Haec) is the first front-end that lowers to the IR".
+Haec is not Rust and has no compiler; its examples are lowered by hand. The
+sentence now says that, and names the two producers that emit the IR today.
+Found by the stack coherence gate (workbench#83).
 
 * *The aspect lane runs, grades stand only on what the policy admits, and four
 status claims are narrowed (2026-11-17).*
