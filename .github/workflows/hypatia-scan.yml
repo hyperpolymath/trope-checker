@@ -50,7 +50,7 @@ jobs:
       actions: read
       contents: read
       security-events: write
-    uses: metadatastician/standards/.github/workflows/hypatia-scan-reusable.yml@857ff096af11451841fb10488fed1438523973a1
+    uses: metadatastician/standards/.github/workflows/hypatia-scan-reusable.yml@58362c24cf225694b388fc660b3525d8207b7c61
     secrets:
       # Same declared-secret shape as the PR lane: without it the alert
       # meta-rules fall back to the built-in token, which cannot read
