@@ -10,6 +10,7 @@ open import TB.Grade
 open import TB.Order
 open import TB.OrderLaws
 open import TB.Monotone
+open import TB.Bridge
 open import TB.Tier
 open import TB.Syntax
 open import TB.Substitution
