@@ -231,6 +231,7 @@ Each finding survived two independent verifiers, one asking whether the source s
 
 High: 11 Medium: 23 Low: 4
 
+[[f-1]]
 *Finding 1* — High · trope-checker · Agda · Contradicts another claim
 
 === INTERFACE-REPORT F2 checklist says fate-tier-meet-hom-fails "would be false under a commutative model" — it is proved on today's commutative carrier
@@ -244,6 +245,7 @@ What differs
 
 Three separate mismatches in one bullet, and the section's "[F2 items HISTORICAL]" bracket (line 274) does not rescue the third. (1) `grade-not-comm` is called "a pinned theorem" but no such declaration exists anywhere in the tree; TB/Grade.agda:516-522 records that it was a theorem of the pre-ratification carrier only and is replaced by `grade-comm` (TB/Grade.agda:525). (2) `cut-symmetric-fails` likewise does not exist; INTERFACE-REPORT:170 itself states "Neither `cut-orientation-matters` nor `cut-symmetric-fails` occurs in any source". (3) The load-bearing error: `fate-tier-meet-hom-fails` is asserted to depend on F2 and to be false under a commutative model, but the carrier in force IS commutative (`grade-comm`, `▷f-comm` at TB/Grade.agda:294), and the theorem is proved on it — the report's own amendment box at lines 41-44 says it "survives with a NEW witness" and the §Target 3 box at lines 202-215 explains that new witness. So the bullet asserts the falsity of a theorem the same document (and TB/Tier.agda) certifies as live.
 
+[[f-2]]
 *Finding 2* — High · trope-checker · Agda · Cites the wrong object
 
 === pwg.json Agda legs cite four declaration names that do not exist in the Agda sources
@@ -257,6 +259,7 @@ What differs
 
 `TB.Grade.gmonoid-unit` does not exist: the unit law is two declarations, `gmonoid-unitL` (Grade.agda:503) and `gmonoid-unitR` (Grade.agda:506). `TB.Honest.fate-deceptive-unique`, `bond-deceptive-unique` and `merge-deceptive-unique` do not exist either; the declarations are camelCase — `fateDeceptiveUnique` (Honest.agda:55), `bondDeceptiveUnique` (:58), `mergeDeceptiveUnique` (:61). These are not the ledger's ASCII-transliteration convention (which it uses for `deceptive-absorbs-|>`, `beta-app`, `|=-refl`): the real names are already pure ASCII, and docs/status/PROOF-STATUS.adoc:32 and :60 cite them correctly, so the ledger disagrees with the status doc it is supposed to generate. Both rows are published as PWG-3 (PROOF-STATUS:174-177, :209-212), so for L2 the entire cited Agda witness, and for veridicality-derivation all three cited witnesses, name nothing in the sources. scripts/pwg-check.sh checks JCS shape, vocabularies and receipt completeness but never resolves a declaration name against the Agda, so the drift gate cannot catch this.
 
+[[f-3]]
 *Finding 3* — Medium · trope-checker · Agda · Contradicts another claim
 
 === INTERFACE-REPORT Target 1 verdict states the retired pre-ratification equation as how TB.Grade computes
@@ -270,6 +273,7 @@ What differs
 
 The clause the verdict quotes as definitional is the amended-away one. TB/Grade.agda:158 defines `dropped ▷f falsified = falsified`, pinned as the theorem `dropped▷falsified` at :260, and `▷f-comm` (:294) / `grade-comm` (:525) prove the product commutative. The §Target 1 heading (line 133, "encode the grade as a NON-COMMUTATIVE graded structure — *PROVED*") and this paragraph therefore assert, in the present tense and about a named module, an equation and a non-commutativity the module refutes. The amendment box's blanket "Prose below that presents F2 as current fact is HISTORICAL" (lines 33-34) warns a reader generically, but it does not mark this paragraph, and the same staleness recurs at line 98 ("'CF' … refuted-as-universal by both F2 and L5") where the F2 half of the refutation no longer holds.
 
+[[f-4]]
 *Finding 4* — Medium · trope-checker · Agda · Policy misapplied
 
 === L4 is graded PWG-3 under the title "in full" although the Agda covers one coordinate plus the fidelity dimension
@@ -283,6 +287,7 @@ What differs
 
 Both declarations are over `Fate` only; `dplusMonoR/L` (Order.agda:204,225) are over `Δ`. There is no Agda monotonicity statement for `bondLte`, `mergeLte` or `gradeLte`. verification/pwg.json's own note for this row says so — "Bond, merge and the grade-level lifting have no gradeable theory leg" — yet the Agda leg carries token PROVEN, which derives PWG-3 for an obligation whose title is "L4 (monotonicity), in full" and whose statement (PROOF-STATUS:39) is "monotone in both arguments w.r.t. ⊑ on every coordinate of the ratified carrier". The ledger applies the opposite rule to comparable rows: retention-order is token OPEN because "Agda proves reflexivity only", and tier2-membership is OPEN because the exhaustive step is missing. Under that rule L4's Agda token should be OPEN and the row ungraded; as published, a PWG-3 attaches to a sentence quantified over every coordinate. (The prose at PROOF-STATUS:39-40 and README.adoc:171-173 does disclose the coverage; the defect is the graded table row and the ledger token, not the narrative.)
 
+[[f-5]]
 *Finding 5* — Medium · trope-checker · Agda · Claim narrower than proof
 
 === INTERFACE-REPORT still carries the "propext/Quot.sound only" axiom wording that AFFIRMATION records as corrected elsewhere
@@ -296,6 +301,7 @@ What differs
 
 The cited file's own axiom-audit footer lists three axioms, not two. AFFIRMATION.adoc:131-135 records this exact wording as an overclaim and says it was corrected in spec §9.3, PROOF-STATUS and the proofs README ("the `propext`/`Quot.sound` only wording … overclaimed and now reads 'no sorryAx, no user axiom'. GradeBoundary.lean's own footer had said so all along"), naming `FateA.Q_add_left_cancel` and `FateA.atten_cancel_on_normalForms` in the same grade-boundary package plus `Trope.nine_families`. INTERFACE-REPORT was missed by that sweep; README.adoc:156-157 and PROOF-STATUS:9 now both say "and `Classical.choice` in three theorems", and verification/pwg.json's lean-boundary receipt lists axioms [propext, Quot.sound, Classical.choice]. This is a Lean-side claim, but it is a claim in the Theorem B interface report describing the foundation Theorem B is said to sit on.
 
+[[f-6]]
 *Finding 6* — Low · trope-checker · Agda · Claim wider than proof
 
 === "Fate is a chain (A2)" is published PWG-3 on two directional facts, with transitivity and antisymmetry unmechanised
@@ -309,6 +315,7 @@ What differs
 
 The two Agda declarations are single Boolean evaluations at one pair of fate values. `fateLte-refl` (Order.agda:128) exists, but there is no Agda transitivity, antisymmetry or totality statement for `fateLte`, so nothing in Agda establishes a chain. verification/pwg.json's note for the row concedes it — "transitivity and antisymmetry are not mechanised in any prover, so 'chain' is stronger than the mechanised content" — yet the Agda leg is PROVEN and the obligation is published PWG-3 under the title "Fate is a chain (A2)". The narrower prose row at PROOF-STATUS:54-55 is accurate ("the v0.1 antichain is dissolved in the stated direction only"); the graded table row is not scoped that way.
 
+[[f-7]]
 *Finding 7* — High · trope-checker · Lean · Claim wider than proof
 
 === grade-factorisation README states the pre-ratification verdict as the directory's verdict and omits GradeFactorisationR.lean entirely
@@ -322,6 +329,7 @@ What differs
 
 The forcing theorem the README generalises from, Factorisation.forced_collapse_general (GradeFactorisation.lean:264), quantifies over multiplicative maps out of `Fate` under the PRE-RATIFICATION `Fate.comp` instance (GradeBoundary.lean:136-151). Under the ratified composition `FateA.comp` the separation is not only possible but proved: phiR_hom (GradeFactorisationR.lean:138) is a homomorphism and phiR_sighted separates exactly that pair, lifted to grades by piR_sighted (line 212). The README states "every such map" with no carrier qualifier, so as written it asserts of the carrier the project actually uses something a theorem in the same directory refutes. REPORT.adoc:18-24 carries a prominent IMPORTANT provenance note doing exactly this narrowing; the README has none. Compounding it, the Layout table at README.adoc:31 describes `GradeFactorisation.lean` as "The whole development" and lists no row for GradeFactorisationR.lean, which is present in the directory, is wired into `just falsify` (justfile:31-33) and carries the verdict flip.
 
+[[f-8]]
 *Finding 8* — High · trope-checker · Lean · Claim wider than proof
 
 === Merge-coordinate tropical separability is asserted in three places with no merge declaration anywhere in the package
@@ -335,6 +343,7 @@ What differs
 
 The only separability witness in the package is psiBond_separates_honest_deceptive, which is about the BOND coordinate and about ONE pair (severed vs misbound). There is no psiMerge, no merge cost map and no merge separability theorem: `grep -n 'conflated' verification/proofs/lean4/grade-factorisation/*.lean` returns nothing at all, so `Merge`'s deceptive bottom is never given a value in Δ, let alone separated. The claim names `conflated` explicitly as tropically separable. The same unsupported Merge claim appears at GradeFactorisation.lean:49-50 ("The commutative coordinates (`Bond`, `Merge`) carry no such obstruction: their deceptive bottoms remain tropically separable (`psiBond_hom`, `psiBond_separates_honest_deceptive`)" — citing two bond lemmas for a two-coordinate claim) and at grade-factorisation/README.adoc:19-20 ("the commutative `Bond`/`Merge` deceptions stay tropically separable"). This is distinct from the psiBond one-pair wording narrowed in the root README by commit c8d6c5c, which touched README.adoc only; the Merge half was never backed by anything.
 
+[[f-9]]
 *Finding 9* — Medium · trope-checker · Lean · Claim wider than proof
 
 === grade-boundary README still claims propext/Quot.sound only, omitting the Classical.choice the repo records for three theorems of this very package
@@ -348,6 +357,7 @@ What differs
 
 The README's upper bound on the axioms is strictly tighter than the one the source file it calls "the single source of truth" states for itself, and tighter than what the repo records as observed. AFFIRMATION.adoc:132-135 reports from the CI audit that `Trope.nine_families` (EffectAtoms.lean:124), `FateA.Q_add_left_cancel` (GradeRatified.lean:120) and `FateA.atten_cancel_on_normalForms` (GradeRatified.lean:147) all depend on `Classical.choice` — all three are modules of the grade-boundary package that `just axioms` covers (justfile:39-40 greps the whole lake build). AFFIRMATION finding (3) states the "propext/Quot.sound only" wording "in spec §9.3, PROOF-STATUS and the proofs README overclaimed" and was corrected; spec/calculus.adoc:765-767, docs/status/PROOF-STATUS.adoc:8-9 and README.adoc:74 now all name Classical.choice, but this README was missed. A narrower axiom claim is a STRONGER purity claim, so this is an overclaim, not a safe understatement.
 
+[[f-10]]
 *Finding 10* — Medium · trope-checker · Lean · Contradicts another claim
 
 === REPORT.adoc asserts no Classical.choice in grade-factorisation, contradicting its own appendix, the source footer and the ledger receipt
@@ -361,6 +371,7 @@ What differs
 
 Three records disagree with REPORT.adoc:238-240 about the same package. (a) The audited file's own footer, covering the very theorems REPORT.adoc:238 quantifies over, admits Classical.choice. (b) REPORT.adoc:330 itself says "All re-run theorems depend on at most `propext`, `Classical.choice`, `Quot.sound`" — the same document, two bounds, 90 lines apart. (c) verification/pwg.json records receipt `lean-factorisation-c0eb4f1` with `"axioms":["propext","Quot.sound","Classical.choice"]`. The justfile:36-37 comment repeats the tight bound ("expect propext/Quot.sound only — no Classical.choice"). I cannot run a kernel to say which bound is the true one; the defect is that the repository states both and gates on neither. Note the gate cannot catch this: falsify (justfile:22-23) only greps for sorryAx.
 
+[[f-11]]
 *Finding 11* — Medium · trope-checker · Lean · Cites the wrong object
 
 === PROOF-STATUS tier-2 row cites only pre-ratification declarations in a table scoped to the ratified carrier
@@ -374,6 +385,7 @@ What differs
 
 PROOF-STATUS.adoc:9-11 scopes the whole Proved table to "the ratified carrier of `spec/calculus.adoc` v0.2 (R-2026-07-07, ADR 0004)", and the C3 row four lines later polices precisely this distinction, demoting `dropped_absorbing` to history because it is a theorem of the pre-ratification carrier. Yet every fate- and grade-level name in the tier-2 row is pre-ratification: `Fate.atten_not_cancel` and `Fate.leftCancelWitness` are stated over `Fate.comp` (the Mul instance at GradeBoundary.lean:151), and `Grade.grade_leftCancel_iff` is over the pre-ratification `Grade` structure. The ratified restatements exist and are not cited here — FateA.leftCancelWitness (GradeRatified.lean:89) and gradeR_leftCancel_iff (line 381). verification/pwg.json's tier2-membership entry does list both and adds the note "Grade.grade_leftCancel_iff is over the historical pre-ratification carrier; the ratified restatement is GradeR.gradeR_leftCancel_iff", so the ledger is correct and the prose table is the drifted surface. (Bond.withheld_honest_not_cancel and Merge.fused_honest_not_cancel are unaffected: ratification left Bond and Merge unchanged.)
 
+[[f-12]]
 *Finding 12* — Low · trope-checker · Lean · Claim wider than proof
 
 === L4Monotonicity docstring claims linearity and a complete chain from a totality theorem alone
@@ -387,6 +399,7 @@ What differs
 
 `FateA.le_total` states totality only. The file declares exactly two order lemmas for FateA.le — le_refl (line 150) and le_total (line 156); there is no transitivity and no antisymmetry theorem for FateA.le anywhere in the tree, so "linear", "a chain" and a fortiori "a complete chain" are not derivable from what is stated. Knaster-Tarski additionally needs completeness (suprema of chains), which nothing here states. The repository already knows this: verification/pwg.json's A2-chain entry notes "Totality is stated in Lean (FateA.le_total); transitivity and antisymmetry are not mechanised in any prover, so 'chain' is stronger than the mechanised content", and PROOF-STATUS.adoc:60 narrows the row to the two directional facts. The module docstring was not narrowed with them, and it restates the chain at lines 131-133 ("The order becomes a chain: `Falsified ⊏ Dropped ⊏ Predicated ⊏ Atten δ ⊏ Present`").
 
+[[f-13]]
 *Finding 13* — High · trope-checker · Idris2 · Claim wider than proof
 
 === `just aspect` prints "Aspect tests passed!" while running no check at all
@@ -400,6 +413,7 @@ What differs
 
 The `aspect` recipe is an uninstantiated mint template: its entire body is two `@echo`s and a TODO comment block. It executes no scan, yet announces a pass. `test-all` (Justfile:203) depends on it, so `just test-all` reports the standing-rule aspect lane as green having checked nothing. Independently, `grep -rn aspect_tests` over the Justfile, all workflows and all scripts shows tests/aspect_tests.sh — the only local Idris2 banned-construct scan — is invoked by nothing: it is unwired. Compounding this, CHANGELOG.adoc:82-85 describes hardening that script's `|| true` handling as if it were a live gate ("it now covers the find and the grep ... but never the awk"), which reads as a claim that the script runs somewhere. This is silent-green in a path the repo treats as a gate (doctrine 3 and 8).
 
+[[f-14]]
 *Finding 14* — Medium · trope-checker · Idris2 · Claim wider than proof
 
 === PROOF-STATUS cites `deceptiveDuals` as proof evidence; it is a tuple value that states no proposition
@@ -413,6 +427,7 @@ What differs
 
 `deceptiveDuals` has type `(Fate, Bond, Merge)` — a data value, not an equality, not a Π-type, not a Σ-type with a proof component. It asserts nothing and cannot witness "exactly three". The three uniqueness lemmas on the same line (Veridicality.idr:40, 49, 57) carry the real content, and only the "each is unique in its coordinate" half of it. The repo's own ledger agrees and says so explicitly: verification/pwg.json, veridicality-derivation `notes` — "The 'exactly three' half rests on the three uniqueness lemmas plus the construction of Grade; Trope.Veridicality.deceptiveDuals is a tuple value and states no proposition, so it is not cited as evidence here" — and correspondingly the ledger's reference.idris2.declarations list for that row contains only the three uniqueness lemmas. PROOF-STATUS cites the one declaration the ledger deliberately refuses to cite, inside a table headed "Proved".
 
+[[f-15]]
 *Finding 15* — Medium · trope-checker · Idris2 · Cites the wrong object
 
 === pwg.json cites three Agda declarations that do not exist (kebab-case names for camelCase declarations)
@@ -426,6 +441,7 @@ What differs
 
 The Agda module declares `fateDeceptiveUnique`, `bondDeceptiveUnique`, `mergeDeceptiveUnique` in camelCase. The ledger's counting Agda leg for veridicality-derivation names three kebab-case identifiers that appear nowhere in verification/proofs/agda/. A grade that derives PWG-3 for this obligation therefore rests on declaration names that do not resolve. PROOF-STATUS.adoc:60 has the correct camelCase forms, so the two records disagree here as well. Root cause is that scripts/pwg-check.sh validates receipt fields, token/state/route vocabularies and table-vs-census byte equality, but never checks that a cited declaration exists in the proof sources — so a mistyped declaration name passes the gate silently. (Found while auditing the Idris2 citations on the same ledger row; flagged here because verification/pwg.json is in this dimension's scope.)
 
+[[f-16]]
 *Finding 16* — Medium · trope-checker · Idris2 · Claim wider than proof
 
 === Verdict-soundness row states the theorem over the use-model floor; `verdictSound` quantifies over `Grade`
@@ -439,6 +455,7 @@ What differs
 
 The row, in the == Proved table, writes the antecedent with floor(U) — the use-model's floor — but the theorem quantifies `floor` over `Grade`. The repo's own documents say these are not the same object: PROOF-STATUS.adoc:404-410 states "The use-model floor is a partial per-coordinate demand, not a grade value"; the shipped checker uses a separate type (`violations : Floor -> Grade -> List String`, src/idris2/Checker/Check.idr:58); and verification/pwg.json's verdict-soundness note says "verdictSound is typed over Grade while the shipped checker's floor is a different type decided by a different predicate, and no lemma connects them." The Idris2 source itself hedges — Soundness.idr:72 says "a (grade-shaped) floor" — and the hedge is dropped in the status row. Other rows in the same table (L4 at :39, Target 3 at :109) do carry their coverage caveats inline, so the omission is inconsistent as well as wider than the theorem.
 
+[[f-17]]
 *Finding 17* — Medium · trope-checker · Idris2 · Claim wider than proof
 
 === aspect_tests.sh reports an unqualified "No dangerous Idris2 patterns" pass after scanning 3 of 16 .idr files
@@ -452,6 +469,7 @@ What differs
 
 The grep root is `src/interface/Abi/` — 3 of the repository's 16 .idr files. It excludes the entire verified core (verification/proofs/idris2/Trope/, 8 files) and the whole executable checker (src/idris2/, 5 files, four of which are `%default covering`), yet the emitted message carries no scope qualifier. The adjacent Coq/Lean block at :79-100 was explicitly widened and documented after a similar mis-scoping, while this block was left at its template scope. Note also `grep -v "test"` would silently drop any matching path containing the substring "test". The script is clean as to what it actually scans — the finding is the unqualified pass text, which combined with the previous finding (the script is never invoked) means the repo has no wired local scan matching this claim.
 
+[[f-18]]
 *Finding 18* — Low · trope-checker · Idris2 · Contradicts another claim
 
 === README claims PROOF-STATUS and pwg.json "agree row for row"; at least three rows differ
@@ -465,6 +483,7 @@ What differs
 
 Three rows diverge. (1) retention-order: PROOF-STATUS:52 cites ten Idris2 declarations including the four transitivity lemmas Trope.Order.\{fateLteTrans,bondLteTrans,mergeLteTrans,dLteTrans}; the ledger's reference.idris2.declarations for that row lists six and omits all four. (2) veridicality-derivation: PROOF-STATUS:60 adds `deceptiveDuals`, which the ledger's note expressly refuses to cite. (3) the same row's Agda names: PROOF-STATUS uses the real camelCase forms, the ledger uses kebab-case forms that do not exist. All four transitivity lemmas do exist (Order.idr:28, 45, 102, 172), so (1) is an under-citation in the ledger rather than an unsupported claim — but "agree row for row" is stated without qualification and is not true of any of the three.
 
+[[f-19]]
 *Finding 19* — High · trope-checker · ledger · Other
 
 === The gate never resolves declaration names, so every name in the ledger is unchecked evidence
@@ -478,6 +497,7 @@ What differs
 
 The gate's five rules cover JCS canonicality, absence of asserted grades, receipt resolution and completeness, token/state/route vocabularies, and table/census agreement. None of them reads the `declarations` arrays. `grep -n declarations scripts/pwg-check.sh scripts/pwg-derive.sh` returns nothing: the string does not occur in either script. The declaration names are the only link in the ledger between a grade and an actual theorem, and they are the one field no machine checks. Twelve dangling names (the other findings here) sit in the ledger on a tree where `bash scripts/pwg-check.sh` exits 0 and prints PASS. The receipts attest that All.agda and Smoke.agda typecheck; they attest nothing about whether the named declarations are the ones that did.
 
+[[f-20]]
 *Finding 20* — Medium · trope-checker · ledger · Cites the wrong object
 
 === L2 cites TB.Grade.gmonoid-unit; the source has gmonoid-unitL and gmonoid-unitR
@@ -491,6 +511,7 @@ What differs
 
 No declaration named `gmonoid-unit` exists in TB/Grade.agda. The unit law is stated as two declarations, gmonoid-unitL (:503) and gmonoid-unitR (:506), and both are exported in Smoke.agda:14. docs/status/PROOF-STATUS.adoc:32 gets this right (`TB.Grade.{gmonoid-unitL,gmonoid-unitR}`); only the ledger is wrong. A reader resolving the L2 PWG-3 grade back to its witness finds nothing.
 
+[[f-21]]
 *Finding 21* — Medium · trope-checker · ledger · Cites the wrong object
 
 === L3 and L5 cite TB.Tier.deceptive-absorbs-|>; the declaration is deceptive-absorbs-▷
@@ -504,6 +525,7 @@ What differs
 
 The ledger writes the composition operator ▷ as the ASCII digraph `|>`. No declaration `deceptive-absorbs-|>` exists; the name is `deceptive-absorbs-▷` (TB/Tier.agda:108, imported by TB/Reduction.agda:41). The same ASCII substitution appears in two separate theorem records, so it is systematic, not a typo. docs/status/PROOF-STATUS.adoc:36 and :44 both use the correct `TB.Tier.deceptive-absorbs-▷`.
 
+[[f-22]]
 *Finding 22* — Medium · trope-checker · ledger · Cites the wrong object
 
 === veridicality-derivation cites three kebab-case names; all three declarations are camelCase
@@ -517,6 +539,7 @@ What differs
 
 The string "deceptive-unique" does not occur anywhere under verification/proofs/agda. All three declarations are camelCase: fateDeceptiveUnique (:55), bondDeceptiveUnique (:58), mergeDeceptiveUnique (:61). docs/status/PROOF-STATUS.adoc:60 spells them correctly (`TB.Honest.{fateDeceptiveUnique,bondDeceptiveUnique,mergeDeceptiveUnique,deceptiveDuals}`); the ledger is the only surface carrying the kebab-case forms. This record is derived PWG-3, so all three of its cited witnesses are unresolvable.
 
+[[f-23]]
 *Finding 23* — Medium · trope-checker · ledger · Cites the wrong object
 
 === retention-order cites TB.Order.|=-refl; the reflexivity declaration is ⊑-refl
@@ -530,6 +553,7 @@ What differs
 
 The string "|=-refl" does not occur anywhere under verification/proofs/agda. The order relation is written ⊑ (defined at TB/Order.agda:112, `_⊑_ : Grade → Grade → Set`) and its reflexivity proof is ⊑-refl at :146; the ledger has rendered ⊑ as the ASCII `|=`. This leg is the sole evidence behind the prose at docs/status/PROOF-STATUS.adoc:305 ("the retention order proves reflexivity but neither transitivity nor decidability"), and the PROOF-STATUS row at :52 names only Idris2 declarations, so the ledger is the only place the Agda witness is named at all - and it names it wrongly.
 
+[[f-24]]
 *Finding 24* — Medium · trope-checker · ledger · Cites the wrong object
 
 === C3's Lean leg qualifies fidelity_total_honest_not_cancel into the Delta namespace, where it does not live
@@ -543,6 +567,7 @@ What differs
 
 The theorem sits at GradeBoundary.lean:408, inside `namespace Grade` (opened :306, closed :413) inside `namespace Trope` (:75-:415). Its full name is therefore Trope.Grade.fidelity_total_honest_not_cancel. `namespace Delta` in that file spans only :87-:117, so Trope.Delta.fidelity_total_honest_not_cancel does not exist and the ledger's `Delta.`-qualified name would not resolve in Lean. The likely origin is visible at docs/status/PROOF-STATUS.adoc:86, which names it unqualified and parenthetically says it is "over `Delta`" - a statement about what the theorem is ABOUT, which the ledger has turned into a namespace it is not IN. The file's own axiom audit at :432 prints it unqualified under `open Trope Trope.Grade` (:422), confirming the Grade namespace.
 
+[[f-25]]
 *Finding 25* — High · trope-checker · §8 derivation · Policy misapplied
 
 === PWG-1 is awarded on PWG-2ii evidence: the "2ii" branch is unreachable
@@ -556,6 +581,7 @@ What differs
 
 Reaching this branch requires $legs == 2, i.e. counts() held for both rocq and lean; counts() (line 93) already requires usable_receipt on each leg, and $agda_ok (line 103) already requires pwg3_receipt($ar), whose selector is a strict subset of usable_receipt's. So all three conjuncts on lines 113-115 are logically entailed by having arrived here, and the else-branch "2ii" can never fire. PWG-1 is therefore granted automatically the moment PWG-2ii is reached, with zero additional evidence, contradicting §8.2's "PWG-2ii, plus ...". Confirmed behaviourally: a ledger with both legs RECONCILED/accepted yields pwg=1 (scratchpad/pwgaudit/c.json and d.json); across all four perturbed ledgers the only values ever emitted were 1, 3, not-applicable and ungraded — never 2ii. The published census line consequently reports `PWG-2ii` 0 as a structural certainty rather than a measurement.
 
+[[f-26]]
 *Finding 26* — High · trope-checker · §8 derivation · Policy misapplied
 
 === No receipt is ever checked against the theorem's source commit, so a grade can rest on a stale or foreign commit
@@ -569,6 +595,7 @@ What differs
 
 The only commit test is a shape test: 40 lowercase hex characters. The script never compares a receipt's .commit with the ledger's top-level .commit (c0eb4f1a1a50aabfab23b94fd74b53cef267f653) or with any per-theorem source revision, and §8.2 PWG-1 at policy line 534 requires the run to be "on the exact source commit". Demonstrated: planting receipts with commit ffffffffffffffffffffffffffffffffffffffff and 0000000000000000000000000000000000000000 on L1 (scratchpad/pwgaudit/c.json) produced pwg=1. §8.4 rule 4's anti-carry-forward rule is thus not implemented anywhere in the derivation; the script trusts the hand-written "state":"current" string as the sole freshness signal, which is precisely the kind of hand-written assertion §8.4 rule 2 exists to remove.
 
+[[f-27]]
 *Finding 27* — Medium · trope-checker · §8 derivation · Policy misapplied
 
 === §8.4 rule 6 is only half implemented: counted Rocq/Lean axioms are dropped and PROVEN-WITH-AXIOMS admissibility is never checked
@@ -582,6 +609,7 @@ What differs
 
 Two separate gaps. (a) $ar is the Agda receipt list only (line 102), so the derived record's axioms field never includes a counted Rocq or Lean witness's axioms, although §8.4 rule 6 names exactly those two provers' mechanisms. Demonstrated on scratchpad/pwgaudit/c.json: L1 scores pwg=1 with a counted lean leg whose token is PROVEN-WITH-AXIOMS, and the derived record still reads "axioms": []. The same shape is live in the real ledger, where receipt lean-boundary-c0eb4f1 lists [propext, Quot.sound, Classical.choice] and the derived L1 record reads "axioms": []. (b) `accepted` (line 52) treats PROVEN-WITH-AXIOMS as counting unconditionally; the disposition-(c) admissibility test the policy makes a precondition of counting is implemented nowhere in the script. Neither gap is backstopped by scripts/pwg-check.sh, which only checks that an axioms key exists on each receipt (pwg-check.sh:85).
 
+[[f-28]]
 *Finding 28* — Medium · trope-checker · §8 derivation · Policy misapplied
 
 === +foundation-diverse is set by mere field presence, with no kernel-checked witness or §2.2 correspondence check
@@ -595,6 +623,7 @@ What differs
 
 The tag is published whenever foundation_diverse_witness is any non-null value — an empty object, a bare string, a witness recorded as OPEN or ASSUMED, or one whose §2.2 state is BRIDGE-PENDING all set it to true. §8.3 attaches two substantive conditions (kernel-checked, and statement correspondence recorded per §2.2) and the script tests neither the §5 token nor the §2.2 state nor any receipt of that witness. The tag then flows into both published surfaces: the census (line 156-158) and the pwg column of the table (line 169). This is not backstopped: scripts/pwg-check.sh's vocabulary rules (lines 93-118) iterate .legs only and never inspect foundation_diverse_witness. In this repository every theorem has foundation_diverse_witness: null, so no false tag is currently published; the defect is latent in the derivation, not live in the ledger.
 
+[[f-29]]
 *Finding 29* — Medium · trope-checker · §8 derivation · Policy misapplied
 
 === The §2.1 invocation test is a substring scan over the whole receipt string, so options outside §2.1 and unflagged entrypoints still reach PWG-3
@@ -608,6 +637,7 @@ What differs
 
 The three tests only require each flag to occur somewhere in the invocation string, and nothing bounds what else the string contains. Two consequences the policy forbids. (a) An invocation carrying an option outside §2.1 — for example a weakening flag such as --allow-unsolved-metas appended after the three required ones — still satisfies all three tests and yields PWG-3, although §8.2 line 505 makes that reachable only under a separately reviewed proof profile, and the script has no field or condition representing such a profile at all. (b) The ledger's own Agda invocation is two commands joined by " ; " (receipt agda-c0eb4f1), and a substring test over the joined string cannot tell that every entrypoint carried the flags; an invocation reading "agda --safe --without-K --cubical-compatible All.agda ; agda Smoke.agda" passes identically. §2.1 (policy lines 184-190) fixes how each theory proof entrypoint is invoked, not how the concatenation of them reads.
 
+[[f-30]]
 *Finding 30* — Medium · mathesis · registry · Claim wider than proof
 
 === ADR 0004 says the claims validator enforces a closed field set; validate() has no closed-field check and accepts a stored grade
@@ -621,6 +651,7 @@ What differs
 
 validate() checks presence and type of the ten named fields but never rejects an UNKNOWN field. Its two sibling validators do exactly that: bridges.mjs:58 calls closed(b, FIELDS, 'Unknown field (a bridge holds no token or grade):', where) and theory.mjs:38 does need(FIELDS.has(k), `Unknown field (an admission holds no grade) ${k}`). I ran validate() on a row carrying pwg:'PWG-1', token:'proven' and nonsense:42 and it returned ACCEPTED. The test suite does not prove this failure either: tests/registry/claims-registry.test.mjs:58 'validation fails closed' tests duplicate id, bad source_commit, unknown kind, missing agda, bad id shape, nonpublic repo, bad receipt sha256 and the shelf rules — no unknown-field case — and the only grade guard, line 57 (`rows.every(r => !('pwg' in r) && !('grade' in r))`), is an assertion over the committed data for two specific key names, not a validator rule. So an asserted grade written into claims.jsonl, which PROOF-POLICY §8.4 rule 2 calls drift and which this ADR's whole design exists to prevent, would pass `just registry-check` silently.
 
+[[f-31]]
 *Finding 31* — High · mathesis · proofs · Claim wider than proof
 
 === THY-1's Lean leg records "no axiom" from an audit that inspects zero declarations in that file
@@ -634,6 +665,7 @@ What differs
 
 lean4/FeatureReachability.lean contains no `theorem` or `lemma` whatsoever: reachMono (:41), absentBelow (:48), onMono (:77), onMonoAll (:82) and absentUnderAllFeatures (:108) are all `def`, because Reach, All and On are Type-valued inductives rather than Prop. The Lean axiom audit in scripts/check-proofs.sh:173 keeps only constants matching `if let .thmInfo _ := ci then`, so for this file it iterates over nothing, prints GATE-AUDIT-DONE 0, and check-proofs.sh:186 records AUDIT_NOTE "axioms: none for 0 declared theorem(s)". The empty `(axioms)` element written into the Lean leg of THY-1 at verification/receipts/theory_praxis.deed:95 therefore rests on an audit with an empty domain. "No declared theorem depends on an axiom" is true only because there are no declared theorems; PROOF-POLICY §8.4 rule 6 requires every counted witness to list its axioms, and PROOF-STATUS.adoc:129-130 separately asserts `#print axioms` reports none for absentUnderAllFeatures, reachMono and onMono, which the gate that produced the current receipt does not establish. (The Rocq side does not have this problem: coq/FeatureReachability.v:109 declares absent_under_all_features as a `Theorem`, and Print Assumptions on it covers reach_mono and edge_mono transitively. A literal `sorry` would still be caught textually by scripts/scan-dangerous.sh, so the gap is in the recorded axiom evidence, not in every guard.)
 
+[[f-32]]
 *Finding 32* — Medium · mathesis · proofs · Ledger and source disagree
 
 === PROOF-STATUS calls the Rocq and Lean THY-1 receipts "current" that the receipt deed records as superseded
@@ -647,6 +679,7 @@ What differs
 
 The receipt deed marks run 42896264290 at 336768958d01 `:state superseded` for both the Rocq leg (deed:76-81) and the Lean leg (deed:100-105), with run 43498592499 at 034f215 as `:state current` (deed:66-75 and :89-99). PROOF-STATUS's THY-1 Agda row was updated to match (it shows 42896264290 as "superseded on 2026-11-13" at :87 and 43498592499 as "current" at :91), but the Rocq row (:110-113) and the Lean row (:135-137) still label the superseded 42896264290 receipt as "(current)" and name no 43498592499 receipt at all. PROOF-POLICY §8.4 rule 5 makes lineage state part of the receipt record, and §8.5 requires each leg's receipts with their lineage states to be in the home repository's proof-status file; the status file and the receipt therefore contradict each other about which two of THY-1's three legs are currently backed.
 
+[[f-33]]
 *Finding 33* — Medium · mathesis · proofs · Claim wider than proof
 
 === APP-1 claims the verdict is "missing" in a case no declaration in any of the three provers states
@@ -660,6 +693,7 @@ What differs
 
 The claim has three conjuncts. "no on a known breach" is Proofs.breach-decides (Missing.agda:216, concluding Σ Status (λ u → verdict f rs ≡ given u false)); "never yes then" is the contrapositive of Proofs.verdict-yes (:210). The middle conjunct, that the verdict is `missing` when there is no known breach but some value it depends on is missing, is stated by no declaration named in the claim and by no declaration anywhere in Applied/Missing.agda, Applied/Cohort.agda, coq/Cohort.v or lean4/Cohort.lean: verdict-yes only rules out `given u true`, which leaves `given s false` open, and breach-decides runs the other direction. The property is true of the Kleene conjunction at Applied/Cohort.agda:265-267, but it is unproved, so the registry row (docs/atlas/generated/registry.adoc:19) and the PROOF-NEEDS APP-1 row (docs/status/PROOF-NEEDS.adoc:41-43), which carry the same sentence, assert more than the cited theorems give.
 
+[[f-34]]
 *Finding 34* — High · satellite status docs · Contradicts another claim
 
 === haec's root PROOF-PROGRESS.adoc denies the existence of the proof tree that haec's own PROOF-STATUS describes in detail
@@ -673,6 +707,7 @@ What differs
 
 `/home/user/haec/verification/proofs/` exists and contains eleven proof-source files across agda/, coq/, idris2/ (incl. idris2/ABI/), lean4/ and tlaplus/. PROOF-PROGRESS.adoc states the opposite three further times: line 147 "| No proofs directory | Infrastructure | Not yet created", line 159 "| Proofs completed | 0 | No proofs directory yet", and line 186 "| Proofs exist | No | No proofs directory | Early implementation phase". A reader taking PROOF-PROGRESS at face value concludes haec has no proof tree at all, when in fact it has a never-instantiated template tree — a different, and more misleading, state. The document declares itself "Generated: 2026-08-14" (line 262) sourced from AFFIRMATION.adoc 2026-06-22, so it predates the 2026-11-09 PROOF-STATUS pass, but it sits unmarked at the repository root while PROOF-STATUS sits in docs/status/, and neither file points at the other.
 
+[[f-35]]
 *Finding 35* — High · satellite status docs · Claim wider than proof
 
 === Workbench reports the effect typology's exhaustiveness as a theorem; trope-checker records it as docstring prose that is explicitly not mechanised
@@ -686,6 +721,7 @@ What differs
 
 The factorisation half is a real theorem; the exhaustiveness half is not. trope-checker's PROOF-STATUS says exhaustiveness is argued in a docstring and is not a proposition, and `EffectAtoms.lean:33-36` confirms it — the "exhaustive **relative to the carrier**" wording the workbench reproduces is module-comment prose, not a `theorem`. trope-checker's PWG ledger grades this row `ungraded`, `0 of 2` legs, Agda token `AGDA-PENDING` (PROOF-STATUS.adoc:244-247), and its retrospective states "Of O1, only the carrier-relative half is mechanised … O1 itself is therefore not closed" (line 426). The workbench's sentence conjoins a proved claim and an unproved one under one "is now a theorem", and restates it at line 296 ("the IR froze at 0.2 under R-2026-07-07 with O1's algebraic half proved") and line 228 ("O1's algebraic half is closed upstream"). This is a prose sentence wider than the theorem it cites.
 
+[[f-36]]
 *Finding 36* — Medium · satellite status docs · Cites the wrong object
 
 === Workbench cites the pre-ratification carrier's atom_factorization as the live result
@@ -699,6 +735,7 @@ What differs
 
 The theorem in `EffectAtoms.lean` is stated over `Grade`, the historical pre-ratification carrier. trope-checker's PROOF-STATUS.adoc:91 says so explicitly: "`EffectAtoms.lean`'s `Grade.atom_factorization` is the factorisation statement over the historical pre-ratification carrier, retained as history". The ratified-carrier theorem the workbench means is `Trope.GradeR.atom_factorization` at /home/user/trope-checker/verification/proofs/lean4/grade-boundary/EffectAtomsRatified.lean:66, in a different file; `EffectAtomsRatified.lean:65` even says "exactly as `Grade.atom_factorization` showed for the historical carrier". The workbench's reference list (RESEARCH-PROGRAMME.adoc:327) repeats the error, naming `EffectAtoms.lean` among "the ratified-carrier proofs" while omitting `EffectAtomsRatified.lean`.
 
+[[f-37]]
 *Finding 37* — Medium · satellite status docs · Contradicts another claim
 
 === hermeneia's status board states that Vocarium does not exist; hermeneia's own README says the two meet at the M2 adapter
@@ -712,6 +749,7 @@ What differs
 
 /home/user/vocarium exists, is at "M1 invoke slice" with a working `voc` store engine, and the workbench's cross-repo table records it that way (/home/user/trope-particularity-workbench/docs/status/STATE-OF-THE-STACK.adoc:77-90). STATE-OF-PLAY is headed "*As at:* 2026-07-29" (line 8) and asserts "Every claim here was measured against `origin/main`" (lines 12-13), but it states the non-existence in the present tense in a live `docs/status/` board, and the same repository's README contradicts it. The surrounding substance — nothing is integrated, every result is against the in-repo JSONL stub — remains true; it is the reason given that is false.
 
+[[f-38]]
 *Finding 38* — Low · satellite status docs · Claim wider than proof
 
 === hermeneia's architecture rule says the grade algebra is proved in Idris2; trope-checker records Idris2 coverage as partial and Agda as the normative kernel
