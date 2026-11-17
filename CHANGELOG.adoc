@@ -41,6 +41,26 @@ generator, not a leg") covers the Mathlib development only.
 
 ==== Fixed
 
+* *The proof recipes run all four proof developments in their ADR 0005 D4
+roles (2026-11-17, upkeep).*
++
+The ADR 0005 amendment named this as upkeep: the recipes D5 touched still
+described three provers. `+build/just/proofs.just+` gains `+proof-check-rocq+`,
+`+proof-check-lean-core+` and `+proof-check-recheck-controls+`, which run
+`+scripts/check-recheck-legs.sh rocq|lean|controls+`, and `+recheck-legs+`, which
+runs all three as the CI job of that name does. A missing or wrong-version prover
+fails; it never skips. `+proof-check-all+` and `+verify-all+` now include them, so
+both also need `+coqc+` 8.18.0 and `+lean+` 4.16.0. `+proof-status+` lists the four
+developments by role, with the PWG census in place of a summary row that
+PROOF-STATUS no longer has.
++
+`+proof-check-lean4+` had failed since the core-Lean leg landed (#122), with or
+without a toolchain problem. Its orphan guard counted `+lean4/ratified-order/RatifiedOrder.lean+` as a file no lake package
+builds. That file is the core-Lean leg, which the recheck gate checks. The guard
+now exempts exactly the file the gate names, so a stray file beside it still
+fails. `+proof-check-rocq+` has the same guard for `+.v+` files. No proof, ledger
+entry or grade changed.
+
 * *Every PWG witness name now resolves, the ladder's top two rungs are
 distinct, and L4 and A2 are graded by their parts (2026-11-16).*
 +

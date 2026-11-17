@@ -4,16 +4,17 @@
 # FORMAL VERIFICATION (PROOFS)
 #
 # Imported by ../../Justfile via `import? "build/just/proofs.just"`.
-# Recipes here check formal proofs across Idris2, Lean4 and Agda, plus
+# Recipes here check the four proof developments in the roles ADR 0005 D4
+# gives them (as amended 2026-11-17): Agda is the normative kernel; Rocq and
+# core Lean (no Mathlib) are the PROOF-POLICY §2 recheck legs; Lean + Mathlib
+# is a generator, never a leg; Idris2 is the executable reference. They also
 # scan for dangerous/unsafe constructs and report status. Run via
 # `just proof-check-all` for the full sweep.
 
-# Check all formal proofs (Idris2 + Lean4 + Agda)
-proof-check-all: proof-check-idris2 proof-check-lean4 proof-check-agda proof-scan-dangerous
+# Check all formal proofs (Agda kernel, Rocq + core-Lean recheck legs, Lean + Mathlib generator, Idris2 reference)
+proof-check-all: proof-check-idris2 proof-check-lean4 proof-check-agda recheck-legs proof-scan-dangerous
     @echo "=== All proof checks complete ==="
 
-# Check Idris2 proofs by PACKAGE (the verified core + the ABI seam)
-#
 # This recipe used to `find` every .idr under verification/ and run
 # `idris2 --check` on each from the repo root — where module names do not
 # resolve, template files that belong to no package fail spuriously, and a
@@ -22,6 +23,8 @@ proof-check-all: proof-check-idris2 proof-check-lean4 proof-check-agda proof-sca
 # check that means something: it is what CI runs, with %default total
 # enforced by the modules themselves. A missing toolchain is a FAIL here:
 # a gate that passes when it did not run is worse than no gate.
+#
+# Check the Idris2 executable reference by PACKAGE (the verified core + the ABI seam; off the PWG ladder)
 proof-check-idris2:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -46,15 +49,17 @@ proof-check-idris2:
     fi
     echo "PASS: trope.ipkg + abi.ipkg typecheck; no orphan .idr files"
 
-# Check Lean4 proofs by PACKAGE (lake build at CI strictness)
-#
 # Was: `lean <file>` per file from the root (imports unresolvable, so
 # permanently red) plus SKIP-on-missing-toolchain. Now the same build CI
-# runs: both lake packages with warnings as errors.
+# runs: both lake packages with warnings as errors. These are the GENERATOR
+# (ADR 0005 D4 as amended), never a §2 leg; the core-Lean recheck leg is
+# proof-check-lean-core.
+#
+# Check the Lean + Mathlib generator packages by PACKAGE (lake build --wfail; a generator, never a §2 leg)
 proof-check-lean4:
     #!/usr/bin/env bash
     set -euo pipefail
-    echo "=== Checking Lean4 proofs (lake build --wfail, both packages) ==="
+    echo "=== Checking Lean + Mathlib generator (lake build --wfail, both packages) ==="
     if ! command -v lake &>/dev/null; then
         echo "FAIL: lake not installed (Lean v4.16.0, see lean-toolchain files) — refusing to report a skip as a pass"
         exit 1
@@ -62,20 +67,25 @@ proof-check-lean4:
     ( cd verification/proofs/lean4/grade-boundary && lake build --wfail )
     ( cd verification/proofs/lean4/grade-factorisation && lake build --wfail )
     # Orphan guard: every .lean in the tree must be a lean_lib of one of
-    # the two lakefiles (a file no package builds is never kernel-checked).
+    # the two lakefiles, or be THE core-Lean leg that
+    # scripts/check-recheck-legs.sh gates (proof-check-lean-core). A file
+    # neither builds is never kernel-checked.
+    leg="$(sed -n 's/^LEAN_FILE="\(.*\)"$/\1/p' scripts/check-recheck-legs.sh)"
+    [ -n "$leg" ] || { echo "FAIL: no LEAN_FILE in scripts/check-recheck-legs.sh — cannot tell the core-Lean leg from an orphan"; exit 1; }
     orphans=""
     for f in $(find verification/proofs/lean4 -name '*.lean' -not -path '*/.lake/*' | sort); do
+        [ "$f" = "$leg" ] && continue
         base="$(basename "$f" .lean)"
         grep -qhE '^name = "'"$base"'"' verification/proofs/lean4/*/lakefile.toml \
           || orphans="$orphans $f"
     done
     if [ -n "$orphans" ]; then
-        echo "FAIL: Lean files belonging to no lake package (never built):$orphans"
+        echo "FAIL: Lean files belonging to no lake package and not the core-Lean leg (never checked):$orphans"
         exit 1
     fi
-    echo "PASS: both Lean packages build (--wfail); no orphan .lean files"
+    echo "PASS: both Lean + Mathlib packages build (--wfail); no orphan .lean files (core-Lean leg: $leg)"
 
-# Check Agda proofs (same entry point and flags as build-agda / CI)
+# Check the Agda normative kernel (same entry point and flags as build-agda / CI)
 proof-check-agda:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -90,10 +100,48 @@ proof-check-agda:
         && agda "${AGDA_FLAGS[@]}" Smoke.agda )
     echo "PASS: Theorem B typechecks (${AGDA_FLAGS[*]})"
 
-# (No proof-check-coq: the tree carries no Coq — T5 of PR #102 removed the
-# never-instantiated template, and a recipe whose find matches nothing and
-# whose missing toolchain exits 0 is, in ADR 0005's words, "a gate that
-# cannot fail". If Coq ever lands for real, add the recipe with the proof.)
+# ---------------------------------------------------------------------------
+# PROOF-POLICY §2 recheck legs: Rocq and core Lean (ADR 0005 D4/D5, as
+# amended 2026-11-17). T5 of PR #102 removed a never-instantiated Coq
+# template and its silently-skipping recipe, "a gate that cannot fail", and
+# said a Coq recipe should come back only with a real proof. The Rocq
+# development that landed on 2026-11-17 is that proof, an instantiated leg,
+# and the recipes below check it. The gate is
+# scripts/check-recheck-legs.sh, the same script the proofs.yml
+# `recheck-legs` job runs. It asserts the pinned prover version (Coq 8.18.0,
+# Lean 4.16.0), and a missing prover FAILS (it never skips). It also fails
+# on any axiom and on an empty audit domain.
+# ---------------------------------------------------------------------------
+
+# Rocq recheck leg: compile, then `Print Assumptions` on every Theorem and Lemma
+proof-check-rocq:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    # Orphan guard: the script gates ONE Rocq file. Any other .v in the proof
+    # tree would be a development no gate checks.
+    leg="$(sed -n 's/^ROCQ_FILE="\(.*\)"$/\1/p' scripts/check-recheck-legs.sh)"
+    [ -n "$leg" ] || { echo "FAIL: no ROCQ_FILE in scripts/check-recheck-legs.sh"; exit 1; }
+    orphans=""
+    for f in $(find verification/proofs -name '*.v' -not -path '*/_build/*' | sort); do
+        [ "$f" = "$leg" ] || orphans="$orphans $f"
+    done
+    if [ -n "$orphans" ]; then
+        echo "FAIL: Rocq files no gate checks (only $leg is gated):$orphans"
+        exit 1
+    fi
+    bash scripts/check-recheck-legs.sh rocq
+
+# Core-Lean recheck leg (no Mathlib): check, then collectAxioms on every declared theorem
+proof-check-lean-core:
+    @bash scripts/check-recheck-legs.sh lean
+
+# Planted controls: Admitted, sorry, a user axiom, an empty domain and a definition drift must each be caught
+proof-check-recheck-controls:
+    @bash scripts/check-recheck-legs.sh controls
+
+# Both §2 recheck legs plus their planted controls (mirrors the proofs.yml recheck-legs job)
+recheck-legs: proof-check-rocq proof-check-lean-core proof-check-recheck-controls
+    @echo "PASS: recheck-legs — Rocq and core-Lean legs green, every planted control caught"
 
 # Scan for dangerous patterns in proof files (believe_me, sorry, Admitted, etc.)
 # COMMENT-AWARE: strips line (-- //) and block ({- -}, /- -/, (* *)) comments before
@@ -125,34 +173,36 @@ proof-scan-dangerous:
     fi
     echo "PASS: No dangerous patterns found in proofs (comments excluded)"
 
-# Show proof status summary
+# Show proof status summary: the four developments by ADR 0005 D4 role, then the PWG census
 proof-status:
     #!/usr/bin/env bash
-    echo "=== Proof Status ==="
+    set -uo pipefail
+    # Source files only: never count a .lake/ or _build/ tree (vendored Mathlib).
+    n() { find "$@" -not -path '*/.lake/*' -not -path '*/_build/*' 2>/dev/null | wc -l; }
+    L=verification/proofs/lean4
+    echo "=== Proof Status (roles: ADR 0005 D4, as amended 2026-11-17) ==="
     echo ""
-    echo "Idris2: $(find verification/proofs/idris2 -name '*.idr' 2>/dev/null | wc -l) files"
-    echo "Lean4:  $(find verification/proofs/lean4 -name '*.lean' 2>/dev/null | wc -l) files"
-    echo "Agda:   $(find verification/proofs/agda -name '*.agda' 2>/dev/null | wc -l) files"
+    # The role goes last: printf pads by bytes, and "§" is two of them.
+    printf '%-13s %5s  %-27s %s\n' \
+      "Development"  "Files" "Gate"                       "Role" \
+      "Agda"         "$(n verification/proofs/agda -name '*.agda')"  "just proof-check-agda"      "normative kernel" \
+      "Rocq"         "$(n verification/proofs/rocq -name '*.v')"      "just proof-check-rocq"      "§2 recheck leg" \
+      "Lean (core)"  "$(n "$L/ratified-order" -name '*.lean')"        "just proof-check-lean-core" "§2 recheck leg, no Mathlib" \
+      "Lean+Mathlib" "$(n "$L/grade-boundary" "$L/grade-factorisation" -name '*.lean')" "just proof-check-lean4" "generator, never a leg" \
+      "Idris2"       "$(n verification/proofs/idris2 -name '*.idr')"  "just proof-check-idris2"    "executable reference, off the PWG ladder"
     echo ""
-    # PROOF-STATUS may live at root, docs/status/ (post-#20), .md or .adoc (post-#23)
-    for candidate in docs/status/PROOF-STATUS.adoc docs/status/PROOF-STATUS.md PROOF-STATUS.adoc PROOF-STATUS.md; do
-        if [ -f "$candidate" ]; then
-            grep -E "^\| \*\*Total\*\*|^\| \*Total\*" "$candidate" 2>/dev/null || echo "(No summary row in $candidate)"
-            exit 0
-        fi
-    done
-    echo "(No PROOF-STATUS file found at root or docs/status/)"
+    echo "Proof Witness Grades are derived from verification/pwg.json (PROOF-POLICY §8.4 rule 2):"
+    bash scripts/pwg-derive.sh --census
 
 # ---------------------------------------------------------------------------
 # Theorem-B integration targets (the grade-algebra ground truth + its Agda
 # metatheory). These supersede the naïve per-file `proof-check-{lean4,agda}`
 # for the two pinned developments, which need lake+Mathlib (Lean) and
 # `--without-K` over an `All.agda` entry point (Agda) rather than a bare
-# per-file check.
+# per-file check. verify-all, the merge gate, also runs the §2 recheck legs
+# (recheck-legs, above), so all four proof developments gate a merge.
 # ---------------------------------------------------------------------------
 
-# Build BOTH Lean packages and axiom-audit every `#print axioms` receipt.
-#
 # The old "audit" re-ran `lake build | grep ... || true` on a warm tree:
 # lake re-emits nothing for up-to-date modules, grep found nothing, and the
 # step passed having audited zero theorems. Now each source is re-elaborated
@@ -161,6 +211,8 @@ proof-status:
 # Classical.choice, Quot.sound} — with a non-vacuity floor (the corpus
 # carries 70+ receipts today; the audit fails below 50 rather than passing
 # on an empty grep).
+#
+# Build BOTH Lean + Mathlib generator packages and axiom-audit every `#print axioms` receipt.
 build-lean:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -218,8 +270,8 @@ build-agda:
 # (Agda postulate-freedom is enforced by --safe in build-agda; a word-grep would
 # false-positive on the honest 'sorry-free' / 'No postulate' comments — do NOT use one.)
 #
-# Build both formal developments + run the Lean source honesty gate (the merge gate).
-verify-all: build-lean build-agda
+# The merge gate: Lean + Mathlib generator, Agda kernel, Rocq + core-Lean recheck legs and controls, Lean honesty gate, PWG record.
+verify-all: build-lean build-agda recheck-legs
     #!/usr/bin/env bash
     set -euo pipefail
     echo "=== verify-all: Lean source honesty gate ==="
@@ -238,7 +290,7 @@ verify-all: build-lean build-agda
     done
     echo "=== verify-all: Proof Witness Grade record ==="
     bash scripts/pwg-check.sh
-    echo "PASS: verify-all — Lean green, no sorryAx and no user axiom; Agda strict-flags green; PWG record derived and in step."
+    echo "PASS: verify-all — Lean + Mathlib green, no sorryAx and no user axiom; Agda strict-flags green; Rocq and core-Lean recheck legs green with every planted control caught; PWG record derived and in step."
 
 # Derive every Proof Witness Grade from verification/pwg.json and show the census.
 # The ledger holds EVIDENCE only; PROOF-POLICY §8.4 rule 2 says the grade is
