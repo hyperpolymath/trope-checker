@@ -282,6 +282,16 @@ pwg_canaries() {
   pwg_case reject "a witness with a tab-joined suffix does not resolve" \
     '(.theorems[] | select(.id == "L1") | .legs.agda.declarations) |= map(. + "\tjunk")' \
     "resolve to no declaration"
+
+  # 8.5.1: a disposition is c, b or debt. The derivation treats anything but c
+  # as inadmissible, so a typo would silently stop a leg counting; the gate must
+  # name it instead. Both FAIL against the gate before these checks existed.
+  pwg_case reject "an axiom disposition outside c|b|debt is rejected" \
+    '.receipts["lean-boundary-c0eb4f1"].axiom_dispositions = {"propext": "C"}' \
+    "must be c|b|debt"
+  pwg_case reject "a disposition for an axiom the receipt does not report is rejected" \
+    '.receipts["lean-boundary-c0eb4f1"].axiom_dispositions = {"funext": "c"}' \
+    "does not report as an axiom"
 }
 
 # --- the top of the ladder: PWG-2ii and PWG-1 are different rungs ----------
@@ -295,8 +305,9 @@ derive_case() {
   local want="$1" label="$2" commit="$3" d got
   d=$(scratch)
   if ! jq -cS --arg c "$commit" '
-      .receipts["rocq-canary"] = (.receipts["lean-boundary-c0eb4f1"] + {commit: $c})
-      | .receipts["lean-boundary-c0eb4f1"].commit = $c
+      (.receipts["lean-boundary-c0eb4f1"]
+         |= (. + {commit: $c, axiom_dispositions: (.axioms | map({key: ., value: "c"}) | from_entries)}))
+      | .receipts["rocq-canary"] = .receipts["lean-boundary-c0eb4f1"]
       | (.theorems[] | select(.id == "L1") | .legs) |=
           (.lean.state = "RECONCILED"
            | .rocq = {declarations: [], receipts: ["rocq-canary"], route: "re-proved", state: "RECONCILED", token: "PROVEN"})' \
@@ -313,6 +324,48 @@ ladder_canaries() {
   derive_case 1 "both legs counting, receipts on the source commit, derive PWG-1 (control)" "$src"
   derive_case 2ii "both legs counting, receipts on another commit, derive PWG-2ii, not PWG-1" \
     "$(printf '%040d' 0 | tr 0 f)"
+}
+
+# --- what a grade stands on: axioms, the invocation, the diversity tag ------
+# Each canary edits the live ledger and reads one DERIVED field of L1. Measured
+# 2026-11-17 against the pre-fix derivation: a leg reporting axioms with no
+# recorded disposition counted (PWG-1); the derived axiom list was the Agda
+# list alone; a second entrypoint with no flags, and an extra option, both kept
+# PWG-3; and any non-null value published +foundation-diverse. The five
+# non-control canaries FAIL against it.
+field_case() {
+  # $1 = expected JSON value, $2 = label, $3 = jq edit of the ledger, $4 = jq read of the L1 row
+  local want="$1" label="$2" edit="$3" read="$4" d got
+  d=$(scratch)
+  if ! jq -cS "$edit" "$ROOT/verification/pwg.json" > "$d/pwg.json" 2>/dev/null; then
+    rm -rf "$d"; bad "$label (the canary's OWN jq transform failed)"; return
+  fi
+  got=$(bash "$ROOT/scripts/pwg-derive.sh" --ledger "$d/pwg.json" --json 2>/dev/null | jq -c ".[] | select(.id == \"L1\") | $read")
+  rm -rf "$d"
+  if [ "$got" = "$want" ]; then ok "$label"; else bad "$label (derived $got, expected $want)"; fi
+}
+standing_canaries() {
+  local both disp
+  # Both recheck legs of L1 made to count, receipts on the source commit.
+  both='(.theorems[] | select(.id == "L1") | .legs) |=
+          (.lean.state = "RECONCILED"
+           | .rocq = {declarations: [], receipts: ["lean-boundary-c0eb4f1"], route: "re-proved", state: "RECONCILED", token: "PROVEN-WITH-AXIOMS"})
+        | .receipts["lean-boundary-c0eb4f1"].commit = .commit'
+  disp='.receipts["lean-boundary-c0eb4f1"] |= (. + {axiom_dispositions: (.axioms | map({key: ., value: "c"}) | from_entries)})'
+  field_case '"3"' "a leg whose receipt reports axioms with no disposition does not count" \
+    "$both" '.pwg'
+  field_case '"3"' "a leg whose receipt reports an axiom of disposition debt does not count" \
+    "$both | $disp | .receipts[\"lean-boundary-c0eb4f1\"].axiom_dispositions[\"Classical.choice\"] = \"debt\"" '.pwg'
+  field_case '["Classical.choice","Quot.sound","propext"]' "the derived axioms include those of every counting leg" \
+    "$both | $disp" '.axioms'
+  field_case '"ungraded"' "an Agda entrypoint without the canonical flags ungrades the row" \
+    '.receipts["agda-c0eb4f1"].invocation = "agda --safe --without-K --cubical-compatible All.agda ; agda Smoke.agda"' '.pwg'
+  field_case '"ungraded"' "an Agda entrypoint carrying an option outside the canonical three ungrades the row" \
+    '.receipts["agda-c0eb4f1"].invocation = "agda --safe --without-K --cubical-compatible --allow-unsolved-metas All.agda"' '.pwg'
+  field_case 'false' "a foundation-diverse field that is not a checked witness earns no tag" \
+    '(.theorems[] | select(.id == "L1")).foundation_diverse_witness = "Isabelle/HOL, planned"' '.foundation_diverse'
+  field_case 'true' "a reconciled, receipted non-DTT witness earns the tag (control)" \
+    '(.theorems[] | select(.id == "L1")).foundation_diverse_witness = {token: "PROVEN", state: "RECONCILED", receipts: ["agda-c0eb4f1"]}' '.foundation_diverse'
 }
 
 # --- the comment stripper every dangerous-construct gate reads through ------
@@ -408,13 +461,13 @@ meta_canary() {
 
 wellknown_canaries; valid_canary; live_canary
 c_weak_crypto; c_plaintext_http; c_secret
-pwg_canaries; ladder_canaries; strip_canaries
+pwg_canaries; ladder_canaries; standing_canaries; strip_canaries
 aspect_canaries
 meta_canary
 echo
 # A canary group that silently stops running used to report "10/10" and exit 0.
 # The count is part of the claim.
-EXPECTED_CASES=34
+EXPECTED_CASES=43
 if [ "$((PASS+FAIL))" -ne "$EXPECTED_CASES" ]; then
   echo "gate falsifiability canaries: $((PASS+FAIL)) cases ran, $EXPECTED_CASES expected — a canary group did not run"
   exit 1
