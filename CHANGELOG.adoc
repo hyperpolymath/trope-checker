@@ -41,6 +41,44 @@ If it may not, the seven rows derive `+PWG-2i+`.
 
 ==== Fixed
 
+* *Eight gate defects from review of #120, and the Hypatia scan pin (2026-11-17).*
++
+_Idris2 comment rules._ The comment stripper read Idris2 files with every
+language's block forms at once. An Idris2 documentation line carrying `+(*+`
+opened a Coq comment that hid a banned construct until a later `+*)+`, and the
+scan passed; a documentation line that only named a banned construct failed.
+The stripper takes `+-v lang=idris+` (`+{- -}+`, `+--+` and `+|||+` only), and the
+aspect scan and the Idris2 step of `+trope-check.yml+` pass it. Without the
+variable its behaviour is unchanged.
++
+_Grade derivation._ No published grade moves. An `+agda+` command behind a
+wrapper (`+env agda …+`) was dropped from the canonical-invocation test and is now
+refused. `+foundation-diverse+` now also requires every receipt of the witness to
+name a checker outside the dependent-type-theory family (§8.3); a reconciled
+Agda receipt used to earn it.
++
+_Canaries that passed for the wrong reason._ The Lean-reconciliation canary
+was rejected on a changed table cell, not a changed grade, because the flipped
+leg had no axiom dispositions and did not count; its fixture now records them,
+and a control reads the derived grade (`+2i+`). The nested-comment canary treated
+a stripper that failed as one that stripped.
++
+_Recheck legs_ (`+scripts/check-recheck-legs.sh+`). The Rocq inventory knew only
+a bare `+Theorem+` or `+Lemma+`, so `+Local Lemma x : False. Admitted.+` was not
+audited; it now takes every statement keyword behind locality words and
+attributes, with a seventh planted control. Each mode compiles, audits and
+checksums one snapshot of the source. Run here on Coq 8.18.0 and Lean 4.16.0:
+both legs 49 of 49, 7 controls caught; the new control is not caught by the
+previous inventory.
++
+_Hypatia scan._ The scan segfaulted on this tree. The cause is the Erlang VM
+on OTP 28.x (`+sweep_off_heap+`, hypatia#1061), which the pinned revision of the
+reusable workflow installed. Both callers move to a revision that installs OTP
+27.3.4.19.
++
+Five new canaries; the four that are not controls fail against the code before
+them. The suite stands at *48/48*.
+
 * *The aspect lane runs, grades stand only on what the policy admits, and four
 status claims are narrowed (2026-11-17).*
 +
@@ -66,8 +104,8 @@ canonical command used to vouch for a second with no flags. (d)
 `+foundation-diverse+` needs an accepted, `+RECONCILED+`, receipted witness, where
 any non-null value used to publish it (§8.3). `+scripts/pwg-check.sh+` rejects a
 disposition outside `+c|b|debt+` and one for an axiom the receipt does not report.
-Canaries 35–43; each fails against the code before it. The suite stands at
-*43/43*.
+Canaries 35–43; each fails against the code before it. The suite stood at
+*43/43* at that point (48/48 after the entry above).
 +
 _Status claims._ `+deceptiveDuals+` is a tuple value and is no longer cited as
 evidence for "exactly three". `+verdictSound+` is stated over a grade-shaped floor,

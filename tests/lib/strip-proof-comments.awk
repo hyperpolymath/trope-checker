@@ -34,7 +34,15 @@
 # nested comment), and the remaining outer close token could then open nothing
 # while the real remainder of the comment leaked into the scan. A depth counter
 # per open token now matches each language's own rule.
-BEGIN { inblk = 0; depth = 0; instr = 0 }
+#
+# LANGUAGE MODE. Run with `-v lang=idris` for Idris2 sources. Idris2 has `{- -}`
+# and `--` only, plus `|||` documentation lines; `(*`, `/-`, `/*` and `//` are
+# ordinary operator text there. Measured 2026-11-17 without the mode: the
+# documentation line `||| Operator example: (*)` opened a Coq comment that hid a
+# `believe_me` on the lines after it until a later `*)`, and the stripper exited
+# 0; and a documentation line that only NAMED a banned construct failed the
+# gate. With no `lang` the behaviour is unchanged (all four block forms).
+BEGIN { inblk = 0; depth = 0; instr = 0; idris = (lang == "idris") }
 {
   line = $0; out = ""; i = 1; n = length(line)
   while (i <= n) {
@@ -50,11 +58,12 @@ BEGIN { inblk = 0; depth = 0; instr = 0 }
       if (c == "\"") { instr = 0; i++; continue }
       i++; continue
     }
-    if (two == "(*") { inblk = 1; depth = 1; nests = 1; open_tok = two; close_tok = "*)"; i += 2; continue }
-    if (two == "/-") { inblk = 1; depth = 1; nests = 1; open_tok = two; close_tok = "-/"; i += 2; continue }
+    if (!idris && two == "(*") { inblk = 1; depth = 1; nests = 1; open_tok = two; close_tok = "*)"; i += 2; continue }
+    if (!idris && two == "/-") { inblk = 1; depth = 1; nests = 1; open_tok = two; close_tok = "-/"; i += 2; continue }
     if (two == "{-") { inblk = 1; depth = 1; nests = 1; open_tok = two; close_tok = "-}"; i += 2; continue }
-    if (two == "/*") { inblk = 1; depth = 1; nests = 0; open_tok = two; close_tok = "*/"; i += 2; continue }
-    if (two == "--" || two == "//") { break }
+    if (!idris && two == "/*") { inblk = 1; depth = 1; nests = 0; open_tok = two; close_tok = "*/"; i += 2; continue }
+    if (two == "--" || (!idris && two == "//")) { break }
+    if (idris && substr(line, i, 3) == "|||") { break }
     c = substr(line, i, 1)
     if (c == "'" && substr(line, i - 1, 1) !~ /[A-Za-z0-9_'?!]/) {
       rest = substr(line, i)

@@ -72,11 +72,20 @@ DERIVE='
   # so one canonical command vouched for a second command that carried none of
   # them, and any further option rode along unseen. Measured 2026-11-17: with
   # the second entrypoint reduced to "agda Smoke.agda" the census did not move.
+  #
+  # A command is an Agda command when ANY of its words is agda or a path ending
+  # in /agda, and such a command must begin with the bare word agda. The earlier
+  # filter kept only commands whose first word was agda, so a wrapped entrypoint
+  # ("env agda Smoke.agda", "nice agda ...", "x && agda ...") was dropped from
+  # the test and rode along behind one canonical command. A wrapper is refused,
+  # not inspected: the canonical form in 2.1 has none.
   def canonical_agda:
-    [ split(";")[] | [splits("[[:space:]]+")] | map(select(length > 0)) | select(length > 0 and .[0] == "agda") ]
+    [ split(";")[] | [splits("[[:space:]]+")] | map(select(length > 0))
+      | select(any(.[]; test("(\\A|/)agda\\z"))) ]
     | length > 0
       and all(.[];
-        (.[1:] | map(select(startswith("-"))) | sort) == ["--cubical-compatible", "--safe", "--without-K"]
+        .[0] == "agda"
+        and (.[1:] | map(select(startswith("-"))) | sort) == ["--cubical-compatible", "--safe", "--without-K"]
         and (.[1:] | map(select(startswith("-") | not)) | length) == 1);
 
   # 8.4 rule 6 and 8.5.1: a witness whose current receipt reports an axiom
@@ -117,11 +126,18 @@ DERIVE='
   # is recorded as in 2.2. A witness is {token, state, receipts}; it earns the
   # tag on the same terms a leg counts. The earlier test was "the field is not
   # null", so any value at all -- a note, a plan -- published the tag.
+  #
+  # 8.3 also says what the witness is a witness IN: a foundation outside the
+  # dependent-type-theory family, which it names as Agda, Rocq and Lean. Every
+  # receipt of the witness must therefore name a checker, and none may be one of
+  # those three. Without this a reconciled Agda receipt earned the tag.
+  def dtt_checker: ascii_downcase | test("\\A(agda|lean|lean4|lake|coq|coqc|rocq)\\z");
   def diverse($w; $receipts):
     ($w | type) == "object"
     and (($w.token // "") | accepted)
     and $w.state == "RECONCILED"
     and (($w.receipts // []) | length > 0)
+    and all($w.receipts[] | $receipts[.]; ((.checker // "") | length > 0) and ((.checker // "") | dtt_checker | not))
     and usable_receipt([$w.receipts[] | $receipts[.]])
     and axioms_admissible([$w.receipts[] | $receipts[.]]);
 

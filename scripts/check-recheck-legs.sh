@@ -56,7 +56,11 @@ need_lean() {
 rocq_audit() {
   local src="$1" dir base names expect got out rc
   dir="$(mktemp -d)"; base="AuditRatifiedOrder"
-  names="$(sed -n -E "s/^[[:space:]]*(Theorem|Lemma)[[:space:]]+([A-Za-z_][A-Za-z0-9_']*).*/\2/p" "$src")"
+  # Every statement keyword Coq 8.18 has, behind any run of locality words or
+  # #[...] attributes. The earlier pattern knew only a bare Theorem or Lemma,
+  # so "Local Lemma x : False. Admitted." was left out of the inventory and the
+  # audit passed on the declarations it did list.
+  names="$(sed -n -E "s/^[[:space:]]*((Local|Global|Program|#\[[^]]*\])[[:space:]]+)*(Theorem|Lemma|Corollary|Proposition|Fact|Remark|Property)[[:space:]]+([A-Za-z_][A-Za-z0-9_']*).*/\4/p" "$src")"
   expect="$(grep -c . <<<"$names" || true)"
   if [ "$expect" -eq 0 ]; then echo "rocq audit: no Theorem or Lemma declared (empty domain)"; rm -rf "$dir"; return 1; fi
   { cat "$src"; echo; while IFS= read -r n; do echo "Print Assumptions $n."; done <<<"$names"; } >"$dir/$base.v"
@@ -117,18 +121,24 @@ case "$MODE" in
   rocq)
     need_rocq
     echo "=== Rocq recheck leg: $ROCQ_FILE ($(coqc --version | head -1)) ==="
-    dir="$(mktemp -d)"; cp "$ROCQ_FILE" "$dir/"
-    ( cd "$dir" && coqc "$(basename "$ROCQ_FILE")" ) || { rm -rf "$dir"; fail "coqc rejects $ROCQ_FILE"; }
-    rm -rf "$dir"
-    rocq_audit "$ROCQ_FILE" || fail "Rocq axiom audit"
-    echo "sha256 $(sha256sum "$ROCQ_FILE" | cut -d' ' -f1)  $ROCQ_FILE"
+    # One snapshot: the compile, the audit and the checksum all read it, so the
+    # checksum printed beside PASS is of the bytes that were checked even if the
+    # working file is saved meanwhile.
+    dir="$(mktemp -d)"; trap 'rm -rf "$dir"' EXIT
+    snap="$dir/$(basename "$ROCQ_FILE")"; cp "$ROCQ_FILE" "$snap"
+    ( cd "$dir" && coqc "$(basename "$ROCQ_FILE")" ) || fail "coqc rejects $ROCQ_FILE"
+    rocq_audit "$snap" || fail "Rocq axiom audit"
+    echo "sha256 $(sha256sum "$snap" | cut -d' ' -f1)  $ROCQ_FILE"
     echo "PASS: Rocq recheck leg"
     ;;
   lean)
     need_lean
     echo "=== Lean recheck leg: $LEAN_FILE ($(lean --version | head -1)) ==="
-    lean_check "$LEAN_FILE" || fail "Lean check or axiom audit"
-    echo "sha256 $(sha256sum "$LEAN_FILE" | cut -d' ' -f1)  $LEAN_FILE"
+    # One snapshot, as for Rocq above.
+    dir="$(mktemp -d)"; trap 'rm -rf "$dir"' EXIT
+    snap="$dir/$(basename "$LEAN_FILE")"; cp "$LEAN_FILE" "$snap"
+    lean_check "$snap" || fail "Lean check or axiom audit"
+    echo "sha256 $(sha256sum "$snap" | cut -d' ' -f1)  $LEAN_FILE"
     echo "PASS: Lean recheck leg"
     ;;
   controls)
@@ -144,6 +154,9 @@ case "$MODE" in
     sed '0,/^Proof\. intros \[\]; reflexivity\. Qed\./s//Proof. Admitted./' "$ROCQ_FILE" >"$t/A.v"
     grep -q 'Admitted\.' "$t/A.v" || fail "control setup: no Admitted planted"
     expect_fail "Rocq Admitted proof" rocq_audit "$t/A.v"
+    # Rocq: an Admitted declaration behind a locality word must be inventoried.
+    { cat "$ROCQ_FILE"; printf '\nLocal Lemma planted_hidden : False. Admitted.\n'; } >"$t/L.v"
+    expect_fail "Rocq Local Lemma left Admitted" rocq_audit "$t/L.v"
     # Rocq: a one-clause drift in a restated definition. withheld ▷b intact
     # = intact keeps every restated theorem TRUE (▷b stays monotone), so only
     # the bridge can see it; the failure must be at bridge_bcomp.
@@ -172,7 +185,7 @@ case "$MODE" in
     printf 'def onlyADef : Nat := 1\n' >"$t/E.lean"
     expect_fail "Lean empty audit domain" lean_check "$t/E.lean"
     [ "$bad" -eq 0 ] || fail "a planted defect was not caught"
-    echo "PASS: every planted defect was caught (6 controls)"
+    echo "PASS: every planted defect was caught (7 controls)"
     ;;
   *) echo "usage: $(basename "$0") rocq|lean|controls" >&2; exit 2 ;;
 esac

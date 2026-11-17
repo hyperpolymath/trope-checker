@@ -80,7 +80,7 @@ IDRIS_COUNT_LOG="${TMPDIR:-/tmp}/aspect-idris-count.$$"
 DANGEROUS_IDRIS=$(
   while IFS= read -r f; do
     printf '%s\n' "$f" >> "$IDRIS_COUNT_LOG"
-    if ! stripped=$(awk -f tests/lib/strip-proof-comments.awk "$f"); then
+    if ! stripped=$(awk -v lang=idris -f tests/lib/strip-proof-comments.awk "$f"); then
       printf '%s\n' "$f" >> "$IDRIS_STRIP_LOG"
       continue
     fi

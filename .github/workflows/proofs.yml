@@ -215,7 +215,7 @@ jobs:
   # (PROOF-POLICY §2: "No Mathlib, in Lean or elsewhere"). The gate is
   # scripts/check-recheck-legs.sh, which runs the same way locally: pinned
   # prover version asserted, compile, an axiom audit that fails on any axiom
-  # AND on an empty audit domain, then six planted controls that must each be
+  # AND on an empty audit domain, then seven planted controls that must each be
   # caught (Admitted, sorry, a user axiom, an empty domain, and a definition
   # drift that only the TB.Bridge tables can see).
   # TOOLCHAIN: Ubuntu 24.04's coq package is Coq 8.18.0 (the version mathesis

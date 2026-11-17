@@ -232,7 +232,8 @@ pwg_canaries() {
   #    and it starts to count, lifting that obligation to PWG-2i. The published
   #    table must stop matching.
   pwg_case reject "flipping a Lean leg to RECONCILED changes the grade and is rejected" \
-    '(.theorems[] | select(.id == "L1") | .legs.lean.state) |= "RECONCILED"' \
+    '(.theorems[] | select(.id == "L1") | .legs.lean.state) |= "RECONCILED"
+     | .receipts["lean-boundary-c0eb4f1"] |= (. + {axiom_dispositions: (.axioms | map({key: ., value: "c"}) | from_entries)})' \
     "not the derived one"
   # R11. A grade may not outlive the run that earned it. Measured against main
   # 0dceab6 these two PASSED the gate: the derivation read .state but never
@@ -364,8 +365,15 @@ standing_canaries() {
     '.receipts["agda-c0eb4f1"].invocation = "agda --safe --without-K --cubical-compatible --allow-unsolved-metas All.agda"' '.pwg'
   field_case 'false' "a foundation-diverse field that is not a checked witness earns no tag" \
     '(.theorems[] | select(.id == "L1")).foundation_diverse_witness = "Isabelle/HOL, planned"' '.foundation_diverse'
-  field_case 'true' "a reconciled, receipted non-DTT witness earns the tag (control)" \
+  field_case 'false' "a reconciled, receipted witness checked by a DTT prover earns no tag" \
     '(.theorems[] | select(.id == "L1")).foundation_diverse_witness = {token: "PROVEN", state: "RECONCILED", receipts: ["agda-c0eb4f1"]}' '.foundation_diverse'
+  field_case 'true' "a reconciled, receipted non-DTT witness earns the tag (control)" \
+    '.receipts["isabelle-fixture"] = (.receipts["agda-c0eb4f1"] + {checker: "isabelle"})
+     | (.theorems[] | select(.id == "L1")).foundation_diverse_witness = {token: "PROVEN", state: "RECONCILED", receipts: ["isabelle-fixture"]}' '.foundation_diverse'
+  field_case '"ungraded"' "an Agda entrypoint behind a wrapper command ungrades the row" \
+    '.receipts["agda-c0eb4f1"].invocation = "agda --safe --without-K --cubical-compatible All.agda ; env agda Smoke.agda"' '.pwg'
+  field_case '"2i"' "a reconciled Lean leg whose axioms all have disposition c lifts the grade (control for canary 7)" \
+    "(.theorems[] | select(.id == \"L1\") | .legs.lean.state) |= \"RECONCILED\" | $disp" '.pwg'
 }
 
 # --- the comment stripper every dangerous-construct gate reads through ------
@@ -376,11 +384,15 @@ standing_canaries() {
 # the pre-fix stripper. The fixture words are assembled at runtime (see the
 # header: a literal would trip the very scanners these canaries guard).
 strip_canaries() {
-  local d strip="$ROOT/tests/lib/strip-proof-comments.awk" w
+  local d out strip="$ROOT/tests/lib/strip-proof-comments.awk" w
   w="so""rry"
   d=$(scratch)
   printf '/- outer /- inner -/ %s stays inside -/\ntheorem t : True := trivial\n' "$w" > "$d/nested.lean"
-  if awk -f "$strip" "$d/nested.lean" 2>/dev/null | grep -qw "$w"; then
+  # The stripper must SUCCEED on this closed comment before its output means
+  # anything: a stripper that rejected it would also print no forbidden word.
+  if ! out=$(awk -f "$strip" "$d/nested.lean" 2>/dev/null); then
+    bad "the stripper rejects a closed NESTED Lean comment"
+  elif printf '%s\n' "$out" | grep -qw "$w"; then
     bad "a word inside a NESTED Lean comment leaks into the scan"
   else
     ok "a word inside a NESTED Lean comment is stripped"
@@ -416,6 +428,26 @@ aspect_canaries() {
     bad "a banned Idris2 construct outside src/interface/Abi, in a path containing 'test', passes the aspect scan"
   else
     ok "a banned Idris2 construct in any Idris2 source fails the aspect scan"
+  fi
+  rm -rf "$d"
+  # Idris2 comment rules, not Coq ones. The banned word sits between two
+  # documentation lines that carry a balanced Coq-style pair; read with Coq
+  # rules, the pair hides it and the scan passes.
+  d=$(scratch); mkdir -p "$d/src/idris2/Checker"
+  printf -- '-- SPDX-License-Identifier: MPL-2.0\nmodule Checker.Hidden\n||| Operator example: (*)\nbad : a -> b\nbad = %s\n||| End operator example: *)\nok : ()\nok = ()\n' "$w" > "$d/src/idris2/Checker/Hidden.idr"
+  if aspect_case "$d"; then
+    bad "a banned Idris2 construct between documentation lines carrying a Coq-style comment pair passes the aspect scan"
+  else
+    ok "Coq-style delimiters in Idris2 documentation do not hide a banned construct"
+  fi
+  rm -rf "$d"
+  # A documentation line that only NAMES a banned construct is not a use of it.
+  d=$(scratch); mkdir -p "$d/src/idris2/Checker"
+  printf -- '-- SPDX-License-Identifier: MPL-2.0\nmodule Checker.Documented\n||| This function does not use %s.\nok : ()\nok = ()\n' "$w" > "$d/src/idris2/Checker/Documented.idr"
+  if aspect_case "$d"; then
+    ok "an Idris2 documentation line naming a banned construct does not fail the aspect scan"
+  else
+    bad "an Idris2 documentation line that only names a banned construct fails the aspect scan"
   fi
   rm -rf "$d"
   d=$(scratch); mkdir -p "$d/src"
@@ -467,7 +499,7 @@ meta_canary
 echo
 # A canary group that silently stops running used to report "10/10" and exit 0.
 # The count is part of the claim.
-EXPECTED_CASES=43
+EXPECTED_CASES=48
 if [ "$((PASS+FAIL))" -ne "$EXPECTED_CASES" ]; then
   echo "gate falsifiability canaries: $((PASS+FAIL)) cases ran, $EXPECTED_CASES expected — a canary group did not run"
   exit 1
