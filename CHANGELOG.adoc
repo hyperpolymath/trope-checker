@@ -35,9 +35,9 @@ Ledger: `+L4-bond-merge+`, `+L4-lifting+`, `+A2-chain+` and `+retention-order+` 
 Lean legs, with receipts from CI run 44006871652 on `+d5234b1+`. The census moves
 from 28 obligations (`+PWG-3+` 18, ungraded 10) to 28 (`+PWG-3+` 15, `+PWG-2ii+` 7,
 ungraded 6). The derivation does not reach `+PWG-1+`, because the receipts are not at
-the ledger's source commit. Whether the core-Lean leg may count, given the
-2026-11-09 ruling that Lean is a generator and not a leg, is put to the owner.
-If it may not, the seven rows derive `+PWG-2i+`.
+the ledger's source commit. The core-Lean leg counts by owner ruling of 2026-11-17,
+which ADR 0005 records in its amendment: the 2026-11-09 ruling ("Lean is a
+generator, not a leg") covers the Mathlib development only.
 
 ==== Fixed
 
