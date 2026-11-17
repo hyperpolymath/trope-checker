@@ -84,7 +84,13 @@ badr=$(jq -r '
       (if ($v.result == "pass" or $v.result == "fail") then empty else "\($k): result must be pass|fail (8.2 -- the derivation reads it; an unrecognised value must not be treated as a pass)" end),
       (if ($v.evidence // "" | length) > 0 then empty else "\($k): no evidence pointer" end),
       (if ($v.state // "" | test("\\A(current|superseded|regressed)\\z")) then empty else "\($k): state must be current|superseded|regressed (8.4 rule 5)" end),
-      (if ($v | has("axioms")) then empty else "\($k): no axioms list (8.4 rule 6 — axioms travel with the grade)" end) ]
+      (if ($v | has("axioms")) then empty else "\($k): no axioms list (8.4 rule 6 — axioms travel with the grade)" end),
+      (($v.axiom_dispositions // {}) | to_entries[]
+        | select((.value | IN("c", "b", "debt")) | not)
+        | "\($k): disposition of \(.key) must be c|b|debt (8.5.1)"),
+      (($v.axiom_dispositions // {}) | keys[] as $n
+        | select((($v.axioms // []) | index($n)) == null)
+        | "\($k): disposition recorded for \($n), which the receipt does not report as an axiom") ]
   | .[]' "$LEDGER") \
   || die "rule 3 (receipt completeness) could not be evaluated over this ledger: malformed theorem/leg/receipt shape"
 [ -n "$badr" ] && die "incomplete receipt(s):"$'\n'"$badr"

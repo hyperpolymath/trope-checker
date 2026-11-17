@@ -56,8 +56,8 @@ toc::[]
 | Idris2 `Trope.Soundness.{fateDroppedLtePredicated,fatePredicatedNotLteDropped}`; Agda `TB.Order.{fateDroppedLtePredicated,fatePredicatedNotLteDropped}`.
 
 | Veridicality Derivation
-| Exactly three deceptive duals, one per coordinate kind (`Falsified`, `Misbound`, `Conflated`), each the unique deceptive inhabitant of its coordinate.
-| Idris2 `Trope.Veridicality.{fateDeceptiveUnique,bondDeceptiveUnique,mergeDeceptiveUnique,deceptiveDuals}`; Agda `TB.Honest.{fateDeceptiveUnique,bondDeceptiveUnique,mergeDeceptiveUnique,deceptiveDuals}`.
+| Exactly three deceptive duals, one per coordinate kind (`Falsified`, `Misbound`, `Conflated`), each the unique deceptive inhabitant of its coordinate. The uniqueness of each is a theorem. "Exactly three" is not stated as one proposition: it follows from the three uniqueness lemmas and the construction of `Grade` as their product. `deceptiveDuals` in both provers is a tuple value, states no proposition, and is not cited as evidence.
+| Idris2 `Trope.Veridicality.{fateDeceptiveUnique,bondDeceptiveUnique,mergeDeceptiveUnique}`; Agda `TB.Honest.{fateDeceptiveUnique,bondDeceptiveUnique,mergeDeceptiveUnique}`.
 
 | Honest Generation
 | The five atoms `attenuate`, `predicate`, `drop`, `sever`, `fuse` with stem:[\varepsilon] generate exactly the honest fragment of each coordinate and never produce a deceptive dual; honesty is closed under stem:[\triangleright].
@@ -79,7 +79,7 @@ toc::[]
 
 | Tier-2 membership, exhaustive
 | In the unquotiented model, every honest-but-lossy element is individually witnessed non-cancellative (finite attenuation regains cancellation on A3 normal forms), `Withheld` and `Fused` included; the per-element witnesses feed the iff.
-| Lean `TierTwoComplete.lean`: `Bond.withheld_honest_not_cancel`, `Merge.fused_honest_not_cancel`, `Fate.atten_not_cancel`, the `*.leftCancelWitness` family, `Grade.grade_leftCancel_iff`. Agda states six of the per-element witnesses and the positive right-cancellation, all in `TB.Tier`: `unknown-not-cancel`, `total-honest-not-cancel`, `falsified-not-cancel`, `dropped-honest-not-cancel`, `predicated-honest-not-cancel`, `severed-honest-not-cancel`, `Q-cancelʳ`. What Agda does *not* state is the exhaustive step: there is no Agda counterpart of `grade_leftCancel_iff`, and no Agda witness on the merge coordinate, which is why the ledger's Agda token for this row is `OPEN` rather than the row being Lean-only.
+| Lean `TierTwoComplete.lean`: `Bond.withheld_honest_not_cancel`, `Merge.fused_honest_not_cancel`, `Fate.atten_not_cancel`, the `*.leftCancelWitness` family (`FateA.leftCancelWitness` on the ratified fate), and the exhaustive iff, `GradeR.gradeR_leftCancel_iff` on the ratified carrier (`Grade.grade_leftCancel_iff` is the same statement over the historical pre-ratification carrier, kept as history). Agda states six of the per-element witnesses and the positive right-cancellation, all in `TB.Tier`: `unknown-not-cancel`, `total-honest-not-cancel`, `falsified-not-cancel`, `dropped-honest-not-cancel`, `predicated-honest-not-cancel`, `severed-honest-not-cancel`, `Q-cancelʳ`. What Agda does *not* state is the exhaustive step: there is no Agda counterpart of `grade_leftCancel_iff`, and no Agda witness on the merge coordinate, which is why the ledger's Agda token for this row is `OPEN` rather than the row being Lean-only.
 
 | C3 (partition; tier closure is not a homomorphism)
 | `Dropped`, `Total`, `Severed`, `Predicated`, `Withheld`, `Fused` are honest non-cancellative elements; `Falsified`, `Misbound`, `Conflated`, `Unknown` are the deceptive ones. `tierOf (g ▷ h) = tierOf g ⊓ tierOf h` is false on fate; tier preservation is closure.
@@ -124,7 +124,7 @@ toc::[]
 | Idris2 `Trope.Soundness.subSound`.
 
 | Verdict soundness (corollary)
-| stem:[\mathrm{floor}(U) \sqsubseteq g \wedge g \sqsubseteq \rho \Rightarrow \mathrm{floor}(U) \sqsubseteq \rho].
+| stem:[f \sqsubseteq g \wedge g \sqsubseteq \rho \Rightarrow f \sqsubseteq \rho] for a *grade-shaped* floor stem:[f], which is how the source states it. It is not a statement about the use-model floor stem:[\mathrm{floor}(U)]: the shipped checker's floor is a partial per-coordinate demand, a different type decided by a different predicate, and no lemma connects the two (see _Modelling notes_).
 | Idris2 `Trope.Soundness.verdictSound`.
 
 | Grade soundness, β/let core

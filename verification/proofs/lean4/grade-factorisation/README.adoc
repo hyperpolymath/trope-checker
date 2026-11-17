@@ -12,9 +12,14 @@ sharing that build through a symlinked `.lake/packages`.
 
 == Verdict
 
-*(B) FACTORS but VERIDICALITY-BLIND.* A nontrivial monoid homomorphism `π : Grade → Δ`
-onto the commutative fidelity carrier exists, but *every* such map is forced to identify
-the honest `dropped` with the deceptive `falsified`. Tropical captures the *fidelity*
+*(B) FACTORS but VERIDICALITY-BLIND, on the pre-ratification carrier.* A nontrivial
+monoid homomorphism `π : Grade → Δ` onto the commutative fidelity carrier exists, but on
+that carrier *every* such map is forced to identify the honest `dropped` with the
+deceptive `falsified` (`forced_collapse_general`, stated over the pre-ratification
+`Fate.comp`). On the *ratified* carrier (ADR 0004, R-2026-07-07) this no longer holds:
+`GradeFactorisationR.lean` exhibits a homomorphism that separates them (`phiR_sighted`,
+`piR_sighted`), verdict *(B′) FACTORS AND VERIDICALITY-SIGHTED*. The rest of this
+paragraph describes the pre-ratification result. Tropical captures the *fidelity*
 sub-grade only; specifically the *fate-axis* honest/deceptive distinction needs separate,
 non-tropical handling, while the commutative `Bond`/`Merge` deceptions stay tropically
 separable. The blindness is co-located exactly with the non-commutativity. See
@@ -32,6 +37,10 @@ addressed; that stays parked behind an operational model (CO-1). See the firelin
                               (D2), nontriviality (D3), the forced-collapse impossibility
                               (D4), complement/F2 confinement (D5), falsifier harness
                               (D6), and an axiom audit.
+| `GradeFactorisationR.lean` | The re-run on the ratified carrier (R-2026-07-07): the
+                              sighted homomorphism (`phiR_sighted`, `piR_sighted`) and
+                              the naive-candidate breaker (`phiId_not_hom`). Built and
+                              asserted by `just falsify`.
 | `REPORT.adoc`             | The three-way verdict, witnesses, and the necessary-not-
                               sufficient guard verbatim.
 | `justfile`                | `just build`, `just falsify`, `just axioms`, `just verdict`.

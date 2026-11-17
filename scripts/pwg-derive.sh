@@ -65,6 +65,28 @@ DERIVE='
     | map(select(.state == "current" and .result == "pass" and (.commit | test("\\A[0-9a-f]{40}\\z"))))
     | length > 0;
 
+  # 2.1: every Agda entrypoint in the recorded invocation is the canonical one.
+  # The invocation may join several commands with ";". Each command that runs
+  # agda must be exactly: agda, the three flags as whole words, and one module.
+  # The earlier test searched the whole string for the three flag substrings,
+  # so one canonical command vouched for a second command that carried none of
+  # them, and any further option rode along unseen. Measured 2026-11-17: with
+  # the second entrypoint reduced to "agda Smoke.agda" the census did not move.
+  def canonical_agda:
+    [ split(";")[] | [splits("[[:space:]]+")] | map(select(length > 0)) | select(length > 0 and .[0] == "agda") ]
+    | length > 0
+      and all(.[];
+        (.[1:] | map(select(startswith("-"))) | sort) == ["--cubical-compatible", "--safe", "--without-K"]
+        and (.[1:] | map(select(startswith("-") | not)) | length) == 1);
+
+  # 8.4 rule 6 and 8.5.1: a witness whose current receipt reports an axiom
+  # without disposition c does not count. Dispositions are recorded on the
+  # receipt as axiom_dispositions {name: c|b|debt}; an axiom with none recorded
+  # is not admissible (fail closed). A receipt reporting no axiom is admissible.
+  def axioms_admissible($rs): $rs
+    | map(select(.state == "current"))
+    | all(.[]; . as $r | all(($r.axioms // [])[]; ($r.axiom_dispositions // {})[.] == "c"));
+
   # 8.2 PWG-3 additionally requires the receipt to record the checker version,
   # the standard-library pin, the flags actually in force, and the import cone (1.1).
   def pwg3_receipt($rs): $rs
@@ -75,9 +97,7 @@ DERIVE='
         and (.checker_version // "" | length > 0)
         and (.stdlib_pin // "" | length > 0)
         and (.import_cone // "" | length > 0)
-        and (.invocation // "" | test("--safe"))
-        and (.invocation // "" | test("--without-K"))
-        and (.invocation // "" | test("--cubical-compatible"))
+        and (.invocation // "" | canonical_agda)
       ))
     | length > 0;
 
@@ -90,7 +110,20 @@ DERIVE='
     ($leg.token | accepted)
     and $leg.state == "RECONCILED"
     and ($leg.route != "waived" and $leg.route != "unavailable")
-    and usable_receipt([$leg.receipts[] | $receipts[.]]);
+    and usable_receipt([$leg.receipts[] | $receipts[.]])
+    and axioms_admissible([$leg.receipts[] | $receipts[.]]);
+
+  # 8.3: the tag needs a kernel-checked witness whose statement correspondence
+  # is recorded as in 2.2. A witness is {token, state, receipts}; it earns the
+  # tag on the same terms a leg counts. The earlier test was "the field is not
+  # null", so any value at all -- a note, a plan -- published the tag.
+  def diverse($w; $receipts):
+    ($w | type) == "object"
+    and (($w.token // "") | accepted)
+    and $w.state == "RECONCILED"
+    and (($w.receipts // []) | length > 0)
+    and usable_receipt([$w.receipts[] | $receipts[.]])
+    and axioms_admissible([$w.receipts[] | $receipts[.]]);
 
   # 8.2 PWG-1 / 8.5.2: a receipt DESCRIBES the source commit when its commit is
   # the source commit of the ledger. (8.5.2 also admits an echo chain to it; this
@@ -109,7 +142,7 @@ DERIVE='
       | ($t.legs.rocq) as $c
       | ($t.legs.lean) as $l
       | ([$a.receipts[] | $R[.]]) as $ar
-      | (($a.token | accepted) and $a.state == "AGDA-VERIFIED" and pwg3_receipt($ar)) as $agda_ok
+      | (($a.token | accepted) and $a.state == "AGDA-VERIFIED" and pwg3_receipt($ar) and axioms_admissible($ar)) as $agda_ok
       | (if counts($c; $R) then 1 else 0 end) as $nc
       | (if counts($l; $R) then 1 else 0 end) as $nl
       | ($nc + $nl) as $legs
@@ -135,10 +168,15 @@ DERIVE='
           kind: $t.kind,
           pwg: $grade,
           # 8.3: a non-DTT witness is a TAG beside the grade, never a leg.
-          foundation_diverse: (($t.foundation_diverse_witness // null) != null),
+          foundation_diverse: diverse($t.foundation_diverse_witness // null; $R),
           counting_legs: $legs,
           agda_receipt_complete: $agda_ok,
-          axioms: ([ $ar[]? | .axioms[]? ] | unique),
+          # 8.4 rule 6: the axioms of EVERY witness the grade stands on, not of the
+          # Agda leg alone. A counting Rocq or Lean leg used to contribute its
+          # count and none of its axioms.
+          axioms: ([ ($ar[]? | .axioms[]?),
+                     (if counts($c; $R) then ($c.receipts[] | $R[.] | .axioms[]?) else empty end),
+                     (if counts($l; $R) then ($l.receipts[] | $R[.] | .axioms[]?) else empty end) ] | unique),
           legs: {
             agda: {route: $a.route, token: $a.token, state: $a.state, counts: (counts($a; $R))},
             rocq: {route: $c.route, token: $c.token, state: $c.state, counts: (counts($c; $R))},
