@@ -8,6 +8,37 @@ https://semver.org/spec/v2.0.0.html[Semantic Versioning].
 
 === [Unreleased]
 
+==== Added
+
+* *L4 in full and A2 (Fate is a chain) proved, and rechecked in Rocq and
+core Lean (2026-11-17).*
++
+The owner ruled to prove, not narrow. `+TB/Monotone.agda+` proves bond and merge
+monotonicity and the lifting to the grade composition (one argument at a time, and
+both at once as `+▷-mono+`). `+TB/OrderLaws.agda+` proves that `+fateLte+` is
+transitive, antisymmetric and total (`+fate-isTotalOrder : IsTotalOrder _≡_ _≤F_+`),
+and that `+⊑+` is a decidable preorder. No existing definition changed.
++
+The repository's first Rocq development, `+verification/proofs/rocq/RatifiedOrder.v+`
+(Coq 8.18.0, no `+Require+`), and a core-Lean file with no import,
+`+verification/proofs/lean4/ratified-order/RatifiedOrder.lean+` (Lean 4.16.0, no
+Mathlib), re-prove all of it. `+TB/Bridge.agda+` pins six restated definitions to
+the Agda on a fixed sample (exhaustive for Bond and Merge), and each leg proves the
+same six literals. A planted one-clause drift that keeps every theorem true is
+caught only by the bridge, in both legs. `+scripts/check-recheck-legs.sh+` is the
+gate. It asserts the prover version, audits every declaration for axioms, fails
+on an empty audit, and runs six planted controls. CI runs it as the new
+`+recheck-legs+` job.
++
+Ledger: `+L4-bond-merge+`, `+L4-lifting+`, `+A2-chain+` and `+retention-order+` gain
+`+PROVEN+` Agda legs. All seven L4/A2/retention rows gain `+RECONCILED+` Rocq and
+Lean legs, with receipts from CI run 44006871652 on `+d5234b1+`. The census moves
+from 28 obligations (`+PWG-3+` 18, ungraded 10) to 28 (`+PWG-3+` 15, `+PWG-2ii+` 7,
+ungraded 6). The derivation does not reach `+PWG-1+`, because the receipts are not at
+the ledger's source commit. Whether the core-Lean leg may count, given the
+2026-11-09 ruling that Lean is a generator and not a leg, is put to the owner.
+If it may not, the seven rows derive `+PWG-2i+`.
+
 ==== Fixed
 
 * *The aspect lane runs, grades stand only on what the policy admits, and four

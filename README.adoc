@@ -171,15 +171,16 @@ Idris2 does not state L3, L6, conicality or the cancellation boundary; L5 is
 Agda-only. Where Idris2 does restate a result, PROOF-POLICY §8.1 keeps it off the
 Proof Witness Grade ladder as an engineering restatement — the ledger records it
 under `reference`, never as a leg, so it can neither raise nor lower a grade.
-And *L4 in full* is proved by none of the three: Agda covers the fate coordinate
-and the fidelity dimension, Lean covers fate, and bond and merge have an Idris2
-restatement only. Idris2 establishes coordinate-level monotonicity only; the
-lifting for `gradeCompose` is mechanised in no prover. The ledger therefore
-grades L4 as four obligations (`L4-fate` and `L4-fidelity` at `PWG-3`;
-`L4-bond-merge` and `L4-lifting` ungraded), and A2 as two (`A2-directions` at
-`PWG-3`; `A2-chain` ungraded, because no ladder prover states the whole chain:
-Lean has totality and reflexivity, Idris2 transitivity off the ladder, and
-antisymmetry is cited nowhere). The atom
+*L4 in full* and *A2* (Fate is a chain) are proved in Agda since 2026-11-17.
+`TB.Monotone` adds the bond and merge coordinates and the lifting to
+`gradeCompose`, and `TB.OrderLaws` adds transitivity, antisymmetry and totality.
+Both are rechecked in Rocq (`verification/proofs/rocq/`) and in core Lean with no
+Mathlib (`verification/proofs/lean4/ratified-order/`). The ledger grades L4 as
+four obligations and A2 as two (owner ruling 2026-11-16). All six, and the
+retention order (a decidable preorder), derive `PWG-2ii`. Whether the core-Lean
+leg may count is put to the owner (PROOF-STATUS, *Recheck legs of the order
+laws and L4*). Completeness of the chain, which spec §7 also uses, is proved in
+no prover. The atom
 factorisation (O1's carrier half, proved on the ratified `GradeR` in
 `EffectAtomsRatified.lean`; O1-coord stays open) and the tropical factorisations
 — pre-ratification `GradeFactorisation.lean` veridicality-blind, ratified
