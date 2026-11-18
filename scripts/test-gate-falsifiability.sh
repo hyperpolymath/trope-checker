@@ -232,11 +232,16 @@ pwg_canaries() {
 # it for being invalid JSON rather than for the planted drift, and the canary passes
 # without ever exercising its target. This plants exactly that and asserts the suite
 # reports FAILURE. Measured: this canary FAILS against the pre-fix harness.
+# Function-local counters isolate the probe from the suite totals.
+meta_probe() {
+  local PASS=0 FAIL=0
+  pwg_case reject "meta-probe (expected to be reported as FAILING)" '.theorems[0].pwg = ' >/dev/null 2>&1
+  printf 'FAILCOUNT=%s' "$FAIL"
+}
+
 meta_canary() {
   local out
-  out=$( PASS=0; FAIL=0
-         pwg_case reject "meta-probe (expected to be reported as FAILING)" '.theorems[0].pwg = ' >/dev/null 2>&1
-         printf 'FAILCOUNT=%s' "$FAIL" )
+  out=$(meta_probe)
   if printf '%s' "$out" | grep -q 'FAILCOUNT=1'; then
     ok "a canary whose own jq program is broken is reported as FAILURE (meta-canary)"
   else
