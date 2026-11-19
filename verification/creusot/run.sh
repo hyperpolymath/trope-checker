@@ -148,10 +148,10 @@ else
   show_log "$log/witness.log"
   fail=1
 fi
-for name in $(sed -n 's/^\(c[0-9][0-9]_[a-z0-9_]*\) = \[\]$/\1/p' "$here/controls/Cargo.toml"); do
+while IFS= read -r name; do
   grep -q "^fn ${name}()" "$wit/tests/controls.rs" \
     || { echo "FAIL: control $name has no witness in witness/tests/controls.rs"; fail=1; }
-done
+done < <(sed -n 's/^\(c[0-9][0-9]_[a-z0-9_]*\) = \[\]$/\1/p' "$here/controls/Cargo.toml")
 while IFS=$'\t' read -r id _rest; do
   [[ -z "${id}" || "${id}" == \#* ]] && continue
   grep -q "^fn ${id}()" "$wit/tests/mutants.rs" \
