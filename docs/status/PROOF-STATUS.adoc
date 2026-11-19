@@ -136,11 +136,17 @@ The Rust fast core (`src/rust/`) is not a proof; it agrees with the Idris2
 reference over the whole conformance corpus (`just trope-rust`).
 
 *Rust (Creusot): OPEN.* Creusot contracts on the Rust algebra, order, meet and
-`violations` are written, along with the laws L1–L6, A2, wf preservation, honest
-correspondence with the Agda order, and verdict soundness. Planted controls and
-mutants are included. Creusot has not yet run on them, so this is not a proved row.
-It becomes one only when a green run of `.github/workflows/creusot.yml` is cited
-here. `acc`, the witness, graph validation and the decoder stay OPEN. One recorded divergence: on
+`violations` are written, along with the laws L1–L6, A2, wf preservation and honest
+correspondence with the Agda order. "Verdict soundness" here is a spec lemma about
+the order only (floor ⊑ g and g ⊑ ρ imply floor ⊑ ρ). It is not a proof about the
+shipped `check` function. Planted controls and mutants are included. This is not a
+proved row. It becomes one only when a green run of `.github/workflows/creusot.yml`,
+with every control and mutant refused, is cited here. CI run 44500624049 (head
+cf9cb01) discharged every SCOPE file, but the gate stayed red, because the refusal
+of the controls and mutants could not yet be confirmed. OPEN by name, and not
+translated by Creusot (`#[cfg(not(creusot))]`, not trusted): `check`, `acc`,
+`topo_witness_order`, `validate_graph`, the decoder (`dec_*`, `req`, `str_list`)
+and the JSON parser (`Json`, `P`, `parse_json`). One recorded divergence: on
 deceptive inputs the Rust order is not the Agda/Idris2 order (next paragraph).
 See `verification/creusot/README.adoc`.
 

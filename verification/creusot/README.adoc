@@ -30,7 +30,7 @@ Under plain rustc every attribute expands to nothing, so runtime behaviour does 
 | The result is empty iff the floor is met on every coordinate it sets (`floor_le_m`).
 | OPEN (not yet run)
 
-| L1, L2, L6, L3 (`Falsified`, `Misbound`, `Conflated`, fidelity `Top`/`Inf`), L5, honest closure, wf preservation, preorder and antisymmetry, A2 and chain on the honest fragment, L4 per coordinate and at grade level, meet as glb on the honest fragment, honest correspondence with Agda `fateLte`/`bondLte`/`mergeLte`/`dLte`, verdict soundness
+| L1, L2, L6, L3 (`Falsified`, `Misbound`, `Conflated`, fidelity `Top`/`Inf`), L5, honest closure, wf preservation, preorder and antisymmetry, A2 and chain on the honest fragment, L4 per coordinate and at grade level, meet as glb on the honest fragment, honest correspondence with Agda `fateLte`/`bondLte`/`mergeLte`/`dLte`, and verdict soundness as a lemma about the order only (floor ⊑ g and g ⊑ ρ imply floor ⊑ ρ). That is not a proof about the shipped `check`, which is OPEN
 | Lemmas in `creusot_spec.rs`
 | OPEN (not yet run)
 

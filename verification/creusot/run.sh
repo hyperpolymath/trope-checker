@@ -63,6 +63,15 @@ prover_refused() {
     && grep -qE '^ *Goal [^ ]+:' <<<"$plain"
 }
 
+# show_log LOGFILE: print the prover output of an unrecognised failure into the CI
+# log (colour codes stripped, build noise dropped), so the verdict can be read.
+show_log() {
+  local logfile="$1"
+  sed 's/\x1b\[[0-9;]*m//g' "$logfile" \
+    | grep -v -E '^ *(Compiling|Checking|Downloaded|Downloading|Updating|Locking|Finished) ' \
+    | tail -60 | sed 's/^/    | /'
+}
+
 # coma_newer_than WS MARKER: Coma output exists, and every file is newer than MARKER.
 coma_newer_than() {
   local ws="$1" marker="$2"
@@ -138,9 +147,11 @@ for c in "${controls[@]}"; do
     fail=1
   elif setup_error "$log/control-$c.log" || ! prover_refused "$log/control-$c.log" "$fn"; then
     echo "FAIL: control $c: unrecognised failure, no why3find 'proof failed' verdict on $fn (see $log/control-$c.log)"
+    show_log "$log/control-$c.log"
     fail=1
   else
     echo "refused (good): control $c"
+    sed 's/\x1b\[[0-9;]*m//g' "$log/control-$c.log" | grep -E ': proof failed|^ *Goal ' | head -6 | sed 's/^/    | /'
   fi
 done
 
@@ -188,9 +199,11 @@ while IFS=$'\t' read -r id fn old new; do
     fail=1
   elif setup_error "$log/mutant-$id.log" || ! prover_refused "$log/mutant-$id.log" "$fn"; then
     echo "FAIL: mutant $id: unrecognised failure, no why3find 'proof failed' verdict on $fn (see $log/mutant-$id.log)"
+    show_log "$log/mutant-$id.log"
     fail=1
   else
     echo "refused (good): mutant $id ($fn)"
+    sed 's/\x1b\[[0-9;]*m//g' "$log/mutant-$id.log" | grep -E ': proof failed|^ *Goal ' | head -6 | sed 's/^/    | /'
   fi
   rm -rf "$work"
 done < "$here/mutants/MUTANTS"
