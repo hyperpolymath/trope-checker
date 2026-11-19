@@ -10,12 +10,14 @@
 #      Coma, produce its own Coma file, and then be REFUSED by the provers.
 #   4. Every mutant (mutants/MUTANTS) must compile with plain rustc, translate to
 #      Coma, and then be REFUSED by the provers on the SCOPE files.
-# A refusal counts only on a positive why3find verdict: a "proof failed" line and a
-# "Goal ...: " line naming the intended control or mutated function. Any other
+# A refusal counts only on a positive why3find verdict: a "proof failed" line in the
+# intended function's own Coma file (<fn>.coma) plus a "Goal ...:" line. Any other
 # failure is unrecognised and fails the gate. A setup error (missing why3find.json, no files,
 # launch failure) is a gate failure, never a refusal.
 # Regeneration is forced every time: sources are touched so Creusot's Cargo cache
-# (target/creusot) cannot skip creusot-rustc, and verif/ is wiped.
+# (target/creusot) cannot skip creusot-rustc, and verif/ is wiped. A self-check
+# reruns the crate and one control with identical inputs and a warm cache and
+# requires every Coma file to be rewritten.
 # Exit codes: 0 all good; 1 red; 3 Creusot not installed (OPEN).
 set -euo pipefail
 
@@ -48,12 +50,23 @@ setup_error() {
 
 # prover_refused LOGFILE FN: true only for a positive why3find verdict on FN.
 # why3find (pinned 89dd8721, src/prove.ml) prints, for each goal it fails to
-# prove, "<position>: proof failed" and then "Goal <Theory>.<goal>: ...". Both must
-# be present, and a Goal line must name FN. Colour codes are stripped first.
+# prove, "<position>: proof failed" and then "Goal <Theory>.<goal>: ...". The
+# position names the Coma file, and Creusot lays files out as
+# verif/<crate>_rlib/<module>/<fn>.coma (the layout SCOPE patterns match). So a
+# refusal needs a "proof failed" line whose file is exactly FN.coma: a failure in
+# fate_le_m.coma does not count for fate_le. Colour codes are stripped first.
 prover_refused() {
   local logfile="$1" fn="$2" plain
   plain="$(sed 's/\x1b\[[0-9;]*m//g' "$logfile")"
-  grep -q ': proof failed' <<<"$plain" && grep -qE "^ *Goal [^ ]*${fn}[^ ]*:" <<<"$plain"
+  grep -E ': proof failed' <<<"$plain" | grep -qE "/${fn}\.coma([^A-Za-z0-9_]|$)" \
+    && grep -qE '^ *Goal [^ ]+:' <<<"$plain"
+}
+
+# coma_newer_than WS MARKER: Coma output exists, and every file is newer than MARKER.
+coma_newer_than() {
+  local ws="$1" marker="$2"
+  [[ -n "$(find "$ws/verif" -name '*.coma' -print -quit 2>/dev/null)" ]] \
+    && [[ -z "$(find "$ws/verif" -name '*.coma' ! -newer "$marker" -print -quit)" ]]
 }
 
 # fresh_coma WS LOGFILE [CARGO ARGS...]: force regeneration, translate, require output.
@@ -73,6 +86,16 @@ if ! fresh_coma "$here" "$log/coma.log"; then
   echo "FAIL: translation to Coma failed or wrote no Coma file (see $log/coma.log)"
   tail -40 "$log/coma.log"
   exit 1
+fi
+# Regeneration self-check: translate again with the same inputs and a warm
+# target/creusot. Every Coma file must be rewritten (newer than the marker), and
+# the output must not be empty. A cache that skips creusot-rustc fails here.
+marker="$(mktemp)"; sleep 1
+if ! fresh_coma "$here" "$log/coma-rerun.log" || ! coma_newer_than "$here" "$marker"; then
+  echo "FAIL: warm-cache rerun did not regenerate every Coma file (see $log/coma-rerun.log)"
+  fail=1
+else
+  echo "regenerated (good): verification crate, warm cache, same inputs"
 fi
 for p in "${scope[@]}"; do
   if ! (cd "$here" && cargo creusot --only=prove --dry-run-why3find "$p") >"$log/scope-check.log" 2>&1; then
@@ -117,6 +140,18 @@ for c in "${controls[@]}"; do
     echo "refused (good): control $c"
   fi
 done
+
+# Same self-check for a control: rerun the last control with the same feature.
+c="${controls[-1]}"; fn="${c%%_*}"
+marker="$(mktemp)"; sleep 1
+if fresh_coma "$here/controls" "$log/control-$c-rerun.log" -- --features "$c" \
+   && coma_newer_than "$here/controls" "$marker" \
+   && [[ -n "$(find "$here/controls/verif" -name "$fn.coma" -newer "$marker" -print -quit)" ]]; then
+  echo "regenerated (good): control $c, warm cache, same feature"
+else
+  echo "FAIL: control $c rerun did not regenerate its Coma (see $log/control-$c-rerun.log)"
+  fail=1
+fi
 
 # ── 3. the mutants ──
 while IFS=$'\t' read -r id fn old new; do

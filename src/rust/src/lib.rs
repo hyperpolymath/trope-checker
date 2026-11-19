@@ -1085,11 +1085,19 @@ pub fn check(doc: &Doc) -> (String, Option<(String, String)>) {
 
 /// The retention order ⊑ on grades: the componentwise product order.
 ///
-/// True iff `hi` retains at least as much as `lo` in EVERY coordinate. This
-/// mirrors `gradeLte` in `verification/proofs/idris2/Trope/Grade.idr` exactly —
-/// the conjunction of the four field-fates with bond and merge — and adds no
-/// new semantics: it is built only from the per-coordinate orders already used
-/// by `violations`. The algebra is PROVED in Idris2, not here.
+/// True iff `hi` retains at least as much as `lo` in EVERY coordinate: the
+/// conjunction of the four field-fates with bond and merge, built only from the
+/// per-coordinate orders already used by `violations`.
+///
+/// On the honest fragment (no `Falsified`, `Misbound` or `Conflated`) this
+/// agrees with `gradeLte` in Agda (`TB/Order.agda`) and Idris2
+/// (`verification/proofs/idris2/Trope/Grade.idr`). On deceptive values it does
+/// NOT: in Rust a deceptive value is comparable only with itself, while the
+/// Agda/Idris2 order puts each deceptive value at the bottom. Owner ruling 13a
+/// (19 Nov 2026) keeps the Rust order as it is; see the "Rust order on
+/// deceptive values" row in `docs/status/PROOF-STATUS.adoc`. The prevent-profile
+/// decoder never produces deceptive values, so the CLI cannot reach the
+/// difference; direct library callers can.
 ///
 /// Exposed so downstream consumers (e.g. a query engine doing loss-bounded
 /// traversal) can compare grades in-process instead of reimplementing the

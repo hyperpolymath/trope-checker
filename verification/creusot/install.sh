@@ -6,7 +6,7 @@
 # .github/workflows/creusot.yml and by hand. Any failure exits non-zero: the
 # gate is then RED, never silently green.
 #
-# Needs: git, rustup, opam (apt: opam), a C toolchain. Downloads: the creusot
+# Needs: git, rustup, opam and libzmq3-dev (apt), a C toolchain. Downloads: the creusot
 # repo at the pinned SHA, the pinned nightly, why3/why3find from their pinned
 # git commits (via opam), and alt-ergo/z3/cvc5 release binaries, which
 # creusot's own installer checks against sha256 sums fixed in its source.
@@ -31,23 +31,21 @@ if [[ "$want_nightly" != "$RUST_NIGHTLY" ]]; then
 fi
 rustup toolchain install "$RUST_NIGHTLY" --profile minimal -c rustfmt,rustc-dev,llvm-tools
 
-export OPAMYES=1
-[[ -d "${OPAMROOT:-$HOME/.opam}" ]] || opam init --bare --disable-sandboxing -n
-opam switch list 2>/dev/null | grep -q '^[ *→]*creusot ' \
-  || opam switch create creusot "ocaml-base-compiler.$OCAML"
-# creusot-deps.opam pins the compiler exactly; an older switch cannot satisfy it.
-have_ocaml="$(opam exec --switch=creusot -- ocamlc -version)"
-if [[ "$have_ocaml" != "$OCAML" ]]; then
-  echo "FAIL: opam switch 'creusot' has OCaml $have_ocaml, PINS needs $OCAML." >&2
-  echo "      Replace it: opam switch remove creusot, then rerun this script." >&2
-  exit 1
-fi
+# The pins the installer will use must still be the ones PINS records.
 grep -q "\"ocaml\" {= \"$OCAML\"}" "$dest/creusot-deps.opam" \
   || { echo "FAIL: creusot-deps.opam no longer pins ocaml $OCAML" >&2; exit 1; }
-# No eval (estate rule): every opam-dependent command runs under `opam exec`.
 grep -q "$WHY3_GIT" "$dest/creusot-deps.opam" || { echo "FAIL: why3 pin drifted" >&2; exit 1; }
 grep -q "$WHY3FIND_GIT" "$dest/creusot-deps.opam" || { echo "FAIL: why3find pin drifted" >&2; exit 1; }
-(cd "$dest" && opam install --switch=creusot --deps-only ./creusot-deps.opam)
-(cd "$dest" && opam exec --switch=creusot -- ./INSTALL)
-opam exec --switch=creusot -- cargo creusot --help >/dev/null
+
+# Follow creusot's own CI (.github/workflows/rust.yml at the tag): an opam root,
+# then `in-creusot-ci=true`, which drops the GTK-based why3-ide from
+# creusot-deps.opam (`!?in-creusot-ci`). The gate never opens the IDE.
+# ./INSTALL then creates and owns its own opam switch (creusot-install,
+# opam_switch) from creusot-deps.opam, compiler included. No separate switch,
+# no `opam install --deps-only`, no eval.
+export OPAMYES=1
+[[ -d "${OPAMROOT:-$HOME/.opam}" ]] || opam init --bare --disable-sandboxing -n
+opam --cli=2.1 var --global in-creusot-ci=true
+(cd "$dest" && ./INSTALL)
+cargo creusot --help >/dev/null
 echo "creusot $CREUSOT_TAG installed"

@@ -42,8 +42,8 @@ jobs:
       - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
-      - name: Install opam
-        run: sudo apt-get update && sudo apt-get install -y opam
+      - name: Install opam and libzmq (as creusot's own CI does)
+        run: sudo apt-get update && sudo apt-get install -y opam libzmq3-dev
       - name: Install the pinned Creusot toolchain
         run: bash verification/creusot/install.sh
       - name: Prove, then require every control and mutant to be refused
@@ -51,4 +51,4 @@ jobs:
           CREUSOT_LOG_DIR: ${{ runner.temp }}/creusot-logs
         run: |
           set -euo pipefail
-          opam exec --switch=creusot -- bash verification/creusot/run.sh
+          bash verification/creusot/run.sh

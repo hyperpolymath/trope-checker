@@ -141,8 +141,25 @@ correspondence with the Agda order, and verdict soundness. Planted controls and
 mutants are included. Creusot has not yet run on them, so this is not a proved row.
 It becomes one only when a green run of `.github/workflows/creusot.yml` is cited
 here. `acc`, the witness, graph validation and the decoder stay OPEN. One recorded divergence: on
-deceptive inputs the Rust order is not the Agda/Idris2 order. Owner ruling pending.
+deceptive inputs the Rust order is not the Agda/Idris2 order (next paragraph).
 See `verification/creusot/README.adoc`.
+
+*Rust order on deceptive values (divergence): RECORDED, owner ruling 13a
+(19 Nov 2026).* Agda (`TB/Order.agda`) and Idris2 (`Trope/Coords.idr`) put each
+deceptive value at the bottom of its order: `fateLte Falsified _`, `bondLte
+Misbound _` and `mergeLte Conflated _` are all true. The Rust `fate_le`,
+`bond_le` and `merge_le` make a deceptive value comparable only with itself, so
+`grade_le` agrees with `gradeLte` on the honest fragment only, and `fate_meet`
+is not a lower bound when one side is deceptive (`meet(Falsified, Present) =
+Dropped`). The prevent-profile decoder rejects deceptive writes, so the CLI
+cannot reach this. Direct library callers can. Options:
+(A) keep the Rust order and state the scope in the `grade_le` documentation;
+(B) change Rust to the Agda/Idris2 order, a behaviour change for library callers;
+(C) change Agda/Idris2 to the Rust order, which reopens proved rows.
+Ruling 13a chose (A) for this week; the `grade_le` documentation now states the
+scope. Aligning the orders, (B) or (C), is next week's decision. The Creusot
+correspondence and glb lemmas are stated on the honest fragment, and controls
+`c03`, `c05` and `c07` must be refused, which keeps the divergence measured.
 
 == Proof Witness Grades
 

@@ -56,8 +56,9 @@ The CLI cannot reach this. The prevent-profile decoder rejects deceptive
 writes, and honesty is closed under compose and meet. The public library API
 can reach it. The correspondence and glb lemmas are therefore stated on the
 honest fragment. Controls `c03`, `c05` and `c07` keep the divergence live:
-they must be refused. Whether the Rust order or the reference is the one to
-change is an owner ruling, pending.
+they must be refused. Owner ruling 13a (19 Nov 2026) keeps the Rust order for
+now and corrects only the `grade_le` documentation. Aligning the orders is next
+week's decision. See the named row in `docs/status/PROOF-STATUS.adoc`.
 
 == Controls and mutants
 
