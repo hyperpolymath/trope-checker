@@ -1,0 +1,33 @@
+# SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+# SPDX-License-Identifier: MPL-2.0
+#
+# Planted controls. Each feature switches on ONE false contract about the
+# verified crate. run.sh proves each feature on its own and requires Creusot to
+# REFUSE it. A control that proves is a gate failure: it means the contracts or
+# the solvers are not discriminating.
+[package]
+name = "tropecheck-creusot-controls"
+version = "0.1.0"
+edition = "2021"
+license = "MPL-2.0"
+publish = false
+
+[dependencies]
+creusot-std = "=0.15.0"
+tropecheck-creusot = { path = ".." }
+
+[features]
+c00_false = []
+c01_pre_a1_drop_absorbs_lie = []
+c02_dadd_without_overflow_precondition = []
+c03_meet_lower_bound_off_honest = []
+c04_predicated_le_dropped = []
+c05_agda_correspondence_everywhere = []
+c06_l4_without_nonneg = []
+c07_meet_lower_bound_grade_off_honest = []
+c08_violations_empty_always = []
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(creusot)'] }
+
+[workspace]

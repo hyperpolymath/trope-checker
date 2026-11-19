@@ -30,3 +30,8 @@ tropecheck ir:
 trope-rust:
     cd src/rust && cargo fmt --all --check && cargo clippy --locked --all-targets -- -D warnings -D clippy::pedantic && cargo test --locked && cargo build --locked --release
     TROPECHECK_BIN=src/rust/target/release/tropecheck-rs bash tests/conformance/run.sh
+
+# Exit 3 means Creusot is not installed: OPEN, nothing proved. Pins: verification/creusot/PINS.
+# Creusot proofs of the Rust fast core, with planted controls and mutants
+creusot:
+    bash verification/creusot/run.sh

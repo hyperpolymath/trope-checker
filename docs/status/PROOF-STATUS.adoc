@@ -132,8 +132,48 @@ toc::[]
 | Agda `TB.Reduction`, `TB.Substitution.cut-preserves-grade`.
 |===
 
-The Rust fast core (`src/rust/`) is not a proof; it agrees with the Idris2
-reference over the whole conformance corpus (`just trope-rust`).
+The Rust fast core (`src/rust/`) agrees with the Idris2 reference over the whole
+conformance corpus (`just trope-rust`). That agreement is testing, not proof. The
+only Rust code with a proof is the Creusot scope in the next paragraph.
+
+*Rust (Creusot): PROVED on its stated scope, CI receipt run 44525604501 (head
+b6a3c3e, 19 Nov 2026).* Creusot v0.15.0 discharged every file named in
+`verification/creusot/SCOPE`. Those are the contracts on `dkey`, `dadd`,
+`fate_*`, `bond_*`, `merge_*`, `epsilon`, `grade_compose`, `grade_meet`,
+`grade_le` and `violations`, and the lemmas in `creusot_spec.rs`: L1, L2, L3, L5,
+L6, L4 (with non-negative attenuation), A2, wf preservation, preorder laws, meet
+as glb and correspondence with the Agda order (both on the honest fragment).
+"Verdict soundness" there is a spec lemma about the order only (floor ⊑ g and
+g ⊑ ρ imply floor ⊑ ρ). It is not a proof about the shipped `check` function. In
+the same run, all 9 planted false contracts and all 7 code mutants were refused.
+Each of the 16 also has an executable witness, which holds on the shipped code,
+and each mutant's witness broke on its mutant. Assumptions are rows CR-A1 to
+CR-A3 in the README: creusot-std specs and solver soundness. A refusal is "not
+proved within budget", which the witnesses back with a concrete counterexample.
+OPEN by name, and not translated by Creusot (`#[cfg(not(creusot))]`, not
+trusted): `check`, `acc`, `topo_witness_order`, `validate_graph`, the decoder
+(`dec_*`, `req`, `str_list`) and the JSON parser (`Json`, `P`, `parse_json`).
+Also OPEN: the 13 derived `Clone` and `PartialEq` files, which are translated
+but not proved (assumed under CR-A1). One recorded divergence: on deceptive
+inputs the Rust order is not the Agda/Idris2 order (next paragraph). See
+`verification/creusot/README.adoc`.
+
+*Rust order on deceptive values (divergence): RECORDED, owner ruling 13a
+(19 Nov 2026).* Agda (`TB/Order.agda`) and Idris2 (`Trope/Coords.idr`) put each
+deceptive value at the bottom of its order: `fateLte Falsified _`, `bondLte
+Misbound _` and `mergeLte Conflated _` are all true. The Rust `fate_le`,
+`bond_le` and `merge_le` make a deceptive value comparable only with itself, so
+`grade_le` agrees with `gradeLte` on the honest fragment only, and `fate_meet`
+is not a lower bound when one side is deceptive (`meet(Falsified, Present) =
+Dropped`). The prevent-profile decoder rejects deceptive writes, so the CLI
+cannot reach this. Direct library callers can. Options:
+(A) keep the Rust order and state the scope in the `grade_le` documentation;
+(B) change Rust to the Agda/Idris2 order, a behaviour change for library callers;
+(C) change Agda/Idris2 to the Rust order, which reopens proved rows.
+Ruling 13a chose (A) for this week; the `grade_le` documentation now states the
+scope. Aligning the orders, (B) or (C), is next week's decision. The Creusot
+correspondence and glb lemmas are stated on the honest fragment, and controls
+`c03`, `c05` and `c07` must be refused, which keeps the divergence measured.
 
 == Proof Witness Grades
 
@@ -387,6 +427,9 @@ Each is specified; none is asserted. Status words follow `spec/calculus.adoc §1
   mechanising O5-1 as a side condition on an `Oracle`-indexed verdict is OPEN.
 * *O6* — the ceiling verdict, stem:[\rho \sqsubseteq g_{\mathrm{ceiling}}], for
   the privacy direction (`spec/calculus.adoc §5` note on T-Sub, `§10`).
+* *Rust (Creusot) remainder* — `check`, `acc`, `topo_witness_order`,
+  `validate_graph`, the decoder and the JSON parser have no Creusot proof. They
+  are excluded from translation, not trusted (`verification/creusot/README.adoc`).
 
 == Modelling notes
 

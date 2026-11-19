@@ -12,8 +12,32 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+// ──────────────────────────── Creusot (verification only) ────────────────────────────
+// Everything Creusot needs is behind `cfg(creusot)`. That cfg is set only by
+// creusot-rustc (via the verification crate `verification/creusot`, which uses this
+// file as its library root and adds the `creusot-std` dependency). An ordinary
+// `cargo build` of tropecheck-rs sees none of it: the crate stays std-only and
+// offline, and every attribute below expands to nothing. No runtime behaviour
+// changes. The logical model and the laws live in `creusot_spec.rs`.
+#[cfg(creusot)]
+use creusot_std::prelude::*;
+// creusot-std's prelude shadows four std-prelude names (Clone, PartialEq, Default,
+// vec!). A glob import cannot disambiguate them, so the ones this file uses are
+// imported explicitly (creusot-std prelude docs; first CI run, E0659 on `vec`).
+#[cfg(creusot)]
+use creusot_std::std::clone::Clone;
+#[cfg(creusot)]
+use creusot_std::std::cmp::PartialEq;
+#[cfg(creusot)]
+use creusot_std::std::vec::vec;
+#[cfg(creusot)]
+pub mod creusot_spec;
+#[cfg(creusot)]
+use creusot_spec::*;
+
 // ──────────────────────────── JSON (minimal, std-only) ────────────────────────────
 #[derive(Clone, Debug)]
+#[cfg(not(creusot))] // OPEN, outside the Creusot proof scope (verification/creusot/SCOPE)
 pub enum Json {
     Null,
     Bool(bool),
@@ -23,10 +47,12 @@ pub enum Json {
     Obj(Vec<(String, Json)>),
 }
 
+#[cfg(not(creusot))] // OPEN, outside the Creusot proof scope (verification/creusot/SCOPE)
 pub struct P<'a> {
     s: &'a [u8],
     i: usize,
 }
+#[cfg(not(creusot))] // OPEN, outside the Creusot proof scope (verification/creusot/SCOPE)
 impl<'a> P<'a> {
     #[must_use]
     pub fn new(s: &'a str) -> Self {
@@ -216,6 +242,7 @@ impl<'a> P<'a> {
 ///
 /// # Errors
 /// Returns an error for malformed input or trailing content.
+#[cfg(not(creusot))] // OPEN, outside the Creusot proof scope (verification/creusot/SCOPE)
 pub fn parse_json(s: &str) -> Result<Json, String> {
     let mut p = P::new(s);
     let v = p.value()?;
@@ -225,6 +252,7 @@ pub fn parse_json(s: &str) -> Result<Json, String> {
     }
     Ok(v)
 }
+#[cfg(not(creusot))] // OPEN, outside the Creusot proof scope (verification/creusot/SCOPE)
 impl Json {
     #[must_use]
     pub fn field(&self, k: &str) -> Option<&Json> {
@@ -254,12 +282,14 @@ impl Json {
 
 // ──────────────────────────── grade algebra (mirror) ────────────────────────────
 #[derive(Clone, PartialEq)]
+#[cfg_attr(creusot, derive(DeepModel), DeepModelTy = "DeltaM")]
 pub enum Delta {
     Q(i64),
     Inf,
     Top,
 }
 #[derive(Clone, PartialEq)]
+#[cfg_attr(creusot, derive(DeepModel), DeepModelTy = "FateM")]
 pub enum Fate {
     Present,
     Atten(Delta),
@@ -268,6 +298,7 @@ pub enum Fate {
     Falsified,
 }
 #[derive(Clone, PartialEq)]
+#[cfg_attr(creusot, derive(DeepModel), DeepModelTy = "Bond")]
 pub enum Bond {
     Intact,
     Withheld,
@@ -275,6 +306,7 @@ pub enum Bond {
     Misbound,
 }
 #[derive(Clone, PartialEq)]
+#[cfg_attr(creusot, derive(DeepModel), DeepModelTy = "Merge")]
 pub enum Merge {
     Single,
     Fused,
@@ -282,6 +314,7 @@ pub enum Merge {
 }
 
 // loss magnitude key: bigger = more loss = less retention
+#[cfg_attr(creusot, ensures(result.0@ == dtag(d.deep_model()) && result.1@ == dval(d.deep_model())))]
 #[must_use]
 pub fn dkey(d: &Delta) -> (u8, i64) {
     match d {
@@ -290,6 +323,8 @@ pub fn dkey(d: &Delta) -> (u8, i64) {
         Delta::Top => (2, 0),
     }
 }
+#[cfg_attr(creusot, requires(d_no_ovf(a.deep_model(), b.deep_model())))]
+#[cfg_attr(creusot, ensures(result.deep_model() == dadd_m(a.deep_model(), b.deep_model())))]
 #[must_use]
 pub fn dadd(a: &Delta, b: &Delta) -> Delta {
     match (a, b) {
@@ -305,6 +340,7 @@ pub fn dadd(a: &Delta, b: &Delta) -> Delta {
 ///
 /// Honest fates ascend from `Dropped` through `Predicated` and attenuation to
 /// `Present`; smaller attenuation retains more. `Falsified` compares only with itself.
+#[cfg_attr(creusot, ensures(result == fate_le_m(lo.deep_model(), hi.deep_model())))]
 #[must_use]
 pub fn fate_le(lo: &Fate, hi: &Fate) -> bool {
     use Fate::{Atten, Dropped, Falsified, Predicated, Present};
@@ -335,6 +371,8 @@ pub fn fate_le(lo: &Fate, hi: &Fate) -> bool {
 ///
 /// # Panics
 /// Panics if finite loss addition overflows with overflow checks enabled.
+#[cfg_attr(creusot, requires(f_no_ovf(a.deep_model(), b.deep_model())))]
+#[cfg_attr(creusot, ensures(result.deep_model() == fate_compose_m(a.deep_model(), b.deep_model())))]
 #[must_use]
 pub fn fate_compose(a: &Fate, b: &Fate) -> Fate {
     use Fate::{Atten, Dropped, Falsified, Predicated, Present};
@@ -348,6 +386,7 @@ pub fn fate_compose(a: &Fate, b: &Fate) -> Fate {
         (Atten(_), Predicated) | (Predicated, _) => Predicated,
     }
 }
+#[cfg_attr(creusot, ensures(result.deep_model() == fate_meet_m(a.deep_model(), b.deep_model())))]
 #[must_use]
 pub fn fate_meet(a: &Fate, b: &Fate) -> Fate {
     if fate_le(a, b) {
@@ -358,6 +397,7 @@ pub fn fate_meet(a: &Fate, b: &Fate) -> Fate {
         Fate::Dropped
     }
 }
+#[cfg_attr(creusot, ensures(result@ == brank(b.deep_model())))]
 #[must_use]
 pub fn bond_rank(b: &Bond) -> i8 {
     match b {
@@ -367,6 +407,7 @@ pub fn bond_rank(b: &Bond) -> i8 {
         Bond::Misbound => 0,
     }
 }
+#[cfg_attr(creusot, ensures(result == bond_le_m(lo.deep_model(), hi.deep_model())))]
 #[must_use]
 pub fn bond_le(lo: &Bond, hi: &Bond) -> bool {
     if matches!(lo, Bond::Misbound) || matches!(hi, Bond::Misbound) {
@@ -374,6 +415,7 @@ pub fn bond_le(lo: &Bond, hi: &Bond) -> bool {
     }
     bond_rank(lo) <= bond_rank(hi)
 }
+#[cfg_attr(creusot, ensures(result.deep_model() == bond_compose_m(a.deep_model(), b.deep_model())))]
 #[must_use]
 pub fn bond_compose(a: &Bond, b: &Bond) -> Bond {
     if matches!(a, Bond::Misbound) || matches!(b, Bond::Misbound) {
@@ -385,10 +427,12 @@ pub fn bond_compose(a: &Bond, b: &Bond) -> Bond {
         b.clone()
     }
 }
+#[cfg_attr(creusot, ensures(result.deep_model() == bond_compose_m(a.deep_model(), b.deep_model())))]
 #[must_use]
 pub fn bond_meet(a: &Bond, b: &Bond) -> Bond {
     bond_compose(a, b)
 }
+#[cfg_attr(creusot, ensures(result@ == mrank(m.deep_model())))]
 #[must_use]
 pub fn merge_rank(m: &Merge) -> i8 {
     match m {
@@ -397,6 +441,7 @@ pub fn merge_rank(m: &Merge) -> i8 {
         Merge::Conflated => 1,
     }
 }
+#[cfg_attr(creusot, ensures(result == merge_le_m(lo.deep_model(), hi.deep_model())))]
 #[must_use]
 pub fn merge_le(lo: &Merge, hi: &Merge) -> bool {
     if matches!(lo, Merge::Conflated) || matches!(hi, Merge::Conflated) {
@@ -404,6 +449,7 @@ pub fn merge_le(lo: &Merge, hi: &Merge) -> bool {
     }
     merge_rank(lo) <= merge_rank(hi)
 }
+#[cfg_attr(creusot, ensures(result.deep_model() == merge_compose_m(a.deep_model(), b.deep_model())))]
 #[must_use]
 pub fn merge_compose(a: &Merge, b: &Merge) -> Merge {
     if matches!(a, Merge::Conflated) || matches!(b, Merge::Conflated) {
@@ -415,12 +461,14 @@ pub fn merge_compose(a: &Merge, b: &Merge) -> Merge {
         b.clone()
     }
 }
+#[cfg_attr(creusot, ensures(result.deep_model() == merge_compose_m(a.deep_model(), b.deep_model())))]
 #[must_use]
 pub fn merge_meet(a: &Merge, b: &Merge) -> Merge {
     merge_compose(a, b)
 }
 
 #[derive(Clone)]
+#[cfg_attr(creusot, derive(DeepModel), DeepModelTy = "GradeM")]
 pub struct Grade {
     pub q: Fate,
     pub b: Fate,
@@ -429,6 +477,7 @@ pub struct Grade {
     pub bond: Bond,
     pub merge: Merge,
 }
+#[cfg_attr(creusot, ensures(result.deep_model() == eps_m()))]
 #[must_use]
 pub fn epsilon() -> Grade {
     Grade {
@@ -440,6 +489,8 @@ pub fn epsilon() -> Grade {
         merge: Merge::Single,
     }
 }
+#[cfg_attr(creusot, requires(g_no_ovf(a.deep_model(), b.deep_model())))]
+#[cfg_attr(creusot, ensures(result.deep_model() == grade_compose_m(a.deep_model(), b.deep_model())))]
 #[must_use]
 pub fn grade_compose(a: &Grade, b: &Grade) -> Grade {
     Grade {
@@ -451,6 +502,7 @@ pub fn grade_compose(a: &Grade, b: &Grade) -> Grade {
         merge: merge_compose(&a.merge, &b.merge),
     }
 }
+#[cfg_attr(creusot, ensures(result.deep_model() == grade_meet_m(a.deep_model(), b.deep_model())))]
 #[must_use]
 pub fn grade_meet(a: &Grade, b: &Grade) -> Grade {
     Grade {
@@ -494,6 +546,7 @@ pub struct Doc {
 ///
 /// # Errors
 /// Returns an error unless the value is a non-negative integer, `"inf"`, or `"top"`.
+#[cfg(not(creusot))] // OPEN, outside the Creusot proof scope (verification/creusot/SCOPE)
 pub fn dec_delta(path: &str, v: &Json) -> Result<Delta, String> {
     match v {
         Json::Num(n) if *n >= 0 => Ok(Delta::Q(*n)),
@@ -511,6 +564,7 @@ pub fn dec_delta(path: &str, v: &Json) -> Result<Delta, String> {
 ///
 /// # Errors
 /// Returns an error for malformed or deceptive fates, or predicates outside quality.
+#[cfg(not(creusot))] // OPEN, outside the Creusot proof scope (verification/creusot/SCOPE)
 pub fn dec_fate(path: &str, is_q: bool, v: &Json) -> Result<Fate, String> {
     match v.field("k").and_then(|k| k.as_str()) {
         Some("Present") => Ok(Fate::Present),
@@ -546,6 +600,7 @@ pub fn dec_fate(path: &str, is_q: bool, v: &Json) -> Result<Fate, String> {
 ///
 /// # Errors
 /// Returns an error for a missing, unknown, or deceptive bond.
+#[cfg(not(creusot))] // OPEN, outside the Creusot proof scope (verification/creusot/SCOPE)
 pub fn dec_bond(path: &str, v: &Json) -> Result<Bond, String> {
     match v.field("k").and_then(|k| k.as_str()) {
         Some("Intact") => Ok(Bond::Intact),
@@ -564,6 +619,7 @@ pub fn dec_bond(path: &str, v: &Json) -> Result<Bond, String> {
 ///
 /// # Errors
 /// Returns an error for a missing, unknown, or deceptive merge, or a missing or empty fusion tag.
+#[cfg(not(creusot))] // OPEN, outside the Creusot proof scope (verification/creusot/SCOPE)
 pub fn dec_merge(path: &str, v: &Json) -> Result<Merge, String> {
     match v.field("k").and_then(|k| k.as_str()) {
         Some("Single") => Ok(Merge::Single),
@@ -585,6 +641,7 @@ pub fn dec_merge(path: &str, v: &Json) -> Result<Merge, String> {
 ///
 /// # Errors
 /// Returns an error naming the path and key when the field is absent.
+#[cfg(not(creusot))] // OPEN, outside the Creusot proof scope (verification/creusot/SCOPE)
 pub fn req<'a>(path: &str, k: &str, v: &'a Json) -> Result<&'a Json, String> {
     v.field(k).ok_or_else(|| format!("{path}: missing \"{k}\""))
 }
@@ -596,6 +653,7 @@ pub fn req<'a>(path: &str, k: &str, v: &'a Json) -> Result<&'a Json, String> {
 ///
 /// # Errors
 /// Returns an error for missing or invalid coordinates or an incoherent bond.
+#[cfg(not(creusot))] // OPEN, outside the Creusot proof scope (verification/creusot/SCOPE)
 pub fn dec_grade(epath: &str, value: &Json) -> Result<Grade, String> {
     let fate = req(&format!("{epath}/grade"), "fate", value)?;
     let quality = dec_fate(
@@ -650,6 +708,7 @@ pub fn dec_grade(epath: &str, value: &Json) -> Result<Grade, String> {
 ///
 /// Return an empty list if `v` is not an array.
 #[must_use]
+#[cfg(not(creusot))] // OPEN, outside the Creusot proof scope (verification/creusot/SCOPE)
 pub fn str_list(v: &Json) -> Vec<String> {
     // Deliberately not Option::map_or_default (unstable on some stable
     // toolchains) nor map().unwrap_or_default() (clippy::map_unwrap_or
@@ -671,6 +730,7 @@ pub fn str_list(v: &Json) -> Vec<String> {
 /// # Errors
 /// Returns an error for a missing or non-string ID or type, an unknown type,
 /// or a `FloatingQuality` node listing `bearer` in `present`.
+#[cfg(not(creusot))] // OPEN, outside the Creusot proof scope (verification/creusot/SCOPE)
 pub fn dec_node(v: &Json) -> Result<Node, String> {
     let id = v
         .field("id")
@@ -703,6 +763,7 @@ pub fn dec_node(v: &Json) -> Result<Node, String> {
 ///
 /// # Errors
 /// Returns an error for a missing ID or output, or a missing or invalid grade.
+#[cfg(not(creusot))] // OPEN, outside the Creusot proof scope (verification/creusot/SCOPE)
 pub fn dec_edge(v: &Json) -> Result<Edge, String> {
     let id = v
         .field("id")
@@ -741,6 +802,7 @@ pub fn dec_edge(v: &Json) -> Result<Edge, String> {
 ///
 /// # Errors
 /// Returns an error if a supplied coordinate is invalid in the prevent profile.
+#[cfg(not(creusot))] // OPEN, outside the Creusot proof scope (verification/creusot/SCOPE)
 pub fn dec_floor(v: &Json) -> Result<Floor, String> {
     let ff = |k: &str, is_q: bool| -> Result<Option<Fate>, String> {
         match v.field("fate").and_then(|fa| fa.field(k)) {
@@ -777,6 +839,7 @@ pub fn dec_floor(v: &Json) -> Result<Floor, String> {
 /// Structural faults are validation faults and MUST NOT produce a verdict:
 /// accumulation treats a missing producer as grade ε, so without this check
 /// an undeclared `use_model.output` silently returned `p-sufficient`.
+#[cfg(not(creusot))] // OPEN, outside the Creusot proof scope (verification/creusot/SCOPE)
 fn validate_graph(nodes: &[Node], edges: &[Edge], out: &str) -> Result<(), String> {
     let mut declared: BTreeSet<&str> = BTreeSet::new();
     for n in nodes {
@@ -842,6 +905,7 @@ fn validate_graph(nodes: &[Node], edges: &[Edge], out: &str) -> Result<(), Strin
 /// invalid nodes, edges, or floors, or a structurally invalid graph
 /// (duplicate node or edge IDs, undeclared node references, duplicate
 /// producers, or cycles) — see `validate_graph`.
+#[cfg(not(creusot))] // OPEN, outside the Creusot proof scope (verification/creusot/SCOPE)
 pub fn dec_doc(v: &Json) -> Result<Doc, String> {
     // Accepted document versions (IR 0.2, R-2026-07-07). "0.1" stays accepted:
     // the wire format is identical, and 0.1 documents are normalized and graded
@@ -891,6 +955,7 @@ pub fn dec_doc(v: &Json) -> Result<Doc, String> {
 }
 
 // ──────────────────────────── checker (DAG accumulate + verdict + witness) ────────
+#[cfg(not(creusot))] // OPEN, outside the Creusot proof scope (verification/creusot/SCOPE)
 pub fn acc(edges: &[Edge], node: &str, fuel: usize, memo: &mut BTreeMap<String, Grade>) -> Grade {
     if fuel == 0 {
         return epsilon();
@@ -923,6 +988,7 @@ pub fn acc(edges: &[Edge], node: &str, fuel: usize, memo: &mut BTreeMap<String, 
     memo.insert(node.to_string(), g.clone());
     g
 }
+#[cfg_attr(creusot, ensures((result@.len() == 0) == floor_le_m(*fl, g.deep_model())))]
 #[must_use]
 pub fn violations(fl: &Floor, g: &Grade) -> Vec<String> {
     let mut v = Vec::new();
@@ -967,6 +1033,7 @@ pub fn violations(fl: &Floor, g: &Grade) -> Vec<String> {
 /// Documents reaching here are schema-valid DAGs. On a malformed cyclic
 /// graph the unemittable remainder is simply skipped (accumulation stays
 /// fuel-bounded in `acc`), never an infinite loop.
+#[cfg(not(creusot))] // OPEN, outside the Creusot proof scope (verification/creusot/SCOPE)
 fn topo_witness_order(doc: &Doc) -> Vec<&Edge> {
     let producer: BTreeMap<&str, &Edge> =
         doc.edges.iter().map(|e| (e.output.as_str(), e)).collect();
@@ -1013,6 +1080,7 @@ fn topo_witness_order(doc: &Doc) -> Vec<&Edge> {
 }
 
 #[must_use]
+#[cfg(not(creusot))] // OPEN, outside the Creusot proof scope (verification/creusot/SCOPE)
 pub fn check(doc: &Doc) -> (String, Option<(String, String)>) {
     let fuel = doc.edges.len() + 1;
     let mut memo = BTreeMap::new();
@@ -1040,15 +1108,24 @@ pub fn check(doc: &Doc) -> (String, Option<(String, String)>) {
 
 /// The retention order ⊑ on grades: the componentwise product order.
 ///
-/// True iff `hi` retains at least as much as `lo` in EVERY coordinate. This
-/// mirrors `gradeLte` in `verification/proofs/idris2/Trope/Grade.idr` exactly —
-/// the conjunction of the four field-fates with bond and merge — and adds no
-/// new semantics: it is built only from the per-coordinate orders already used
-/// by `violations`. The algebra is PROVED in Idris2, not here.
+/// True iff `hi` retains at least as much as `lo` in EVERY coordinate: the
+/// conjunction of the four field-fates with bond and merge, built only from the
+/// per-coordinate orders already used by `violations`.
+///
+/// On the honest fragment (no `Falsified`, `Misbound` or `Conflated`) this
+/// agrees with `gradeLte` in Agda (`TB/Order.agda`) and Idris2
+/// (`verification/proofs/idris2/Trope/Grade.idr`). On deceptive values it does
+/// NOT: in Rust a deceptive value is comparable only with itself, while the
+/// Agda/Idris2 order puts each deceptive value at the bottom. Owner ruling 13a
+/// (19 Nov 2026) keeps the Rust order as it is; see the "Rust order on
+/// deceptive values" row in `docs/status/PROOF-STATUS.adoc`. The prevent-profile
+/// decoder never produces deceptive values, so the CLI cannot reach the
+/// difference; direct library callers can.
 ///
 /// Exposed so downstream consumers (e.g. a query engine doing loss-bounded
 /// traversal) can compare grades in-process instead of reimplementing the
 /// order and forking the semantics.
+#[cfg_attr(creusot, ensures(result == grade_le_m(lo.deep_model(), hi.deep_model())))]
 #[must_use]
 pub fn grade_le(lo: &Grade, hi: &Grade) -> bool {
     fate_le(&lo.q, &hi.q)

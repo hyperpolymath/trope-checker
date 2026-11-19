@@ -1,0 +1,18 @@
+# SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+# SPDX-License-Identifier: MPL-2.0
+#
+# Executable falsity witnesses (hub decision (b), 19 Nov). Plain Rust, plain
+# cargo test, no Creusot. They make each control's falsity and each mutant's
+# contract break a checked fact, independent of the provers, so a prover
+# timeout can never pass as a refusal. See ../README.adoc, "What a refusal means".
+[package]
+name = "tropecheck-witness"
+version = "0.1.0"
+edition = "2021"
+license = "MPL-2.0"
+publish = false
+
+[dependencies]
+tropecheck-rs = { path = "../../../src/rust" }
+
+[workspace]

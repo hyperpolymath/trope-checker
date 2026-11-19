@@ -1,0 +1,57 @@
+# SPDX-License-Identifier: MPL-2.0
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+#
+# Creusot proofs of the Rust fast core (src/rust), with planted controls and
+# code mutants that must be refused. See verification/creusot/README.adoc.
+#
+# Honesty rules for this job:
+#   - It is never continue-on-error. An install failure is a RED job.
+#   - run.sh exits 3 if Creusot is missing; that is also RED here.
+#   - docs/status/PROOF-STATUS.adoc keeps the Rust (Creusot) row OPEN until a
+#     green run of this job is cited there as the receipt.
+# The estate Creusot gate (proven-cicd-and-workflows) is not used yet: it needs
+# a detector fix (#143) and does not carry these pins. This job MOVES to the suite
+# gate once #143 merges. Toolchain pins live beside it in verification/creusot/PINS.
+name: "🔴 Gate: Creusot (Rust core)"
+
+on:
+  # push: main only. A PR branch is covered by the pull_request event; running on
+  # both would start two identical long jobs per push in separate concurrency groups.
+  push:
+    branches: [main]
+    paths:
+      - 'src/rust/**'
+      - 'verification/creusot/**'
+      - 'build/just/trope.just'
+      - '.github/workflows/creusot.yml'
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  creusot:
+    name: "Creusot: prove, refuse controls, refuse mutants"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    steps:
+      # Pinned like every workflow here: tag + actions.lock entry (the linter's
+      # coverage and resolution checks). v7.0.1 = 3d3c42e5aac5ba805825da76410c181273ba90b1.
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install opam and libzmq (as creusot's own CI does)
+        run: sudo apt-get update && sudo apt-get install -y opam libzmq3-dev
+      - name: Install the pinned Creusot toolchain
+        run: bash verification/creusot/install.sh
+      - name: Prove, then require every control and mutant to be refused
+        env:
+          CREUSOT_LOG_DIR: ${{ runner.temp }}/creusot-logs
+        run: |
+          set -euo pipefail
+          bash verification/creusot/run.sh

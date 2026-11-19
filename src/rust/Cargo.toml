@@ -28,3 +28,8 @@ path = "src/main.rs"
 
 [profile.release]
 opt-level = 3
+
+# `cfg(creusot)` is set only by creusot-rustc (verification/creusot). Declaring it
+# here keeps plain builds free of the unexpected-cfg warning.
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(creusot)'] }

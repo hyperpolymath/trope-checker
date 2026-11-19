@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: MPL-2.0
+# Code mutants. Format: id <TAB> function <TAB> exact original text <TAB> replacement.
+# run.sh copies src/rust/src to a scratch tree, applies ONE mutant (it fails if the
+# original text is not found exactly once), and requires Creusot to refuse the crate.
+m01_drop_swallows_lie	fate_compose	(Falsified, _) | (Dropped | Atten(_) | Predicated, Falsified) => Falsified,	(Falsified, _) | (Atten(_) | Predicated, Falsified) => Falsified,
+m02_delta_order_flipped	fate_le	(Atten(a), Atten(b)) => dkey(a) >= dkey(b),	(Atten(a), Atten(b)) => dkey(a) <= dkey(b),
+m03_misbound_not_absorbing	bond_compose	        return Bond::Misbound;	        return Bond::Intact;
+m04_quality_floor_inverted	violations	        if !fate_le(d, &g.q) {	        if fate_le(d, &g.q) {
+m05_dadd_drops_rhs	dadd	(Delta::Q(x), Delta::Q(y)) => Delta::Q(x + y),	(Delta::Q(x), Delta::Q(_)) => Delta::Q(*x),
+m06_merge_compose_max	merge_compose	    if merge_rank(a) <= merge_rank(b) {	    if merge_rank(a) >= merge_rank(b) {
+m07_a2_reverted	fate_le	(Predicated | Dropped, Atten(_)) | (Dropped, Predicated) => true,	(Predicated | Dropped, Atten(_)) => true,

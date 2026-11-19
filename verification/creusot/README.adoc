@@ -1,0 +1,147 @@
+// SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Creusot proofs of the Rust fast core
+
+Status: *PROVED on the stated scope*. The receipt is CI run 44525604501 of
+`.github/workflows/creusot.yml` (head b6a3c3e, 19 Nov 2026). Every file named in
+`SCOPE` proved. All 9 controls and all 7 mutants were refused, and every
+executable witness behaved as required. The claim covers `SCOPE` only. Every item
+marked OPEN below stays OPEN, and the derived `Clone` and `PartialEq` files are
+assumed (CR-A1), not proved. `docs/status/PROOF-STATUS.adoc` cites the same run.
+
+== What is checked, and where
+
+The contracts are attributes on the shipping code in `src/rust/src/lib.rs`,
+written as `#[cfg_attr(creusot, ...)]`. The logical model and the laws are in
+`src/rust/src/creusot_spec.rs`, compiled only under `cfg(creusot)`.
+
+This directory is a second Cargo package whose library root *is*
+`src/rust/src/lib.rs`. It is the same file, not a copy. The package only adds
+`creusot-std`. `tropecheck-rs` keeps no dependencies and still builds offline.
+Under plain rustc every attribute expands to nothing, so runtime behaviour does not change.
+
+[cols="2,3,1",options="header"]
+|===
+| Code | Contract | State
+
+| `dkey`, `dadd`, `fate_le`, `fate_compose`, `fate_meet`, `bond_*`, `merge_*`, `epsilon`, `grade_compose`, `grade_meet`, `grade_le`
+| The result equals a clause-by-clause transcription (`*_m` in `creusot_spec.rs`). `dadd`, `fate_compose` and `grade_compose` require no i64 overflow (owner ruling 1).
+| PROVED (run 44525604501)
+
+| `violations`
+| The result is empty iff the floor is met on every coordinate it sets (`floor_le_m`).
+| PROVED (run 44525604501)
+
+| L1, L2, L6, L3 (`Falsified`, `Misbound`, `Conflated`, fidelity `Top`/`Inf`), L5, honest closure, wf preservation, preorder and antisymmetry, A2 and chain on the honest fragment, L4 per coordinate and at grade level, meet as glb on the honest fragment, honest correspondence with Agda `fateLte`/`bondLte`/`mergeLte`/`dLte`, and verdict soundness as a lemma about the order only (floor ⊑ g and g ⊑ ρ imply floor ⊑ ρ). That is not a proof about the shipped `check`, which is OPEN
+| Lemmas in `creusot_spec.rs`
+| PROVED (run 44525604501)
+
+| `acc`, `check`, `topo_witness_order`, `validate_graph`
+| No contract, and excluded from the Creusot build with `#[cfg(not(creusot))]`. Each uses `BTreeMap`/`BTreeSet`, for which creusot-std v0.15.0 has no specs, and `acc` recurses without a variant.
+| OPEN
+
+| JSON parser (`Json`, `P`, `parse_json`), `dec_*` decoder
+| No contract yet, and excluded from the Creusot build with `#[cfg(not(creusot))]`: Creusot rejects the recursive `Json` type (nested under `Vec`) and the mutually recursive `value`/`array`/`object` without termination arguments. The intended contract is that `Ok` implies honest, non-negative and A3-normal, and that `Predicated` occurs only when `is_q`.
+| OPEN
+|===
+
+== The divergence this proof carries (not fixed)
+
+Agda (`TB/Order.agda`) and Idris2 (`Trope/Coords.idr`) put each deceptive
+bottom at the bottom of the order: `fateLte Falsified _ = true`, and likewise
+for `Misbound` and `Conflated`. The Rust order makes each deceptive value
+comparable only with itself. So the claim in `grade_le`'s doc comment that it
+"mirrors gradeLte exactly" is false on deceptive inputs. Also, `fate_meet` is not a
+lower bound when one side is deceptive: `meet(Falsified, Present) = Dropped`.
+
+The CLI cannot reach this. The prevent-profile decoder rejects deceptive
+writes, and honesty is closed under compose and meet. The public library API
+can reach it. The correspondence and glb lemmas are therefore stated on the
+honest fragment. Controls `c03`, `c05` and `c07` keep the divergence live:
+they must be refused. Owner ruling 13a (19 Nov 2026) keeps the Rust order for
+now and corrects only the `grade_le` documentation. Aligning the orders is next
+week's decision. See the named row in `docs/status/PROOF-STATUS.adoc`.
+
+== Controls and mutants
+
+`run.sh` fails loudly:
+
+* Proofs: every Coma file named in `SCOPE` must prove. Each `SCOPE` pattern must
+  match at least one file. Any other translated file is printed as OPEN. The
+  parser, the decoder, `acc`, `check` and the witness order are not translated
+  at all (`#[cfg(not(creusot))]`). None of them is proved or claimed.
+* Controls (`controls/`, one Cargo feature each): every false contract must
+  translate to Coma, produce its own Coma file, and then be refused by the
+  provers. `c00` is `ensures(false)`.
+* Mutants (`mutants/MUTANTS`): each one-line code change must still compile
+  with plain rustc, translate to Coma, and be refused on the `SCOPE` files.
+* A refusal counts only if why3find ran and its output names the intended
+  control or mutated function. A setup error never counts as a refusal.
+* Regeneration is forced on every run. Sources are touched so Creusot's Cargo
+  cache (`target/creusot`) cannot skip translation, and `verif/` is wiped.
+* `why3find.json` in this directory and in `controls/` is a copy of the file at
+  the pinned Creusot tag. It is what `cargo creusot init` would write.
+
+Exit 0 means all good, 1 means red, 3 means Creusot is not installed. Exit 3 is
+OPEN and never counts as green.
+
+== What a refusal means
+
+A control or mutant counts as refused only on why3find's own verdict for the
+intended function. The log must contain all of these, matching the format seen in
+CI run 44507269211:
+
+* `... : proof failed`
+* `Goal Coma.vc_<fn>: ✘`
+* `Error: <n> unproved file`
+
+It must also contain no failing goal for any other function.
+
+Limit, stated plainly: why3find's `✘` means "not proved within the prover budget".
+It does not separate a refutation from a timeout. A prover verdict alone would
+therefore show only that the provers could not establish the false claim.
+
+So each refusal also has an executable falsity witness, in `witness/` (plain
+`cargo test`, no Creusot):
+
+* `witness/tests/controls.rs`: one test per control, named after it. It runs a
+  concrete counterexample on the shipped code and passes exactly when that
+  control's claim is false. Examples: `fate_compose(Dropped, Falsified)` is
+  `Falsified` (c01), `dadd(Q(i64::MAX), Q(1))` overflows (c02), and
+  `meet(Falsified, Present) = Dropped` is not below `Falsified` (c03).
+* `witness/tests/mutants.rs`: one test per mutant, named by its id. It states the
+  function's contract on one concrete input. It must pass on the shipped code and
+  fail on the mutated code.
+
+`run.sh` makes the gate red if any witness is missing, if a control witness or a
+mutant witness fails on the shipped code, or if a mutant witness still passes on
+its mutant. A timeout therefore can never pass as a refusal on its own: the
+falsity is checked independently of the provers.
+
+== ASSUMED boundaries
+
+These are third-party specifications that the proofs rely on and do not re-prove (PROOF-POLICY):
+
+[cols="1,3",options="header"]
+|===
+| ID | Assumption
+
+| CR-A1
+| creusot-std v0.15.0's derive specs: `#[derive(DeepModel)]`, Creusot's `PartialEq` derive (`eq` returns deep-model equality), and rustc's builtin `Clone` derive with Creusot's structural postcondition.
+
+| CR-A2
+| creusot-std v0.15.0's specs for `Vec::new`, `Vec::push` and `Vec::len` (used by `violations`), and for `i64`/`i8`/`u8` arithmetic and views.
+
+| CR-A3
+| The pinned Why3, Why3find, Alt-Ergo, Z3 and cvc5 (`PINS`) are sound.
+|===
+
+The proofs add no `#[trusted]` item and no admitted lemma. If one is ever
+needed, it must get a row here first.
+
+== Running
+
+----
+bash verification/creusot/install.sh   # pinned toolchain (PINS); needs opam
+just creusot                           # = bash verification/creusot/run.sh
+----
