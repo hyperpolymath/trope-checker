@@ -233,11 +233,14 @@ pwg_canaries() {
 # without ever exercising its target. This plants exactly that and asserts the suite
 # reports FAILURE. Measured: this canary FAILS against the pre-fix harness.
 meta_canary() {
-  local out
-  out=$( PASS=0; FAIL=0
-         pwg_case reject "meta-probe (expected to be reported as FAILING)" '.theorems[0].pwg = ' >/dev/null 2>&1
-         printf 'FAILCOUNT=%s' "$FAIL" )
-  if printf '%s' "$out" | grep -q 'FAILCOUNT=1'; then
+  # Isolate the probe's counters by saving and restoring them (not a subshell),
+  # so the probe's expected FAIL never leaks into the suite's totals.
+  local saved_pass="$PASS" saved_fail="$FAIL" probe_fail
+  PASS=0; FAIL=0
+  pwg_case reject "meta-probe (expected to be reported as FAILING)" '.theorems[0].pwg = ' >/dev/null 2>&1
+  probe_fail="$FAIL"
+  PASS="$saved_pass"; FAIL="$saved_fail"
+  if [ "$probe_fail" -eq 1 ]; then
     ok "a canary whose own jq program is broken is reported as FAILURE (meta-canary)"
   else
     bad "a BROKEN canary still reported PASS — the suite cannot detect its own breakage"
