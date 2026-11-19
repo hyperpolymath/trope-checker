@@ -10,7 +10,8 @@
 #   - docs/status/PROOF-STATUS.adoc keeps the Rust (Creusot) row OPEN until a
 #     green run of this job is cited there as the receipt.
 # The estate Creusot gate (proven-cicd-and-workflows) is not used yet: it needs
-# a detector fix (#143) and a pinned SHA. This job stands in until it does.
+# a detector fix (#143) and does not carry these pins. This job MOVES to the suite
+# gate once #143 merges. Toolchain pins live beside it in verification/creusot/PINS.
 name: "🔴 Gate: Creusot (Rust core)"
 
 on:
@@ -36,6 +37,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 150
     steps:
+      # Pinned like every workflow here: tag + actions.lock entry (the linter's
+      # coverage and resolution checks). v7.0.1 = 3d3c42e5aac5ba805825da76410c181273ba90b1.
       - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
