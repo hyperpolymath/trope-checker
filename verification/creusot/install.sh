@@ -16,23 +16,23 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$here/PINS"
 dest="${CREUSOT_SRC:-$HOME/.cache/creusot-src}"
 
-if [ ! -d "$dest/.git" ]; then
+if [[ ! -d "$dest/.git" ]]; then
   git clone --quiet --depth 1 --branch "$CREUSOT_TAG" "$CREUSOT_REPO" "$dest"
 fi
 got="$(git -C "$dest" rev-parse HEAD)"
-if [ "$got" != "$CREUSOT_SHA" ]; then
+if [[ "$got" != "$CREUSOT_SHA" ]]; then
   echo "FAIL: $CREUSOT_TAG resolved to $got, pinned $CREUSOT_SHA" >&2
   exit 1
 fi
 want_nightly="$(sed -n 's/^channel = "\(.*\)"$/\1/p' "$dest/rust-toolchain")"
-if [ "$want_nightly" != "$RUST_NIGHTLY" ]; then
+if [[ "$want_nightly" != "$RUST_NIGHTLY" ]]; then
   echo "FAIL: creusot wants $want_nightly, PINS says $RUST_NIGHTLY" >&2
   exit 1
 fi
 rustup toolchain install "$RUST_NIGHTLY" --profile minimal -c rustfmt,rustc-dev,llvm-tools
 
 export OPAMYES=1
-[ -d "${OPAMROOT:-$HOME/.opam}" ] || opam init --bare --disable-sandboxing -n
+[[ -d "${OPAMROOT:-$HOME/.opam}" ]] || opam init --bare --disable-sandboxing -n
 opam switch list 2>/dev/null | grep -q '^[ *→]*creusot ' \
   || opam switch create creusot "ocaml-base-compiler.$OCAML"
 eval "$(opam env --switch=creusot)"

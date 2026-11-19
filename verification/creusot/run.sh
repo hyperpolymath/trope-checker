@@ -43,7 +43,7 @@ fi
 
 # ── 2. the planted controls ──
 mapfile -t controls < <(sed -n 's/^\(c[0-9][0-9]_[a-z0-9_]*\) = \[\]$/\1/p' "$here/controls/Cargo.toml")
-[ "${#controls[@]}" -gt 0 ] || { echo "FAIL: no controls found"; exit 1; }
+[[ "${#controls[@]}" -gt 0 ]] || { echo "FAIL: no controls found"; exit 1; }
 for c in "${controls[@]}"; do
   # A control must COMPILE to Coma (else it is refused for the wrong reason),
   # then FAIL to prove. verif/ is wiped so no stale goal from another control counts.
@@ -71,7 +71,7 @@ while IFS=$'\t' read -r id fn old new; do
   rm -rf "$work/verification/creusot/target" "$work/verification/creusot/verif"
   # The fixtures the unit tests include_str! are not needed: tests are not built.
   n="$(grep -cF -- "$old" "$work/src/rust/src/lib.rs" || true)"
-  if [ "$n" != "1" ]; then
+  if [[ "$n" != "1" ]]; then
     echo "FAIL: mutant $id ($fn): original text found $n times, expected 1"
     fail=1; rm -rf "$work"; continue
   fi
@@ -95,7 +95,7 @@ while IFS=$'\t' read -r id fn old new; do
   rm -rf "$work"
 done < "$here/mutants/MUTANTS"
 
-if [ "$fail" -ne 0 ]; then
+if [[ "$fail" -ne 0 ]]; then
   echo "CREUSOT GATE: RED"
   exit 1
 fi
