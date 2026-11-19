@@ -10,8 +10,9 @@
 #      Coma, produce its own Coma file, and then be REFUSED by the provers.
 #   4. Every mutant (mutants/MUTANTS) must compile with plain rustc, translate to
 #      Coma, and then be REFUSED by the provers on the SCOPE files.
-# A refusal counts only if why3find actually ran and its output names the intended
-# control or mutated function. A setup error (missing why3find.json, no files,
+# A refusal counts only on a positive why3find verdict: a "proof failed" line and a
+# "Goal ...: " line naming the intended control or mutated function. Any other
+# failure is unrecognised and fails the gate. A setup error (missing why3find.json, no files,
 # launch failure) is a gate failure, never a refusal.
 # Regeneration is forced every time: sources are touched so Creusot's Cargo cache
 # (target/creusot) cannot skip creusot-rustc, and verif/ is wiped.
@@ -43,6 +44,16 @@ mapfile -t scope < <(grep -v '^#' "$here/SCOPE" | sed '/^[[:space:]]*$/d')
 setup_error() {
   local logfile="$1"
   grep -qE "No files to prove|failed to launch|not found\. Perhaps|Pattern must be non-empty|could not compile" "$logfile"
+}
+
+# prover_refused LOGFILE FN: true only for a positive why3find verdict on FN.
+# why3find (pinned 89dd8721, src/prove.ml) prints, for each goal it fails to
+# prove, "<position>: proof failed" and then "Goal <Theory>.<goal>: ...". Both must
+# be present, and a Goal line must name FN. Colour codes are stripped first.
+prover_refused() {
+  local logfile="$1" fn="$2" plain
+  plain="$(sed 's/\x1b\[[0-9;]*m//g' "$logfile")"
+  grep -q ': proof failed' <<<"$plain" && grep -qE "^ *Goal [^ ]*${fn}[^ ]*:" <<<"$plain"
 }
 
 # fresh_coma WS LOGFILE [CARGO ARGS...]: force regeneration, translate, require output.
@@ -99,8 +110,8 @@ for c in "${controls[@]}"; do
   if (cd "$here/controls" && cargo creusot --only=prove "tropecheck_creusot_controls_rlib::$fn") >"$log/control-$c.log" 2>&1; then
     echo "FAIL: control $c was PROVED. A false contract went through."
     fail=1
-  elif setup_error "$log/control-$c.log" || ! grep -q "$fn" "$log/control-$c.log"; then
-    echo "FAIL: control $c failed without a prover verdict naming $fn (see $log/control-$c.log)"
+  elif setup_error "$log/control-$c.log" || ! prover_refused "$log/control-$c.log" "$fn"; then
+    echo "FAIL: control $c: unrecognised failure, no why3find 'proof failed' verdict on $fn (see $log/control-$c.log)"
     fail=1
   else
     echo "refused (good): control $c"
@@ -137,8 +148,8 @@ while IFS=$'\t' read -r id fn old new; do
   if (cd "$work/verification/creusot" && cargo creusot --only=prove "${scope[@]}") >"$log/mutant-$id.log" 2>&1; then
     echo "FAIL: mutant $id ($fn) was PROVED. The contracts do not pin the code."
     fail=1
-  elif setup_error "$log/mutant-$id.log" || ! grep -q "$fn" "$log/mutant-$id.log"; then
-    echo "FAIL: mutant $id failed without a prover verdict naming $fn (see $log/mutant-$id.log)"
+  elif setup_error "$log/mutant-$id.log" || ! prover_refused "$log/mutant-$id.log" "$fn"; then
+    echo "FAIL: mutant $id: unrecognised failure, no why3find 'proof failed' verdict on $fn (see $log/mutant-$id.log)"
     fail=1
   else
     echo "refused (good): mutant $id ($fn)"
