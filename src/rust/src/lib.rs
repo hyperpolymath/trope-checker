@@ -12,6 +12,22 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+// ──────────────────────────── Creusot (verification only) ────────────────────────────
+// Everything Creusot needs is behind `cfg(creusot)`. That cfg is set only by
+// creusot-rustc (via the verification crate `verification/creusot`, which uses this
+// file as its library root and adds the `creusot-std` dependency). An ordinary
+// `cargo build` of tropecheck-rs sees none of it: the crate stays std-only and
+// offline, and every attribute below expands to nothing. No runtime behaviour
+// changes. The logical model and the laws live in `creusot_spec.rs`.
+#[cfg(creusot)]
+use creusot_std::prelude::*;
+#[cfg(creusot)]
+use creusot_std::std::cmp::PartialEq;
+#[cfg(creusot)]
+pub mod creusot_spec;
+#[cfg(creusot)]
+use creusot_spec::*;
+
 // ──────────────────────────── JSON (minimal, std-only) ────────────────────────────
 #[derive(Clone, Debug)]
 pub enum Json {
@@ -254,12 +270,14 @@ impl Json {
 
 // ──────────────────────────── grade algebra (mirror) ────────────────────────────
 #[derive(Clone, PartialEq)]
+#[cfg_attr(creusot, derive(DeepModel), DeepModelTy = "DeltaM")]
 pub enum Delta {
     Q(i64),
     Inf,
     Top,
 }
 #[derive(Clone, PartialEq)]
+#[cfg_attr(creusot, derive(DeepModel), DeepModelTy = "FateM")]
 pub enum Fate {
     Present,
     Atten(Delta),
@@ -268,6 +286,7 @@ pub enum Fate {
     Falsified,
 }
 #[derive(Clone, PartialEq)]
+#[cfg_attr(creusot, derive(DeepModel), DeepModelTy = "Bond")]
 pub enum Bond {
     Intact,
     Withheld,
@@ -275,6 +294,7 @@ pub enum Bond {
     Misbound,
 }
 #[derive(Clone, PartialEq)]
+#[cfg_attr(creusot, derive(DeepModel), DeepModelTy = "Merge")]
 pub enum Merge {
     Single,
     Fused,
@@ -282,6 +302,7 @@ pub enum Merge {
 }
 
 // loss magnitude key: bigger = more loss = less retention
+#[cfg_attr(creusot, ensures(result.0@ == dtag(d.deep_model()) && result.1@ == dval(d.deep_model())))]
 #[must_use]
 pub fn dkey(d: &Delta) -> (u8, i64) {
     match d {
@@ -290,6 +311,8 @@ pub fn dkey(d: &Delta) -> (u8, i64) {
         Delta::Top => (2, 0),
     }
 }
+#[cfg_attr(creusot, requires(d_no_ovf(a.deep_model(), b.deep_model())))]
+#[cfg_attr(creusot, ensures(result.deep_model() == dadd_m(a.deep_model(), b.deep_model())))]
 #[must_use]
 pub fn dadd(a: &Delta, b: &Delta) -> Delta {
     match (a, b) {
@@ -305,6 +328,7 @@ pub fn dadd(a: &Delta, b: &Delta) -> Delta {
 ///
 /// Honest fates ascend from `Dropped` through `Predicated` and attenuation to
 /// `Present`; smaller attenuation retains more. `Falsified` compares only with itself.
+#[cfg_attr(creusot, ensures(result == fate_le_m(lo.deep_model(), hi.deep_model())))]
 #[must_use]
 pub fn fate_le(lo: &Fate, hi: &Fate) -> bool {
     use Fate::{Atten, Dropped, Falsified, Predicated, Present};
@@ -335,6 +359,8 @@ pub fn fate_le(lo: &Fate, hi: &Fate) -> bool {
 ///
 /// # Panics
 /// Panics if finite loss addition overflows with overflow checks enabled.
+#[cfg_attr(creusot, requires(f_no_ovf(a.deep_model(), b.deep_model())))]
+#[cfg_attr(creusot, ensures(result.deep_model() == fate_compose_m(a.deep_model(), b.deep_model())))]
 #[must_use]
 pub fn fate_compose(a: &Fate, b: &Fate) -> Fate {
     use Fate::{Atten, Dropped, Falsified, Predicated, Present};
@@ -348,6 +374,7 @@ pub fn fate_compose(a: &Fate, b: &Fate) -> Fate {
         (Atten(_), Predicated) | (Predicated, _) => Predicated,
     }
 }
+#[cfg_attr(creusot, ensures(result.deep_model() == fate_meet_m(a.deep_model(), b.deep_model())))]
 #[must_use]
 pub fn fate_meet(a: &Fate, b: &Fate) -> Fate {
     if fate_le(a, b) {
@@ -358,6 +385,7 @@ pub fn fate_meet(a: &Fate, b: &Fate) -> Fate {
         Fate::Dropped
     }
 }
+#[cfg_attr(creusot, ensures(result@ == brank(b.deep_model())))]
 #[must_use]
 pub fn bond_rank(b: &Bond) -> i8 {
     match b {
@@ -367,6 +395,7 @@ pub fn bond_rank(b: &Bond) -> i8 {
         Bond::Misbound => 0,
     }
 }
+#[cfg_attr(creusot, ensures(result == bond_le_m(lo.deep_model(), hi.deep_model())))]
 #[must_use]
 pub fn bond_le(lo: &Bond, hi: &Bond) -> bool {
     if matches!(lo, Bond::Misbound) || matches!(hi, Bond::Misbound) {
@@ -374,6 +403,7 @@ pub fn bond_le(lo: &Bond, hi: &Bond) -> bool {
     }
     bond_rank(lo) <= bond_rank(hi)
 }
+#[cfg_attr(creusot, ensures(result.deep_model() == bond_compose_m(a.deep_model(), b.deep_model())))]
 #[must_use]
 pub fn bond_compose(a: &Bond, b: &Bond) -> Bond {
     if matches!(a, Bond::Misbound) || matches!(b, Bond::Misbound) {
@@ -385,10 +415,12 @@ pub fn bond_compose(a: &Bond, b: &Bond) -> Bond {
         b.clone()
     }
 }
+#[cfg_attr(creusot, ensures(result.deep_model() == bond_compose_m(a.deep_model(), b.deep_model())))]
 #[must_use]
 pub fn bond_meet(a: &Bond, b: &Bond) -> Bond {
     bond_compose(a, b)
 }
+#[cfg_attr(creusot, ensures(result@ == mrank(m.deep_model())))]
 #[must_use]
 pub fn merge_rank(m: &Merge) -> i8 {
     match m {
@@ -397,6 +429,7 @@ pub fn merge_rank(m: &Merge) -> i8 {
         Merge::Conflated => 1,
     }
 }
+#[cfg_attr(creusot, ensures(result == merge_le_m(lo.deep_model(), hi.deep_model())))]
 #[must_use]
 pub fn merge_le(lo: &Merge, hi: &Merge) -> bool {
     if matches!(lo, Merge::Conflated) || matches!(hi, Merge::Conflated) {
@@ -404,6 +437,7 @@ pub fn merge_le(lo: &Merge, hi: &Merge) -> bool {
     }
     merge_rank(lo) <= merge_rank(hi)
 }
+#[cfg_attr(creusot, ensures(result.deep_model() == merge_compose_m(a.deep_model(), b.deep_model())))]
 #[must_use]
 pub fn merge_compose(a: &Merge, b: &Merge) -> Merge {
     if matches!(a, Merge::Conflated) || matches!(b, Merge::Conflated) {
@@ -415,12 +449,14 @@ pub fn merge_compose(a: &Merge, b: &Merge) -> Merge {
         b.clone()
     }
 }
+#[cfg_attr(creusot, ensures(result.deep_model() == merge_compose_m(a.deep_model(), b.deep_model())))]
 #[must_use]
 pub fn merge_meet(a: &Merge, b: &Merge) -> Merge {
     merge_compose(a, b)
 }
 
 #[derive(Clone)]
+#[cfg_attr(creusot, derive(DeepModel), DeepModelTy = "GradeM")]
 pub struct Grade {
     pub q: Fate,
     pub b: Fate,
@@ -429,6 +465,7 @@ pub struct Grade {
     pub bond: Bond,
     pub merge: Merge,
 }
+#[cfg_attr(creusot, ensures(result.deep_model() == eps_m()))]
 #[must_use]
 pub fn epsilon() -> Grade {
     Grade {
@@ -440,6 +477,8 @@ pub fn epsilon() -> Grade {
         merge: Merge::Single,
     }
 }
+#[cfg_attr(creusot, requires(g_no_ovf(a.deep_model(), b.deep_model())))]
+#[cfg_attr(creusot, ensures(result.deep_model() == grade_compose_m(a.deep_model(), b.deep_model())))]
 #[must_use]
 pub fn grade_compose(a: &Grade, b: &Grade) -> Grade {
     Grade {
@@ -451,6 +490,7 @@ pub fn grade_compose(a: &Grade, b: &Grade) -> Grade {
         merge: merge_compose(&a.merge, &b.merge),
     }
 }
+#[cfg_attr(creusot, ensures(result.deep_model() == grade_meet_m(a.deep_model(), b.deep_model())))]
 #[must_use]
 pub fn grade_meet(a: &Grade, b: &Grade) -> Grade {
     Grade {
@@ -923,6 +963,7 @@ pub fn acc(edges: &[Edge], node: &str, fuel: usize, memo: &mut BTreeMap<String, 
     memo.insert(node.to_string(), g.clone());
     g
 }
+#[cfg_attr(creusot, ensures((result@.len() == 0) == floor_le_m(*fl, g.deep_model())))]
 #[must_use]
 pub fn violations(fl: &Floor, g: &Grade) -> Vec<String> {
     let mut v = Vec::new();
@@ -1049,6 +1090,7 @@ pub fn check(doc: &Doc) -> (String, Option<(String, String)>) {
 /// Exposed so downstream consumers (e.g. a query engine doing loss-bounded
 /// traversal) can compare grades in-process instead of reimplementing the
 /// order and forking the semantics.
+#[cfg_attr(creusot, ensures(result == grade_le_m(lo.deep_model(), hi.deep_model())))]
 #[must_use]
 pub fn grade_le(lo: &Grade, hi: &Grade) -> bool {
     fate_le(&lo.q, &hi.q)

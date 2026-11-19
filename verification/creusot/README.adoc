@@ -1,0 +1,101 @@
+// SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Creusot proofs of the Rust fast core
+
+Status: *OPEN*. The contracts and lemmas are written. Creusot has not run
+on them yet, so nothing here counts as proved. The row in
+`docs/status/PROOF-STATUS.adoc` stays OPEN until a green run of
+`.github/workflows/creusot.yml` is cited there as the receipt.
+
+== What is checked, and where
+
+The contracts are attributes on the shipping code in `src/rust/src/lib.rs`,
+written as `#[cfg_attr(creusot, ...)]`. The logical model and the laws are in
+`src/rust/src/creusot_spec.rs`, compiled only under `cfg(creusot)`.
+
+This directory is a second Cargo package whose library root *is*
+`src/rust/src/lib.rs`. It is the same file, not a copy. The package only adds
+`creusot-std`. `tropecheck-rs` keeps no dependencies and still builds offline.
+Under plain rustc every attribute expands to nothing, so runtime behaviour does not change.
+
+[cols="2,3,1",options="header"]
+|===
+| Code | Contract | State
+
+| `dkey`, `dadd`, `fate_le`, `fate_compose`, `fate_meet`, `bond_*`, `merge_*`, `epsilon`, `grade_compose`, `grade_meet`, `grade_le`
+| The result equals a clause-by-clause transcription (`*_m` in `creusot_spec.rs`). `dadd`, `fate_compose` and `grade_compose` require no i64 overflow (owner ruling 1).
+| OPEN (not yet run)
+
+| `violations`
+| The result is empty iff the floor is met on every coordinate it sets (`floor_le_m`).
+| OPEN (not yet run)
+
+| L1, L2, L6, L3 (`Falsified`, `Misbound`, `Conflated`, fidelity `Top`/`Inf`), L5, honest closure, wf preservation, preorder and antisymmetry, A2 and chain on the honest fragment, L4 per coordinate and at grade level, meet as glb on the honest fragment, honest correspondence with Agda `fateLte`/`bondLte`/`mergeLte`/`dLte`, verdict soundness
+| Lemmas in `creusot_spec.rs`
+| OPEN (not yet run)
+
+| `acc`, `check`, `topo_witness_order`, `validate_graph`
+| No contract. Each uses `BTreeMap`/`BTreeSet`, and creusot-std v0.15.0 has no specs for them.
+| OPEN
+
+| JSON parser, `dec_*` decoder
+| No contract yet. The intended contract is that `Ok` implies honest, non-negative and A3-normal, and that `Predicated` occurs only when `is_q`.
+| OPEN
+|===
+
+== The divergence this proof carries (not fixed)
+
+Agda (`TB/Order.agda`) and Idris2 (`Trope/Coords.idr`) put each deceptive
+bottom at the bottom of the order: `fateLte Falsified _ = true`, and likewise
+for `Misbound` and `Conflated`. The Rust order makes each deceptive value
+comparable only with itself. So the claim in `grade_le`'s doc comment that it
+"mirrors gradeLte exactly" is false on deceptive inputs. Also, `fate_meet` is not a
+lower bound when one side is deceptive: `meet(Falsified, Present) = Dropped`.
+
+The CLI cannot reach this. The prevent-profile decoder rejects deceptive
+writes, and honesty is closed under compose and meet. The public library API
+can reach it. The correspondence and glb lemmas are therefore stated on the
+honest fragment. Controls `c03`, `c05` and `c07` keep the divergence live:
+they must be refused. Whether the Rust order or the reference is the one to
+change is an owner ruling, pending.
+
+== Controls and mutants
+
+`run.sh` fails loudly:
+
+* Proofs: `cargo creusot` on this package must succeed.
+* Controls (`controls/`, one Cargo feature each): every false contract must
+  translate to Coma and then be refused by the provers. `c00` is `ensures(false)`.
+* Mutants (`mutants/MUTANTS`): each one-line code change must still compile
+  with plain rustc, translate to Coma, and be refused.
+
+Exit 0 means all good, 1 means red, 3 means Creusot is not installed. Exit 3 is
+OPEN and never counts as green.
+
+== ASSUMED boundaries
+
+These are third-party specifications that the proofs rely on and do not re-prove (PROOF-POLICY):
+
+[cols="1,3",options="header"]
+|===
+| ID | Assumption
+
+| CR-A1
+| creusot-std v0.15.0's derive specs: `#[derive(DeepModel)]`, Creusot's `PartialEq` derive (`eq` returns deep-model equality), and rustc's builtin `Clone` derive with Creusot's structural postcondition.
+
+| CR-A2
+| creusot-std v0.15.0's specs for `Vec::new`, `Vec::push` and `Vec::len` (used by `violations`), and for `i64`/`i8`/`u8` arithmetic and views.
+
+| CR-A3
+| The pinned Why3, Why3find, Alt-Ergo, Z3 and cvc5 (`PINS`) are sound.
+|===
+
+The proofs add no `#[trusted]` item and no admitted lemma. If one is ever
+needed, it must get a row here first.
+
+== Running
+
+----
+bash verification/creusot/install.sh   # pinned toolchain (PINS); needs opam
+just creusot                           # = bash verification/creusot/run.sh
+----

@@ -1,0 +1,31 @@
+# SPDX-FileCopyrightText: © 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+# SPDX-License-Identifier: MPL-2.0
+#
+# Creusot verification crate for the Rust fast core.
+#
+# Its library root IS src/rust/src/lib.rs: the same source file, not a copy, so
+# what Creusot proves is the code that ships. This crate only adds the
+# creusot-std dependency. Under creusot-rustc the `cfg(creusot)` attributes in
+# lib.rs switch on; under plain rustc they are inert. tropecheck-rs itself keeps
+# no dependency and still builds offline.
+#
+# Run with `just creusot` (verification/creusot/run.sh). Toolchain pins are in
+# verification/creusot/PINS.
+[package]
+name = "tropecheck-creusot"
+version = "0.1.0"
+edition = "2021"
+license = "MPL-2.0"
+publish = false
+
+[lib]
+name = "tropecheck_rs"
+path = "../../src/rust/src/lib.rs"
+
+[dependencies]
+creusot-std = "=0.15.0"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(creusot)'] }
+
+[workspace]

@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: MPL-2.0
+# Creusot toolchain pins. run.sh and .github/workflows/creusot.yml read this file.
+# The solver versions are the ones creusot v0.15.0's installer fetches and
+# sha256-checks (creusot-setup/src/tools_versions_urls.rs at the tag).
+CREUSOT_REPO=https://github.com/creusot-rs/creusot
+CREUSOT_TAG=v0.15.0
+CREUSOT_SHA=fd4d85b2c237ef93147e99f6a0c04acfc89a6a17
+RUST_NIGHTLY=nightly-2026-08-03
+WHY3_GIT=05bf4ddf55cb3042f34c3bc0ed3aff56a226978a
+WHY3FIND_GIT=89dd8721fb9de7fea5d00e58ebdabdc75a8235b8
+ALTERGO=2.6.4
+Z3=5.3.2
+CVC5=1.4.1
+OCAML=4.14.2
