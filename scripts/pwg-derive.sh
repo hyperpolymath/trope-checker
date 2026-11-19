@@ -69,7 +69,7 @@ DERIVE='
   # PROVEN-WITH-AXIOMS and its 2.2 correspondence state is RECONCILED." And:
   # a waived leg, an unavailable leg and any BRIDGE-PENDING leg do not count.
   # Also require at least one current receipt with a full 40-character commit,
-  # resolving the leg’s receipt IDs through the supplied receipt map.
+  # resolving the receipt IDs of the leg through the supplied receipt map.
   def counts($leg; $receipts):
     ($leg.token | accepted)
     and $leg.state == "RECONCILED"
