@@ -2,10 +2,12 @@
 // SPDX-License-Identifier: CC-BY-SA-4.0
 = Creusot proofs of the Rust fast core
 
-Status: *OPEN*. The contracts and lemmas are written. Creusot has not run
-on them yet, so nothing here counts as proved. The row in
-`docs/status/PROOF-STATUS.adoc` stays OPEN until a green run of
-`.github/workflows/creusot.yml` is cited there as the receipt.
+Status: *PROVED on the stated scope*. The receipt is CI run 44525604501 of
+`.github/workflows/creusot.yml` (head b6a3c3e, 19 Nov 2026). Every file named in
+`SCOPE` proved. All 9 controls and all 7 mutants were refused, and every
+executable witness behaved as required. The claim covers `SCOPE` only. Every item
+marked OPEN below stays OPEN, and the derived `Clone` and `PartialEq` files are
+assumed (CR-A1), not proved. `docs/status/PROOF-STATUS.adoc` cites the same run.
 
 == What is checked, and where
 
@@ -24,15 +26,15 @@ Under plain rustc every attribute expands to nothing, so runtime behaviour does 
 
 | `dkey`, `dadd`, `fate_le`, `fate_compose`, `fate_meet`, `bond_*`, `merge_*`, `epsilon`, `grade_compose`, `grade_meet`, `grade_le`
 | The result equals a clause-by-clause transcription (`*_m` in `creusot_spec.rs`). `dadd`, `fate_compose` and `grade_compose` require no i64 overflow (owner ruling 1).
-| OPEN (not yet run)
+| PROVED (run 44525604501)
 
 | `violations`
 | The result is empty iff the floor is met on every coordinate it sets (`floor_le_m`).
-| OPEN (not yet run)
+| PROVED (run 44525604501)
 
 | L1, L2, L6, L3 (`Falsified`, `Misbound`, `Conflated`, fidelity `Top`/`Inf`), L5, honest closure, wf preservation, preorder and antisymmetry, A2 and chain on the honest fragment, L4 per coordinate and at grade level, meet as glb on the honest fragment, honest correspondence with Agda `fateLte`/`bondLte`/`mergeLte`/`dLte`, and verdict soundness as a lemma about the order only (floor ⊑ g and g ⊑ ρ imply floor ⊑ ρ). That is not a proof about the shipped `check`, which is OPEN
 | Lemmas in `creusot_spec.rs`
-| OPEN (not yet run)
+| PROVED (run 44525604501)
 
 | `acc`, `check`, `topo_witness_order`, `validate_graph`
 | No contract, and excluded from the Creusot build with `#[cfg(not(creusot))]`. Each uses `BTreeMap`/`BTreeSet`, for which creusot-std v0.15.0 has no specs, and `acc` recurses without a variant.
