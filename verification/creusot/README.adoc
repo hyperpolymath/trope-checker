@@ -83,6 +83,26 @@ week's decision. See the named row in `docs/status/PROOF-STATUS.adoc`.
 Exit 0 means all good, 1 means red, 3 means Creusot is not installed. Exit 3 is
 OPEN and never counts as green.
 
+== What a refusal means
+
+A control or mutant counts as refused only on why3find's own verdict for the
+intended function. The log must contain all of these, matching the format seen in
+CI run 44507269211:
+
+* `... : proof failed`
+* `Goal Coma.vc_<fn>: ✘`
+* `Error: <n> unproved file`
+
+It must also contain no failing goal for any other function.
+
+Limit, stated plainly: why3find's `✘` means "not proved within the prover budget".
+It does not separate a refutation from a timeout. A refusal therefore shows that
+the provers could not establish the false claim. On its own, it does not show
+that a solver found the claim false. Each control is false by construction, and
+`controls/src/lib.rs` gives the concrete counterexample for each. Each mutant
+changes the result on a concrete input. An independent, executable witness for
+each one is a proposed follow-up, pending the hub's decision.
+
 == ASSUMED boundaries
 
 These are third-party specifications that the proofs rely on and do not re-prove (PROOF-POLICY):

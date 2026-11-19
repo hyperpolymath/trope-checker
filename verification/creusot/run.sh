@@ -10,9 +10,9 @@
 #      Coma, produce its own Coma file, and then be REFUSED by the provers.
 #   4. Every mutant (mutants/MUTANTS) must compile with plain rustc, translate to
 #      Coma, and then be REFUSED by the provers on the SCOPE files.
-# A refusal counts only on a positive why3find verdict: a "proof failed" line in the
-# intended function's own Coma file (<fn>.coma) plus a "Goal ...:" line. Any other
-# failure is unrecognised and fails the gate. A setup error (missing why3find.json, no files,
+# A refusal counts only on a positive why3find verdict on the intended function:
+# "proof failed", "Goal Coma.vc_<fn>: ✘", "Error: <n> unproved file", and no
+# other failing goal (see prover_refused). Any other failure fails the gate. A setup error (missing why3find.json, no files,
 # launch failure) is a gate failure, never a refusal.
 # Regeneration is forced every time: sources are touched so Creusot's Cargo cache
 # (target/creusot) cannot skip creusot-rustc, and verif/ is wiped. A self-check
@@ -50,17 +50,22 @@ setup_error() {
 }
 
 # prover_refused LOGFILE FN: true only for a positive why3find verdict on FN.
-# why3find (pinned 89dd8721, src/prove.ml) prints, for each goal it fails to
-# prove, "<position>: proof failed" and then "Goal <Theory>.<goal>: ...". The
-# position names the Coma file, and Creusot lays files out as
-# verif/<crate>_rlib/<module>/<fn>.coma (the layout SCOPE patterns match). So a
-# refusal needs a "proof failed" line whose file is exactly FN.coma: a failure in
-# fate_le_m.coma does not count for fate_le. Colour codes are stripped first.
+# Format taken from real CI logs (run 44507269211, why3find 89dd8721): for each
+# goal it cannot prove, why3find prints "<position>: proof failed" (the position
+# is the Rust source span, or the .coma file for a logic lemma), then
+# "Goal Coma.vc_<fn>: ✘ ...", and finally "Error: <n> unproved file". A refusal
+# needs all three, a failing Goal line naming exactly vc_<fn>, and no failing
+# Goal line for any other function. Anything else is an unrecognised failure.
+# Note: why3find's ✘ means "not proved within the prover budget"; it does not
+# distinguish a refutation from a timeout. See README "What a refusal means".
 prover_refused() {
-  local logfile="$1" fn="$2" plain
+  local logfile="$1" fn="$2" plain others
   plain="$(sed 's/\x1b\[[0-9;]*m//g' "$logfile")"
-  grep -E ': proof failed' <<<"$plain" | grep -qE "/${fn}\.coma([^A-Za-z0-9_]|$)" \
-    && grep -qE '^ *Goal [^ ]+:' <<<"$plain"
+  grep -q ': proof failed$' <<<"$plain" || return 1
+  grep -qE '^Error: [0-9]+ unproved file' <<<"$plain" || return 1
+  grep -qE "^ *Goal Coma\.vc_${fn}: ✘" <<<"$plain" || return 1
+  others="$(grep -E '^ *Goal [^ ]+: ✘' <<<"$plain" | grep -vE "^ *Goal Coma\.vc_${fn}: ✘" || true)"
+  [[ -z "$others" ]]
 }
 
 # show_log LOGFILE: print the prover output of an unrecognised failure into the CI
@@ -174,9 +179,10 @@ while IFS=$'\t' read -r id fn old new; do
   mkdir -p "$work/src/rust" "$work/verification"
   cp -r "$root/src/rust/src" "$work/src/rust/src"
   cp "$root/src/rust/Cargo.toml" "$work/src/rust/"
-  cp -r "$here" "$work/verification/creusot"
-  rm -rf "$work/verification/creusot/target" "$work/verification/creusot/verif" \
-         "$work/verification/creusot/controls/target" "$work/verification/creusot/controls/verif"
+  # Copy the verification tree without build output, so each mutant starts with
+  # a fresh target/ and verif/ (both trees).
+  (cd "$here" && find . \( -path ./target -o -path ./verif -o -path ./controls/target -o -path ./controls/verif \) -prune -o -type f -print0 \
+     | while IFS= read -r -d '' f; do mkdir -p "$work/verification/creusot/$(dirname "$f")"; cp "$f" "$work/verification/creusot/$f"; done)
   n="$(grep -cF -- "$old" "$work/src/rust/src/lib.rs" || true)"
   if [[ "$n" != "1" ]]; then
     echo "FAIL: mutant $id ($fn): original text found $n times, expected 1"
