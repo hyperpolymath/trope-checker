@@ -35,10 +35,10 @@ export OPAMYES=1
 [[ -d "${OPAMROOT:-$HOME/.opam}" ]] || opam init --bare --disable-sandboxing -n
 opam switch list 2>/dev/null | grep -q '^[ *→]*creusot ' \
   || opam switch create creusot "ocaml-base-compiler.$OCAML"
-eval "$(opam env --switch=creusot)"
+# No eval (estate rule): every opam-dependent command runs under `opam exec`.
 grep -q "$WHY3_GIT" "$dest/creusot-deps.opam" || { echo "FAIL: why3 pin drifted" >&2; exit 1; }
 grep -q "$WHY3FIND_GIT" "$dest/creusot-deps.opam" || { echo "FAIL: why3find pin drifted" >&2; exit 1; }
-(cd "$dest" && opam install --deps-only ./creusot-deps.opam)
-(cd "$dest" && ./INSTALL)
-cargo creusot --help >/dev/null
+(cd "$dest" && opam install --switch=creusot --deps-only ./creusot-deps.opam)
+(cd "$dest" && opam exec --switch=creusot -- ./INSTALL)
+opam exec --switch=creusot -- cargo creusot --help >/dev/null
 echo "creusot $CREUSOT_TAG installed"

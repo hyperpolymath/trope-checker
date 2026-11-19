@@ -51,5 +51,4 @@ jobs:
           CREUSOT_LOG_DIR: ${{ runner.temp }}/creusot-logs
         run: |
           set -euo pipefail
-          eval "$(opam env --switch=creusot)"
-          bash verification/creusot/run.sh
+          opam exec --switch=creusot -- bash verification/creusot/run.sh
