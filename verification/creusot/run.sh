@@ -41,7 +41,8 @@ mapfile -t scope < <(grep -v '^#' "$here/SCOPE" | sed '/^[[:space:]]*$/d')
 
 # setup_error LOGFILE: true if the prove step failed before or outside the provers.
 setup_error() {
-  grep -qE "No files to prove|failed to launch|not found\. Perhaps|Pattern must be non-empty|could not compile" "$1"
+  local logfile="$1"
+  grep -qE "No files to prove|failed to launch|not found\. Perhaps|Pattern must be non-empty|could not compile" "$logfile"
 }
 
 # fresh_coma WS LOGFILE [CARGO ARGS...]: force regeneration, translate, require output.
@@ -70,7 +71,7 @@ for p in "${scope[@]}"; do
 done
 (cd "$here" && find verif -name '*.coma' | sort) >"$log/all-coma.txt"
 (cd "$here" && cargo creusot --only=prove --dry-run-why3find "${scope[@]}") 2>&1 \
-  | tr ' "' '\n\n' | grep '\.coma$' | sort -u >"$log/in-scope.txt" || true
+  | tr -s ' "' '\n' | grep '\.coma$' | sort -u >"$log/in-scope.txt" || true
 echo "Coma files: $(wc -l <"$log/all-coma.txt") total, $(wc -l <"$log/in-scope.txt") in SCOPE."
 echo "OPEN (translated, not in SCOPE, not proved):"
 comm -23 "$log/all-coma.txt" "$log/in-scope.txt" | sed 's/^/  /'
