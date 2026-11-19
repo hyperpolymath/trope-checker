@@ -15,7 +15,10 @@
 name: "🔴 Gate: Creusot (Rust core)"
 
 on:
+  # push: main only. A PR branch is covered by the pull_request event; running on
+  # both would start two identical long jobs per push in separate concurrency groups.
   push:
+    branches: [main]
     paths:
       - 'src/rust/**'
       - 'verification/creusot/**'

@@ -21,12 +21,15 @@ use std::collections::{BTreeMap, BTreeSet};
 // changes. The logical model and the laws live in `creusot_spec.rs`.
 #[cfg(creusot)]
 use creusot_std::prelude::*;
-// The glob import cannot disambiguate the derive macros `Clone` and `PartialEq`
-// from the std prelude's, so both are imported explicitly (creusot-std prelude docs).
+// creusot-std's prelude shadows four std-prelude names (Clone, PartialEq, Default,
+// vec!). A glob import cannot disambiguate them, so the ones this file uses are
+// imported explicitly (creusot-std prelude docs; first CI run, E0659 on `vec`).
 #[cfg(creusot)]
 use creusot_std::std::clone::Clone;
 #[cfg(creusot)]
 use creusot_std::std::cmp::PartialEq;
+#[cfg(creusot)]
+use creusot_std::std::vec::vec;
 #[cfg(creusot)]
 pub mod creusot_spec;
 #[cfg(creusot)]

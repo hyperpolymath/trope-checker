@@ -36,6 +36,7 @@ for ws in "$here" "$here/controls"; do
 done
 
 fail=0
+COMA_GLOB="*.coma"
 log="${CREUSOT_LOG_DIR:-$(mktemp -d)}"
 mkdir -p "$log"
 echo "logs: $log"
@@ -65,8 +66,8 @@ prover_refused() {
 # coma_newer_than WS MARKER: Coma output exists, and every file is newer than MARKER.
 coma_newer_than() {
   local ws="$1" marker="$2"
-  [[ -n "$(find "$ws/verif" -name '*.coma' -print -quit 2>/dev/null)" ]] \
-    && [[ -z "$(find "$ws/verif" -name '*.coma' ! -newer "$marker" -print -quit)" ]]
+  [[ -n "$(find "$ws/verif" -name "$COMA_GLOB" -print -quit 2>/dev/null)" ]] \
+    && [[ -z "$(find "$ws/verif" -name "$COMA_GLOB" ! -newer "$marker" -print -quit)" ]]
 }
 
 # fresh_coma WS LOGFILE [CARGO ARGS...]: force regeneration, translate, require output.
@@ -77,7 +78,7 @@ fresh_coma() {
   if ! (cd "$ws" && cargo creusot --only=coma "$@") >"$out" 2>&1; then
     return 1
   fi
-  [[ -n "$(find "$ws/verif" -name '*.coma' -print -quit 2>/dev/null)" ]]
+  [[ -n "$(find "$ws/verif" -name "$COMA_GLOB" -print -quit 2>/dev/null)" ]]
 }
 
 # ── 1. the positive proof, on SCOPE only ──
@@ -103,7 +104,7 @@ for p in "${scope[@]}"; do
     fail=1
   fi
 done
-(cd "$here" && find verif -name '*.coma' | sort) >"$log/all-coma.txt"
+(cd "$here" && find verif -name "$COMA_GLOB" | sort) >"$log/all-coma.txt"
 (cd "$here" && cargo creusot --only=prove --dry-run-why3find "${scope[@]}") 2>&1 \
   | tr -s ' "' '\n' | grep '\.coma$' | sort -u >"$log/in-scope.txt" || true
 echo "Coma files: $(wc -l <"$log/all-coma.txt") total, $(wc -l <"$log/in-scope.txt") in SCOPE."
@@ -176,7 +177,7 @@ while IFS=$'\t' read -r id fn old new; do
     fail=1; rm -rf "$work"; continue
   fi
   if ! (cd "$work/verification/creusot" && cargo creusot --only=coma) >"$log/mutant-$id-coma.log" 2>&1 \
-     || [[ -z "$(find "$work/verification/creusot/verif" -name '*.coma' -print -quit 2>/dev/null)" ]]; then
+     || [[ -z "$(find "$work/verification/creusot/verif" -name "$COMA_GLOB" -print -quit 2>/dev/null)" ]]; then
     echo "FAIL: mutant $id did not translate to Coma; a refusal would prove nothing"
     fail=1; rm -rf "$work"; continue
   fi
