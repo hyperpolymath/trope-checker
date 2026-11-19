@@ -35,11 +35,11 @@ Under plain rustc every attribute expands to nothing, so runtime behaviour does 
 | OPEN (not yet run)
 
 | `acc`, `check`, `topo_witness_order`, `validate_graph`
-| No contract. Each uses `BTreeMap`/`BTreeSet`, and creusot-std v0.15.0 has no specs for them.
+| No contract, and excluded from the Creusot build with `#[cfg(not(creusot))]`. Each uses `BTreeMap`/`BTreeSet`, for which creusot-std v0.15.0 has no specs, and `acc` recurses without a variant.
 | OPEN
 
-| JSON parser, `dec_*` decoder
-| No contract yet. The intended contract is that `Ok` implies honest, non-negative and A3-normal, and that `Predicated` occurs only when `is_q`.
+| JSON parser (`Json`, `P`, `parse_json`), `dec_*` decoder
+| No contract yet, and excluded from the Creusot build with `#[cfg(not(creusot))]`: Creusot rejects the recursive `Json` type (nested under `Vec`) and the mutually recursive `value`/`array`/`object` without termination arguments. The intended contract is that `Ok` implies honest, non-negative and A3-normal, and that `Predicated` occurs only when `is_q`.
 | OPEN
 |===
 
@@ -65,9 +65,9 @@ week's decision. See the named row in `docs/status/PROOF-STATUS.adoc`.
 `run.sh` fails loudly:
 
 * Proofs: every Coma file named in `SCOPE` must prove. Each `SCOPE` pattern must
-  match at least one file. Creusot translates the whole crate, so every file
-  outside `SCOPE` (the parser, the decoder, `acc` and the rest) is printed as
-  OPEN. It is not proved and not claimed.
+  match at least one file. Any other translated file is printed as OPEN. The
+  parser, the decoder, `acc`, `check` and the witness order are not translated
+  at all (`#[cfg(not(creusot))]`). None of them is proved or claimed.
 * Controls (`controls/`, one Cargo feature each): every false contract must
   translate to Coma, produce its own Coma file, and then be refused by the
   provers. `c00` is `ensures(false)`.

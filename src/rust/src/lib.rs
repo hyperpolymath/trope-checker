@@ -37,6 +37,7 @@ use creusot_spec::*;
 
 // ──────────────────────────── JSON (minimal, std-only) ────────────────────────────
 #[derive(Clone, Debug)]
+#[cfg(not(creusot))] // OPEN, outside the Creusot proof scope (verification/creusot/SCOPE)
 pub enum Json {
     Null,
     Bool(bool),
@@ -46,10 +47,12 @@ pub enum Json {
     Obj(Vec<(String, Json)>),
 }
 
+#[cfg(not(creusot))] // OPEN, outside the Creusot proof scope (verification/creusot/SCOPE)
 pub struct P<'a> {
     s: &'a [u8],
     i: usize,
 }
+#[cfg(not(creusot))] // OPEN, outside the Creusot proof scope (verification/creusot/SCOPE)
 impl<'a> P<'a> {
     #[must_use]
     pub fn new(s: &'a str) -> Self {
@@ -239,6 +242,7 @@ impl<'a> P<'a> {
 ///
 /// # Errors
 /// Returns an error for malformed input or trailing content.
+#[cfg(not(creusot))] // OPEN, outside the Creusot proof scope (verification/creusot/SCOPE)
 pub fn parse_json(s: &str) -> Result<Json, String> {
     let mut p = P::new(s);
     let v = p.value()?;
@@ -248,6 +252,7 @@ pub fn parse_json(s: &str) -> Result<Json, String> {
     }
     Ok(v)
 }
+#[cfg(not(creusot))] // OPEN, outside the Creusot proof scope (verification/creusot/SCOPE)
 impl Json {
     #[must_use]
     pub fn field(&self, k: &str) -> Option<&Json> {
@@ -541,6 +546,7 @@ pub struct Doc {
 ///
 /// # Errors
 /// Returns an error unless the value is a non-negative integer, `"inf"`, or `"top"`.
+#[cfg(not(creusot))] // OPEN, outside the Creusot proof scope (verification/creusot/SCOPE)
 pub fn dec_delta(path: &str, v: &Json) -> Result<Delta, String> {
     match v {
         Json::Num(n) if *n >= 0 => Ok(Delta::Q(*n)),
@@ -558,6 +564,7 @@ pub fn dec_delta(path: &str, v: &Json) -> Result<Delta, String> {
 ///
 /// # Errors
 /// Returns an error for malformed or deceptive fates, or predicates outside quality.
+#[cfg(not(creusot))] // OPEN, outside the Creusot proof scope (verification/creusot/SCOPE)
 pub fn dec_fate(path: &str, is_q: bool, v: &Json) -> Result<Fate, String> {
     match v.field("k").and_then(|k| k.as_str()) {
         Some("Present") => Ok(Fate::Present),
@@ -593,6 +600,7 @@ pub fn dec_fate(path: &str, is_q: bool, v: &Json) -> Result<Fate, String> {
 ///
 /// # Errors
 /// Returns an error for a missing, unknown, or deceptive bond.
+#[cfg(not(creusot))] // OPEN, outside the Creusot proof scope (verification/creusot/SCOPE)
 pub fn dec_bond(path: &str, v: &Json) -> Result<Bond, String> {
     match v.field("k").and_then(|k| k.as_str()) {
         Some("Intact") => Ok(Bond::Intact),
@@ -611,6 +619,7 @@ pub fn dec_bond(path: &str, v: &Json) -> Result<Bond, String> {
 ///
 /// # Errors
 /// Returns an error for a missing, unknown, or deceptive merge, or a missing or empty fusion tag.
+#[cfg(not(creusot))] // OPEN, outside the Creusot proof scope (verification/creusot/SCOPE)
 pub fn dec_merge(path: &str, v: &Json) -> Result<Merge, String> {
     match v.field("k").and_then(|k| k.as_str()) {
         Some("Single") => Ok(Merge::Single),
@@ -632,6 +641,7 @@ pub fn dec_merge(path: &str, v: &Json) -> Result<Merge, String> {
 ///
 /// # Errors
 /// Returns an error naming the path and key when the field is absent.
+#[cfg(not(creusot))] // OPEN, outside the Creusot proof scope (verification/creusot/SCOPE)
 pub fn req<'a>(path: &str, k: &str, v: &'a Json) -> Result<&'a Json, String> {
     v.field(k).ok_or_else(|| format!("{path}: missing \"{k}\""))
 }
@@ -643,6 +653,7 @@ pub fn req<'a>(path: &str, k: &str, v: &'a Json) -> Result<&'a Json, String> {
 ///
 /// # Errors
 /// Returns an error for missing or invalid coordinates or an incoherent bond.
+#[cfg(not(creusot))] // OPEN, outside the Creusot proof scope (verification/creusot/SCOPE)
 pub fn dec_grade(epath: &str, value: &Json) -> Result<Grade, String> {
     let fate = req(&format!("{epath}/grade"), "fate", value)?;
     let quality = dec_fate(
@@ -697,6 +708,7 @@ pub fn dec_grade(epath: &str, value: &Json) -> Result<Grade, String> {
 ///
 /// Return an empty list if `v` is not an array.
 #[must_use]
+#[cfg(not(creusot))] // OPEN, outside the Creusot proof scope (verification/creusot/SCOPE)
 pub fn str_list(v: &Json) -> Vec<String> {
     // Deliberately not Option::map_or_default (unstable on some stable
     // toolchains) nor map().unwrap_or_default() (clippy::map_unwrap_or
@@ -718,6 +730,7 @@ pub fn str_list(v: &Json) -> Vec<String> {
 /// # Errors
 /// Returns an error for a missing or non-string ID or type, an unknown type,
 /// or a `FloatingQuality` node listing `bearer` in `present`.
+#[cfg(not(creusot))] // OPEN, outside the Creusot proof scope (verification/creusot/SCOPE)
 pub fn dec_node(v: &Json) -> Result<Node, String> {
     let id = v
         .field("id")
@@ -750,6 +763,7 @@ pub fn dec_node(v: &Json) -> Result<Node, String> {
 ///
 /// # Errors
 /// Returns an error for a missing ID or output, or a missing or invalid grade.
+#[cfg(not(creusot))] // OPEN, outside the Creusot proof scope (verification/creusot/SCOPE)
 pub fn dec_edge(v: &Json) -> Result<Edge, String> {
     let id = v
         .field("id")
@@ -788,6 +802,7 @@ pub fn dec_edge(v: &Json) -> Result<Edge, String> {
 ///
 /// # Errors
 /// Returns an error if a supplied coordinate is invalid in the prevent profile.
+#[cfg(not(creusot))] // OPEN, outside the Creusot proof scope (verification/creusot/SCOPE)
 pub fn dec_floor(v: &Json) -> Result<Floor, String> {
     let ff = |k: &str, is_q: bool| -> Result<Option<Fate>, String> {
         match v.field("fate").and_then(|fa| fa.field(k)) {
@@ -824,6 +839,7 @@ pub fn dec_floor(v: &Json) -> Result<Floor, String> {
 /// Structural faults are validation faults and MUST NOT produce a verdict:
 /// accumulation treats a missing producer as grade ε, so without this check
 /// an undeclared `use_model.output` silently returned `p-sufficient`.
+#[cfg(not(creusot))] // OPEN, outside the Creusot proof scope (verification/creusot/SCOPE)
 fn validate_graph(nodes: &[Node], edges: &[Edge], out: &str) -> Result<(), String> {
     let mut declared: BTreeSet<&str> = BTreeSet::new();
     for n in nodes {
@@ -889,6 +905,7 @@ fn validate_graph(nodes: &[Node], edges: &[Edge], out: &str) -> Result<(), Strin
 /// invalid nodes, edges, or floors, or a structurally invalid graph
 /// (duplicate node or edge IDs, undeclared node references, duplicate
 /// producers, or cycles) — see `validate_graph`.
+#[cfg(not(creusot))] // OPEN, outside the Creusot proof scope (verification/creusot/SCOPE)
 pub fn dec_doc(v: &Json) -> Result<Doc, String> {
     // Accepted document versions (IR 0.2, R-2026-07-07). "0.1" stays accepted:
     // the wire format is identical, and 0.1 documents are normalized and graded
@@ -938,6 +955,7 @@ pub fn dec_doc(v: &Json) -> Result<Doc, String> {
 }
 
 // ──────────────────────────── checker (DAG accumulate + verdict + witness) ────────
+#[cfg(not(creusot))] // OPEN, outside the Creusot proof scope (verification/creusot/SCOPE)
 pub fn acc(edges: &[Edge], node: &str, fuel: usize, memo: &mut BTreeMap<String, Grade>) -> Grade {
     if fuel == 0 {
         return epsilon();
@@ -1015,6 +1033,7 @@ pub fn violations(fl: &Floor, g: &Grade) -> Vec<String> {
 /// Documents reaching here are schema-valid DAGs. On a malformed cyclic
 /// graph the unemittable remainder is simply skipped (accumulation stays
 /// fuel-bounded in `acc`), never an infinite loop.
+#[cfg(not(creusot))] // OPEN, outside the Creusot proof scope (verification/creusot/SCOPE)
 fn topo_witness_order(doc: &Doc) -> Vec<&Edge> {
     let producer: BTreeMap<&str, &Edge> =
         doc.edges.iter().map(|e| (e.output.as_str(), e)).collect();
@@ -1061,6 +1080,7 @@ fn topo_witness_order(doc: &Doc) -> Vec<&Edge> {
 }
 
 #[must_use]
+#[cfg(not(creusot))] // OPEN, outside the Creusot proof scope (verification/creusot/SCOPE)
 pub fn check(doc: &Doc) -> (String, Option<(String, String)>) {
     let fuel = doc.edges.len() + 1;
     let mut memo = BTreeMap::new();

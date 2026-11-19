@@ -85,7 +85,9 @@ fresh_coma() {
 echo "== prove: SCOPE of the verification crate (src/rust/src/lib.rs + creusot_spec.rs)"
 if ! fresh_coma "$here" "$log/coma.log"; then
   echo "FAIL: translation to Coma failed or wrote no Coma file (see $log/coma.log)"
-  tail -40 "$log/coma.log"
+  # Every error with its context, not just the tail: a truncated log hid the
+  # first error of an earlier run.
+  grep -v -E '^ *(Compiling|Checking|Downloaded|Downloading|Updating|Locking) ' "$log/coma.log" | head -400
   exit 1
 fi
 # Regeneration self-check: translate again with the same inputs and a warm
