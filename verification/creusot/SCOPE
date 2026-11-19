@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: MPL-2.0
+# Proof scope: the Coma files the positive proof must discharge. One cargo-creusot
+# segment pattern per line (see `cargo creusot --help`, <PATTERN>). run.sh fails if
+# a pattern matches no file, so a renamed function cannot silently drop out.
+# Every Coma file NOT matched here is out of scope and listed as OPEN in the log:
+# the JSON parser, the decoder, acc/check/topo_witness_order/validate_graph.
+tropecheck_rs_rlib::creusot_spec::*
+tropecheck_rs_rlib::dkey
+tropecheck_rs_rlib::dadd
+tropecheck_rs_rlib::fate_le
+tropecheck_rs_rlib::fate_compose
+tropecheck_rs_rlib::fate_meet
+tropecheck_rs_rlib::bond_rank
+tropecheck_rs_rlib::bond_le
+tropecheck_rs_rlib::bond_compose
+tropecheck_rs_rlib::bond_meet
+tropecheck_rs_rlib::merge_rank
+tropecheck_rs_rlib::merge_le
+tropecheck_rs_rlib::merge_compose
+tropecheck_rs_rlib::merge_meet
+tropecheck_rs_rlib::epsilon
+tropecheck_rs_rlib::grade_compose
+tropecheck_rs_rlib::grade_meet
+tropecheck_rs_rlib::grade_le
+tropecheck_rs_rlib::violations

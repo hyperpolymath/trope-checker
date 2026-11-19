@@ -63,11 +63,21 @@ change is an owner ruling, pending.
 
 `run.sh` fails loudly:
 
-* Proofs: `cargo creusot` on this package must succeed.
+* Proofs: every Coma file named in `SCOPE` must prove. Each `SCOPE` pattern must
+  match at least one file. Creusot translates the whole crate, so every file
+  outside `SCOPE` (the parser, the decoder, `acc` and the rest) is printed as
+  OPEN. It is not proved and not claimed.
 * Controls (`controls/`, one Cargo feature each): every false contract must
-  translate to Coma and then be refused by the provers. `c00` is `ensures(false)`.
+  translate to Coma, produce its own Coma file, and then be refused by the
+  provers. `c00` is `ensures(false)`.
 * Mutants (`mutants/MUTANTS`): each one-line code change must still compile
-  with plain rustc, translate to Coma, and be refused.
+  with plain rustc, translate to Coma, and be refused on the `SCOPE` files.
+* A refusal counts only if why3find ran and its output names the intended
+  control or mutated function. A setup error never counts as a refusal.
+* Regeneration is forced on every run. Sources are touched so Creusot's Cargo
+  cache (`target/creusot`) cannot skip translation, and `verif/` is wiped.
+* `why3find.json` in this directory and in `controls/` is a copy of the file at
+  the pinned Creusot tag. It is what `cargo creusot init` would write.
 
 Exit 0 means all good, 1 means red, 3 means Creusot is not installed. Exit 3 is
 OPEN and never counts as green.

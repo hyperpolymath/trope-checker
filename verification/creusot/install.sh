@@ -35,6 +35,15 @@ export OPAMYES=1
 [[ -d "${OPAMROOT:-$HOME/.opam}" ]] || opam init --bare --disable-sandboxing -n
 opam switch list 2>/dev/null | grep -q '^[ *→]*creusot ' \
   || opam switch create creusot "ocaml-base-compiler.$OCAML"
+# creusot-deps.opam pins the compiler exactly; an older switch cannot satisfy it.
+have_ocaml="$(opam exec --switch=creusot -- ocamlc -version)"
+if [[ "$have_ocaml" != "$OCAML" ]]; then
+  echo "FAIL: opam switch 'creusot' has OCaml $have_ocaml, PINS needs $OCAML." >&2
+  echo "      Replace it: opam switch remove creusot, then rerun this script." >&2
+  exit 1
+fi
+grep -q "\"ocaml\" {= \"$OCAML\"}" "$dest/creusot-deps.opam" \
+  || { echo "FAIL: creusot-deps.opam no longer pins ocaml $OCAML" >&2; exit 1; }
 # No eval (estate rule): every opam-dependent command runs under `opam exec`.
 grep -q "$WHY3_GIT" "$dest/creusot-deps.opam" || { echo "FAIL: why3 pin drifted" >&2; exit 1; }
 grep -q "$WHY3FIND_GIT" "$dest/creusot-deps.opam" || { echo "FAIL: why3find pin drifted" >&2; exit 1; }
