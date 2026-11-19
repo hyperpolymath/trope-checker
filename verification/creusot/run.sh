@@ -134,6 +134,30 @@ else
   fail=1
 fi
 
+# ── 1b. executable falsity witnesses on the shipped code (hub decision (b)) ──
+# verification/creusot/witness: plain cargo test, no Creusot. Every control and
+# every mutant must have a witness test of the same name, and all of them must
+# pass on the shipped code. A missing or failing witness makes the gate red. This
+# makes each refusal stand on a checked counterexample, not on a prover verdict
+# alone (why3find's ✘ does not separate refutation from timeout).
+wit="$here/witness"
+if (cd "$wit" && cargo test --offline --locked -q) >"$log/witness.log" 2>&1; then
+  echo "witnesses (good): every control and mutant witness holds on the shipped code"
+else
+  echo "FAIL: a witness does not hold on the shipped code (see $log/witness.log)"
+  show_log "$log/witness.log"
+  fail=1
+fi
+for name in $(sed -n 's/^\(c[0-9][0-9]_[a-z0-9_]*\) = \[\]$/\1/p' "$here/controls/Cargo.toml"); do
+  grep -q "^fn ${name}()" "$wit/tests/controls.rs" \
+    || { echo "FAIL: control $name has no witness in witness/tests/controls.rs"; fail=1; }
+done
+while IFS=$'\t' read -r id _rest; do
+  [[ -z "${id}" || "${id}" == \#* ]] && continue
+  grep -q "^fn ${id}()" "$wit/tests/mutants.rs" \
+    || { echo "FAIL: mutant $id has no witness in witness/tests/mutants.rs"; fail=1; }
+done < "$here/mutants/MUTANTS"
+
 # ── 2. the planted controls ──
 mapfile -t controls < <(sed -n 's/^\(c[0-9][0-9]_[a-z0-9_]*\) = \[\]$/\1/p' "$here/controls/Cargo.toml")
 [[ "${#controls[@]}" -gt 0 ]] || { echo "FAIL: no controls found"; exit 1; }
@@ -181,7 +205,7 @@ while IFS=$'\t' read -r id fn old new; do
   cp "$root/src/rust/Cargo.toml" "$work/src/rust/"
   # Copy the verification tree without build output, so each mutant starts with
   # a fresh target/ and verif/ (both trees).
-  (cd "$here" && find . \( -path ./target -o -path ./verif -o -path ./controls/target -o -path ./controls/verif \) -prune -o -type f -print0 \
+  (cd "$here" && find . \( -path ./target -o -path ./verif -o -path ./controls/target -o -path ./controls/verif -o -path ./witness/target \) -prune -o -type f -print0 \
      | while IFS= read -r -d '' f; do mkdir -p "$work/verification/creusot/$(dirname "$f")"; cp "$f" "$work/verification/creusot/$f"; done)
   n="$(grep -cF -- "$old" "$work/src/rust/src/lib.rs" || true)"
   if [[ "$n" != "1" ]]; then
@@ -199,6 +223,19 @@ while IFS=$'\t' read -r id fn old new; do
      || [[ -z "$(find "$work/verification/creusot/verif" -name "$COMA_GLOB" -print -quit 2>/dev/null)" ]]; then
     echo "FAIL: mutant $id did not translate to Coma; a refusal would prove nothing"
     fail=1; rm -rf "$work"; continue
+  fi
+  # The witness for this mutant must FAIL on the mutated source: a concrete input
+  # on which the mutant breaks its contract, independent of the provers.
+  if (cd "$work/verification/creusot/witness" && cargo test --offline --locked -q --test mutants -- --exact "$id") \
+       >"$log/mutant-$id-witness.log" 2>&1; then
+    echo "FAIL: mutant $id: its witness still passes on the mutated code; no concrete contract break"
+    fail=1
+  elif ! grep -q 'test result: FAILED. 0 passed; 1 failed' "$log/mutant-$id-witness.log"; then
+    echo "FAIL: mutant $id: the witness did not run exactly one failing test (see $log/mutant-$id-witness.log)"
+    show_log "$log/mutant-$id-witness.log"
+    fail=1
+  else
+    echo "witness breaks (good): mutant $id"
   fi
   if (cd "$work/verification/creusot" && cargo creusot --only=prove "${scope[@]}") >"$log/mutant-$id.log" 2>&1; then
     echo "FAIL: mutant $id ($fn) was PROVED. The contracts do not pin the code."

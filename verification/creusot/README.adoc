@@ -96,12 +96,25 @@ CI run 44507269211:
 It must also contain no failing goal for any other function.
 
 Limit, stated plainly: why3find's `✘` means "not proved within the prover budget".
-It does not separate a refutation from a timeout. A refusal therefore shows that
-the provers could not establish the false claim. On its own, it does not show
-that a solver found the claim false. Each control is false by construction, and
-`controls/src/lib.rs` gives the concrete counterexample for each. Each mutant
-changes the result on a concrete input. An independent, executable witness for
-each one is a proposed follow-up, pending the hub's decision.
+It does not separate a refutation from a timeout. A prover verdict alone would
+therefore show only that the provers could not establish the false claim.
+
+So each refusal also has an executable falsity witness, in `witness/` (plain
+`cargo test`, no Creusot):
+
+* `witness/tests/controls.rs`: one test per control, named after it. It runs a
+  concrete counterexample on the shipped code and passes exactly when that
+  control's claim is false. Examples: `fate_compose(Dropped, Falsified)` is
+  `Falsified` (c01), `dadd(Q(i64::MAX), Q(1))` overflows (c02), and
+  `meet(Falsified, Present) = Dropped` is not below `Falsified` (c03).
+* `witness/tests/mutants.rs`: one test per mutant, named by its id. It states the
+  function's contract on one concrete input. It must pass on the shipped code and
+  fail on the mutated code.
+
+`run.sh` makes the gate red if any witness is missing, if a control witness or a
+mutant witness fails on the shipped code, or if a mutant witness still passes on
+its mutant. A timeout therefore can never pass as a refusal on its own: the
+falsity is checked independently of the provers.
 
 == ASSUMED boundaries
 
