@@ -75,10 +75,9 @@ while IFS=$'\t' read -r id fn old new; do
     echo "FAIL: mutant $id ($fn): original text found $n times, expected 1"
     fail=1; rm -rf "$work"; continue
   fi
-  OLD="$old" NEW="$new" python3 -c '
-import os, sys
-p = sys.argv[1]; s = open(p).read()
-open(p, "w").write(s.replace(os.environ["OLD"], os.environ["NEW"], 1))' "$work/src/rust/src/lib.rs"
+  # Literal (not glob) single replacement in pure bash.
+  src="$(<"$work/src/rust/src/lib.rs")"
+  printf '%s\n' "${src/"$old"/"$new"}" >"$work/src/rust/src/lib.rs"
   if ! (cd "$work/src/rust" && cargo check --offline -q) >"$log/mutant-$id-rustc.log" 2>&1; then
     echo "FAIL: mutant $id does not compile with plain rustc; it would be refused for the wrong reason"
     fail=1; rm -rf "$work"; continue
