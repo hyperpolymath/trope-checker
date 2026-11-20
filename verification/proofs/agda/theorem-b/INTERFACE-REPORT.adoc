@@ -279,9 +279,21 @@ realised dynamically: the deceptive states are unreachable by construction.
   (`cut-symmetric-fails`) and the tier finding (`fate-tier-meet-hom-fails`) both
   DEPEND on F2 and would be false under a commutative model.
 * F4 (three-tier boundary) is preserved as a *structure* subject reduction respects:
-  the cancellative core is closed and cancels; the deceptive tier is forward-closed
-  (L5); the honest-but-lossy middle is shown non-cancellative by witnesses; and the
+  the cancellative core is closed and cancels; the GRADE-LEVEL deceptive predicate
+  is closed under `▷` in its LEFT argument (`deceptive-absorbs-▷`, total — L5);
+  the honest-but-lossy middle is shown non-cancellative by witnesses; and the
   one place a clean homomorphism would over-claim is exhibited as a refuted finding.
+  *Both qualifications on that second clause are load-bearing, and an earlier
+  draft of this line carried neither.* It read "the deceptive tier is
+  forward-closed", which this very checklist refutes two bullets up: the fate
+  TIER is not closed under `▷` on the RIGHT, and `fate-tier-meet-hom-fails` is
+  the witness — `dropped ▷f atten unknown` reduces to `dropped`, which is
+  `honestLossy`, although `atten unknown` is tier-deceptive, because collapse
+  discards the fidelity coordinate the deceptive `unknown` was living in. What
+  is forward-closed is the grade-level *predicate* from the left, which is a
+  different statement and the one Agda proves. `TB/Tier.agda` records the
+  distinction explicitly: the collapse "does not launder the GRADE-level
+  deceptive predicate".
   No statement was silently restricted to make it go through; every scoping choice
   (presence-coarseness, `fuse` omission, `fix` NOT-REACHED) is stated explicitly.
 
