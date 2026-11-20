@@ -40,14 +40,29 @@ command -v jq >/dev/null || { echo "pwg-derive: jq is required" >&2; exit 2; }
 # ---------------------------------------------------------------------------
 # shellcheck disable=SC2016  # single quotes are REQUIRED: $a/$c/$l/$t/$R below are
 # jq variables, and the shell must not expand them.
+#
+# CONSEQUENCE, and it has bitten twice: NO APOSTROPHE MAY APPEAR ANYWHERE INSIDE
+# THIS BLOCK, comments included. One closes the string, and what follows is read
+# as shell. Write "the receipt of the leg", never "the leg's receipt". The first
+# occurrence here was a Unicode right-quote, which survived only because it is
+# not an ASCII apostrophe; "fixing" SC1112 by swapping in a plain one broke the
+# script. Reword instead.
 DERIVE='
   # A section 5 token that means the kernel accepted it.
   def accepted: . == "PROVEN" or . == "PROVEN-WITH-AXIOMS";
 
-  # A receipt is usable when it is the current one and names a full 40-char commit
-  # (8.2 PWG-1: "the source repository and its full 40-character commit").
+  # A receipt is usable when it is the current one, RECORDS A PASS, and names a
+  # full 40-char commit (8.2 PWG-1: "the source repository and its full
+  # 40-character commit").
+  #
+  # The result check is load-bearing, not decorative. Measured 2026-11-16 against
+  # main 0dceab6: flipping the Agda receipt of this ledger to "result": "fail" while
+  # leaving "state": "current" left the census byte-identical -- 17 PWG-3 grades
+  # published on a receipt that records the checker REJECTING the development --
+  # and scripts/pwg-check.sh exited 0. A grade may not outlive the run that
+  # earned it; a regressed run is 8.2 evidence of the opposite.
   def usable_receipt($rs): $rs
-    | map(select(.state == "current" and (.commit | test("^[0-9a-f]{40}$"))))
+    | map(select(.state == "current" and .result == "pass" and (.commit | test("\\A[0-9a-f]{40}\\z"))))
     | length > 0;
 
   # 8.2 PWG-3 additionally requires the receipt to record the checker version,
@@ -55,7 +70,8 @@ DERIVE='
   def pwg3_receipt($rs): $rs
     | map(select(
         .state == "current"
-        and (.commit | test("^[0-9a-f]{40}$"))
+        and .result == "pass"
+        and (.commit | test("\\A[0-9a-f]{40}\\z"))
         and (.checker_version // "" | length > 0)
         and (.stdlib_pin // "" | length > 0)
         and (.import_cone // "" | length > 0)
@@ -69,14 +85,23 @@ DERIVE='
   # PROVEN-WITH-AXIOMS and its 2.2 correspondence state is RECONCILED." And:
   # a waived leg, an unavailable leg and any BRIDGE-PENDING leg do not count.
   # Also require at least one current receipt with a full 40-character commit,
-  # resolving the leg’s receipt IDs through the supplied receipt map.
+  # resolving the receipt IDs of the leg through the supplied receipt map.
   def counts($leg; $receipts):
     ($leg.token | accepted)
     and $leg.state == "RECONCILED"
     and ($leg.route != "waived" and $leg.route != "unavailable")
     and usable_receipt([$leg.receipts[] | $receipts[.]]);
 
-  .receipts as $R
+  # 8.2 PWG-1 / 8.5.2: a receipt DESCRIBES the source commit when its commit is
+  # the source commit of the ledger. (8.5.2 also admits an echo chain to it; this
+  # ledger records no echoes, so a receipt from any other commit does not
+  # describe it -- the conservative reading, and it still counts toward 3/2i/2ii.)
+  def describes($rs; $src): $rs
+    | map(select(.state == "current" and .result == "pass" and .commit == $src))
+    | length > 0;
+
+  .commit as $src
+  | .receipts as $R
   | .theorems
   | map(
       . as $t
@@ -94,9 +119,13 @@ DERIVE='
           elif $legs == 0 then "3"
           elif $legs == 1 then "2i"
           else
-            (if (usable_receipt($ar)
-                 and usable_receipt([$c.receipts[] | $R[.]])
-                 and usable_receipt([$l.receipts[] | $R[.]]))
+            # Both legs count, so every conjunct of usable_receipt already holds
+            # for all three witnesses: testing it here (as this branch once did)
+            # made "2ii" unreachable and granted PWG-1 on PWG-2ii evidence. The
+            # rung above 2ii is about WHICH COMMIT the receipts describe.
+            (if (describes($ar; $src)
+                 and describes([$c.receipts[] | $R[.]]; $src)
+                 and describes([$l.receipts[] | $R[.]]; $src))
              then "1" else "2ii" end)
           end
         ) as $grade
