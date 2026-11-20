@@ -30,9 +30,12 @@ IR schema, the verified core, and the conformance suite.
 The checker MUST NOT parse, import, execute, or depend on any source language.
 It is a pure function _of the IR_, and the IR (its JSON schema) is the trust
 boundary. A front-end's grade annotations are *claims*; the checker validates
-their *composition*, not their origin. `Rust` (Haec) is the first front-end
-that lowers to the IR — dogfooding without coupling — but a static analyser for
-an existing language could emit the same IR and be checked by the same checker.
+their *composition*, not their origin. Haec is the first language designed to
+lower to the IR. It has no compiler yet: its examples are lowered by hand and
+round-trip through this checker. The producers that emit the IR today are
+Vocarium's `voc invoke` and Hermeneia's `invoke`, the latter from its stub
+store. A static analyser for an existing language
+could emit the same IR and be checked by the same checker.
 ====
 
 == The three firewalls (HC-2 — never let code launder them)
@@ -74,8 +77,14 @@ rejects them at validation, naming the offending coordinate. The alternative
 | `verification/proofs/lean4/grade-boundary/` | The grade-algebra ground truth (Lean 4 + Mathlib): the three-tier honest/deceptive cancellation boundary. No `sorryAx` and no user axiom; the kernel reports `propext` and `Quot.sound`, and `Classical.choice` in three theorems.
 | `verification/proofs/lean4/grade-factorisation/` | The tropical factorisation probe (Lean 4 + Mathlib): imports the carrier and decides whether the grade admits a commutative cost-quotient. Verdict *(B) factors but veridicality-blind* on the *pre-ratification* carrier; re-run on the ratified carrier it becomes *(B′) sighted on the fate axis* — `piR`
 separates honest `Dropped` from deceptive `Falsified`, and reads the four fate slots
-only; `psiBond` separates honest from deceptive bonds
-(`GradeFactorisation.lean`). A precondition only; does not address recursion (CO-1).
+only; on the bond axis `psiBond` is proved to separate the honest `severed` from
+the deceptive `misbound` (`psiBond_separates_honest_deceptive`, via
+`total ≠ unknown`, in `GradeFactorisation.lean`), and in general: every honest
+bond is separated from `misbound`, the only deceptive one
+(`psiBond_separates_all_honest`, by `cases`: `intact` and `withheld` cost `Q 0`,
+`severed` costs `total`, and neither equals `unknown`). The general form was added
+2026-11-16; its kernel check is the CI `lean-build` job (`lake build --wfail`,
+leanchecker and the axiom audit), which is the receipt this claim rests on. A precondition only; does not address recursion (CO-1).
 | `verification/proofs/agda/theorem-b/` | Theorem B — the deferred calculus metatheory (Agda `--safe --without-K --cubical-compatible`, the PROOF-POLICY §2.1 invocation; zero postulates): intrinsic graded calculus, value-substitution, subject reduction (β/let; `fix` open), Honest Generation.
 | `verification/proofs/INTEGRATION-REPORT.adoc` | How the three streams reconcile: the unified R-id ↔ Lean ↔ Agda ↔ status table, the convergence (central open problem), and the divergence adjudication.
 | `docs/CONTRIBUTING-A-FRONTEND.adoc` | How a new front-end targets the IR (the portability contract).
@@ -156,17 +165,25 @@ The grade-level cancellation boundary (left-cancellative iff ε on the
 unquotiented carrier) is proved in Lean; Agda proves finite-fidelity cancellation
 and selected non-cancellation counterexamples, not the exhaustive iff.
 `docs/status/PROOF-STATUS.adoc` and
-`verification/pwg.json` are the per-result record, and they agree row for row.
+`verification/pwg.json` are the per-result record. `scripts/pwg-check.sh` checks that the
+grade table and census published in the first are the ones derived from the second; the
+prose rows of the status file are written by hand and are not checked against the ledger.
 Only *L1* and *L4* carry a statement in all three, and of the ten results *eight*
 lack one entirely. Lean does not state L2, L5, Honest Generation or Veridicality;
 Idris2 does not state L3, L6, conicality or the cancellation boundary; L5 is
 Agda-only. Where Idris2 does restate a result, PROOF-POLICY §8.1 keeps it off the
 Proof Witness Grade ladder as an engineering restatement — the ledger records it
 under `reference`, never as a leg, so it can neither raise nor lower a grade.
-And *L4 in full* is proved by none of the three: Agda covers the fate coordinate
-and the fidelity dimension, Lean covers fate, and bond and merge have an Idris2
-restatement only. Idris2 establishes coordinate-level monotonicity only; the
-lifting for `gradeCompose` is not mechanised in Idris2. The atom
+*L4 in full* and *A2* (Fate is a chain) are proved in Agda since 2026-11-17.
+`TB.Monotone` adds the bond and merge coordinates and the lifting to
+`gradeCompose`, and `TB.OrderLaws` adds transitivity, antisymmetry and totality.
+Both are rechecked in Rocq (`verification/proofs/rocq/`) and in core Lean with no
+Mathlib (`verification/proofs/lean4/ratified-order/`). The ledger grades L4 as
+four obligations and A2 as two (owner ruling 2026-11-16). All six, and the
+retention order (a decidable preorder), derive `PWG-2ii`. The core-Lean leg counts
+by owner ruling of 2026-11-17, which ADR 0005 records in its amendment: Lean with
+Mathlib stays a generator, never a leg. Completeness of the chain, which spec §7 also uses, is proved in
+no prover. The atom
 factorisation (O1's carrier half, proved on the ratified `GradeR` in
 `EffectAtomsRatified.lean`; O1-coord stays open) and the tropical factorisations
 — pre-ratification `GradeFactorisation.lean` veridicality-blind, ratified

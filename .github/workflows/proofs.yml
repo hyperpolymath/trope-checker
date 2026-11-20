@@ -27,6 +27,8 @@ on:
     paths:
       - 'verification/proofs/lean4/**'
       - 'verification/proofs/agda/**'
+      - 'verification/proofs/rocq/**'
+      - 'scripts/check-recheck-legs.sh'
       - 'verification/pwg.json'
       - 'scripts/pwg-derive.sh'
       - 'scripts/pwg-check.sh'
@@ -206,6 +208,50 @@ jobs:
             exit 1
           fi
           echo "PASS: All.agda + Smoke.agda typecheck (${AGDA_FLAGS[*]}; --safe => postulate-free by construction)"
+
+  # PROOF-POLICY §2 recheck legs for the ratified-carrier order laws and L4 in
+  # full (TB.OrderLaws, TB.Monotone): a Rocq leg and a core-only Lean leg. No
+  # Mathlib, so unlike the lean-build packages below these legs can count
+  # (PROOF-POLICY §2: "No Mathlib, in Lean or elsewhere"). The gate is
+  # scripts/check-recheck-legs.sh, which runs the same way locally: pinned
+  # prover version asserted, compile, an axiom audit that fails on any axiom
+  # AND on an empty audit domain, then seven planted controls that must each be
+  # caught (Admitted, sorry, a user axiom, an empty domain, and a definition
+  # drift that only the TB.Bridge tables can see).
+  # TOOLCHAIN: Ubuntu 24.04's coq package is Coq 8.18.0 (the version mathesis
+  # pins; the script refuses any other). Lean 4.16.0 (the repo's pin) is the
+  # GitHub release archive, checked against the SHA-256 observed 2026-11-17.
+  recheck-legs:
+    name: "Recheck legs (Rocq 8.18.0, Lean 4.16.0 core): order laws + L4"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Coq 8.18.0 (apt) and Lean 4.16.0 (pinned, checksummed)
+        shell: bash
+        env:
+          LEAN_URL: https://github.com/leanprover/lean4/releases/download/v4.16.0/lean-4.16.0-linux.tar.zst
+          LEAN_SHA256: cdd31f1064783fff163be53e285722102f16767e65e6fb7f7cb1c232514e0c3a
+        run: |
+          set -euo pipefail
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends coq zstd
+          cd "$RUNNER_TEMP"
+          curl --fail --proto '=https' --proto-redir '=https' --tlsv1.2 -sSL -o lean.tar.zst "$LEAN_URL"
+          echo "$LEAN_SHA256  lean.tar.zst" | sha256sum -c -
+          tar --zstd -xf lean.tar.zst
+          echo "$PWD/lean-4.16.0-linux/bin" >> "$GITHUB_PATH"
+      - name: Rocq leg (compile + Print Assumptions on every declaration)
+        shell: bash
+        run: bash scripts/check-recheck-legs.sh rocq
+      - name: Lean leg (check + collectAxioms on every declared theorem)
+        shell: bash
+        run: bash scripts/check-recheck-legs.sh lean
+      - name: Planted controls (each must be caught)
+        shell: bash
+        run: bash scripts/check-recheck-legs.sh controls
 
   # The Lean developments actually built. `lean-source-honesty` above is a cheap
   # syntactic guard that runs in seconds on every push; this is the semantic one,

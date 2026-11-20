@@ -40,28 +40,73 @@ command -v jq >/dev/null || { echo "pwg-derive: jq is required" >&2; exit 2; }
 # ---------------------------------------------------------------------------
 # shellcheck disable=SC2016  # single quotes are REQUIRED: $a/$c/$l/$t/$R below are
 # jq variables, and the shell must not expand them.
+#
+# CONSEQUENCE, and it has bitten twice: NO APOSTROPHE MAY APPEAR ANYWHERE INSIDE
+# THIS BLOCK, comments included. One closes the string, and what follows is read
+# as shell. Write "the receipt of the leg", never "the leg's receipt". The first
+# occurrence here was a Unicode right-quote, which survived only because it is
+# not an ASCII apostrophe; "fixing" SC1112 by swapping in a plain one broke the
+# script. Reword instead.
 DERIVE='
   # A section 5 token that means the kernel accepted it.
   def accepted: . == "PROVEN" or . == "PROVEN-WITH-AXIOMS";
 
-  # A receipt is usable when it is the current one and names a full 40-char commit
-  # (8.2 PWG-1: "the source repository and its full 40-character commit").
+  # A receipt is usable when it is the current one, RECORDS A PASS, and names a
+  # full 40-char commit (8.2 PWG-1: "the source repository and its full
+  # 40-character commit").
+  #
+  # The result check is load-bearing, not decorative. Measured 2026-11-16 against
+  # main 0dceab6: flipping the Agda receipt of this ledger to "result": "fail" while
+  # leaving "state": "current" left the census byte-identical -- 17 PWG-3 grades
+  # published on a receipt that records the checker REJECTING the development --
+  # and scripts/pwg-check.sh exited 0. A grade may not outlive the run that
+  # earned it; a regressed run is 8.2 evidence of the opposite.
   def usable_receipt($rs): $rs
-    | map(select(.state == "current" and (.commit | test("^[0-9a-f]{40}$"))))
+    | map(select(.state == "current" and .result == "pass" and (.commit | test("\\A[0-9a-f]{40}\\z"))))
     | length > 0;
+
+  # 2.1: every Agda entrypoint in the recorded invocation is the canonical one.
+  # The invocation may join several commands with ";". Each command that runs
+  # agda must be exactly: agda, the three flags as whole words, and one module.
+  # The earlier test searched the whole string for the three flag substrings,
+  # so one canonical command vouched for a second command that carried none of
+  # them, and any further option rode along unseen. Measured 2026-11-17: with
+  # the second entrypoint reduced to "agda Smoke.agda" the census did not move.
+  #
+  # A command is an Agda command when ANY of its words is agda or a path ending
+  # in /agda, and such a command must begin with the bare word agda. The earlier
+  # filter kept only commands whose first word was agda, so a wrapped entrypoint
+  # ("env agda Smoke.agda", "nice agda ...", "x && agda ...") was dropped from
+  # the test and rode along behind one canonical command. A wrapper is refused,
+  # not inspected: the canonical form in 2.1 has none.
+  def canonical_agda:
+    [ split(";")[] | [splits("[[:space:]]+")] | map(select(length > 0))
+      | select(any(.[]; test("(\\A|/)agda\\z"))) ]
+    | length > 0
+      and all(.[];
+        .[0] == "agda"
+        and (.[1:] | map(select(startswith("-"))) | sort) == ["--cubical-compatible", "--safe", "--without-K"]
+        and (.[1:] | map(select(startswith("-") | not)) | length) == 1);
+
+  # 8.4 rule 6 and 8.5.1: a witness whose current receipt reports an axiom
+  # without disposition c does not count. Dispositions are recorded on the
+  # receipt as axiom_dispositions {name: c|b|debt}; an axiom with none recorded
+  # is not admissible (fail closed). A receipt reporting no axiom is admissible.
+  def axioms_admissible($rs): $rs
+    | map(select(.state == "current"))
+    | all(.[]; . as $r | all(($r.axioms // [])[]; ($r.axiom_dispositions // {})[.] == "c"));
 
   # 8.2 PWG-3 additionally requires the receipt to record the checker version,
   # the standard-library pin, the flags actually in force, and the import cone (1.1).
   def pwg3_receipt($rs): $rs
     | map(select(
         .state == "current"
-        and (.commit | test("^[0-9a-f]{40}$"))
+        and .result == "pass"
+        and (.commit | test("\\A[0-9a-f]{40}\\z"))
         and (.checker_version // "" | length > 0)
         and (.stdlib_pin // "" | length > 0)
         and (.import_cone // "" | length > 0)
-        and (.invocation // "" | test("--safe"))
-        and (.invocation // "" | test("--without-K"))
-        and (.invocation // "" | test("--cubical-compatible"))
+        and (.invocation // "" | canonical_agda)
       ))
     | length > 0;
 
@@ -69,14 +114,43 @@ DERIVE='
   # PROVEN-WITH-AXIOMS and its 2.2 correspondence state is RECONCILED." And:
   # a waived leg, an unavailable leg and any BRIDGE-PENDING leg do not count.
   # Also require at least one current receipt with a full 40-character commit,
-  # resolving the leg’s receipt IDs through the supplied receipt map.
+  # resolving the receipt IDs of the leg through the supplied receipt map.
   def counts($leg; $receipts):
     ($leg.token | accepted)
     and $leg.state == "RECONCILED"
     and ($leg.route != "waived" and $leg.route != "unavailable")
-    and usable_receipt([$leg.receipts[] | $receipts[.]]);
+    and usable_receipt([$leg.receipts[] | $receipts[.]])
+    and axioms_admissible([$leg.receipts[] | $receipts[.]]);
 
-  .receipts as $R
+  # 8.3: the tag needs a kernel-checked witness whose statement correspondence
+  # is recorded as in 2.2. A witness is {token, state, receipts}; it earns the
+  # tag on the same terms a leg counts. The earlier test was "the field is not
+  # null", so any value at all -- a note, a plan -- published the tag.
+  #
+  # 8.3 also says what the witness is a witness IN: a foundation outside the
+  # dependent-type-theory family, which it names as Agda, Rocq and Lean. Every
+  # receipt of the witness must therefore name a checker, and none may be one of
+  # those three. Without this a reconciled Agda receipt earned the tag.
+  def dtt_checker: ascii_downcase | test("\\A(agda|lean|lean4|lake|coq|coqc|rocq)\\z");
+  def diverse($w; $receipts):
+    ($w | type) == "object"
+    and (($w.token // "") | accepted)
+    and $w.state == "RECONCILED"
+    and (($w.receipts // []) | length > 0)
+    and all($w.receipts[] | $receipts[.]; ((.checker // "") | length > 0) and ((.checker // "") | dtt_checker | not))
+    and usable_receipt([$w.receipts[] | $receipts[.]])
+    and axioms_admissible([$w.receipts[] | $receipts[.]]);
+
+  # 8.2 PWG-1 / 8.5.2: a receipt DESCRIBES the source commit when its commit is
+  # the source commit of the ledger. (8.5.2 also admits an echo chain to it; this
+  # ledger records no echoes, so a receipt from any other commit does not
+  # describe it -- the conservative reading, and it still counts toward 3/2i/2ii.)
+  def describes($rs; $src): $rs
+    | map(select(.state == "current" and .result == "pass" and .commit == $src))
+    | length > 0;
+
+  .commit as $src
+  | .receipts as $R
   | .theorems
   | map(
       . as $t
@@ -84,7 +158,7 @@ DERIVE='
       | ($t.legs.rocq) as $c
       | ($t.legs.lean) as $l
       | ([$a.receipts[] | $R[.]]) as $ar
-      | (($a.token | accepted) and $a.state == "AGDA-VERIFIED" and pwg3_receipt($ar)) as $agda_ok
+      | (($a.token | accepted) and $a.state == "AGDA-VERIFIED" and pwg3_receipt($ar) and axioms_admissible($ar)) as $agda_ok
       | (if counts($c; $R) then 1 else 0 end) as $nc
       | (if counts($l; $R) then 1 else 0 end) as $nl
       | ($nc + $nl) as $legs
@@ -94,9 +168,13 @@ DERIVE='
           elif $legs == 0 then "3"
           elif $legs == 1 then "2i"
           else
-            (if (usable_receipt($ar)
-                 and usable_receipt([$c.receipts[] | $R[.]])
-                 and usable_receipt([$l.receipts[] | $R[.]]))
+            # Both legs count, so every conjunct of usable_receipt already holds
+            # for all three witnesses: testing it here (as this branch once did)
+            # made "2ii" unreachable and granted PWG-1 on PWG-2ii evidence. The
+            # rung above 2ii is about WHICH COMMIT the receipts describe.
+            (if (describes($ar; $src)
+                 and describes([$c.receipts[] | $R[.]]; $src)
+                 and describes([$l.receipts[] | $R[.]]; $src))
              then "1" else "2ii" end)
           end
         ) as $grade
@@ -106,10 +184,15 @@ DERIVE='
           kind: $t.kind,
           pwg: $grade,
           # 8.3: a non-DTT witness is a TAG beside the grade, never a leg.
-          foundation_diverse: (($t.foundation_diverse_witness // null) != null),
+          foundation_diverse: diverse($t.foundation_diverse_witness // null; $R),
           counting_legs: $legs,
           agda_receipt_complete: $agda_ok,
-          axioms: ([ $ar[]? | .axioms[]? ] | unique),
+          # 8.4 rule 6: the axioms of EVERY witness the grade stands on, not of the
+          # Agda leg alone. A counting Rocq or Lean leg used to contribute its
+          # count and none of its axioms.
+          axioms: ([ ($ar[]? | .axioms[]?),
+                     (if counts($c; $R) then ($c.receipts[] | $R[.] | .axioms[]?) else empty end),
+                     (if counts($l; $R) then ($l.receipts[] | $R[.] | .axioms[]?) else empty end) ] | unique),
           legs: {
             agda: {route: $a.route, token: $a.token, state: $a.state, counts: (counts($a; $R))},
             rocq: {route: $c.route, token: $c.token, state: $c.state, counts: (counts($c; $R))},

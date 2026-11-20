@@ -68,12 +68,41 @@ fi
 bold "Aspect 2: Dangerous patterns"
 
 # Idris2 dangerous patterns
-DANGEROUS_IDRIS=$(grep -rn 'believe_me\|assert_total\|really_believe_me' src/interface/Abi/ 2>/dev/null | grep -v "^Binary" | grep -v "test" || true)
-if [ -n "$DANGEROUS_IDRIS" ]; then
+#
+# Every Idris2 source under src/ and verification/, with comments stripped.
+# The previous form scanned src/interface/Abi/ only (3 of the 16 files) and
+# piped the matches through `grep -v "test"`, which dropped any hit whose PATH
+# or text contained "test". Both made the scan pass on code it never read.
+# A scan that finds no Idris2 file at all fails: nothing read, nothing passes.
+IDRIS_STRIP_LOG="${TMPDIR:-/tmp}/aspect-idris-strip-failed.$$"
+IDRIS_COUNT_LOG="${TMPDIR:-/tmp}/aspect-idris-count.$$"
+: > "$IDRIS_COUNT_LOG"
+DANGEROUS_IDRIS=$(
+  while IFS= read -r f; do
+    printf '%s\n' "$f" >> "$IDRIS_COUNT_LOG"
+    if ! stripped=$(awk -v lang=idris -f tests/lib/strip-proof-comments.awk "$f"); then
+      printf '%s\n' "$f" >> "$IDRIS_STRIP_LOG"
+      continue
+    fi
+    printf '%s\n' "$stripped" \
+      | grep -nE '\b(believe_me|really_believe_me|assert_total|assert_smaller|unsafePerformIO|idris_crash)\b|^[[:space:]]*postulate\b' \
+      | sed "s|^|$f:|" || true
+  done < <(find src verification -type f -name '*.idr' 2>/dev/null | sort || true)
+)
+IDRIS_FILES=$(wc -l < "$IDRIS_COUNT_LOG" | tr -d ' ')
+rm -f "$IDRIS_COUNT_LOG"
+if [ -f "$IDRIS_STRIP_LOG" ]; then
+  fail "Comment stripper could not scan these Idris2 files (truncated input, not a clean scan):"
+  head -5 "$IDRIS_STRIP_LOG"
+  rm -f "$IDRIS_STRIP_LOG"
+fi
+if [ "$IDRIS_FILES" -eq 0 ]; then
+    fail "No Idris2 source found under src/ or verification/: nothing was scanned"
+elif [ -n "$DANGEROUS_IDRIS" ]; then
     fail "Dangerous Idris2 patterns found:"
     echo "$DANGEROUS_IDRIS" | head -5
 else
-    pass "No dangerous Idris2 patterns (believe_me, assert_total)"
+    pass "No dangerous Idris2 patterns in $IDRIS_FILES file(s) (believe_me, assert_total, assert_smaller, unsafePerformIO, idris_crash, postulate)"
 fi
 
 # Coq/Lean dangerous patterns

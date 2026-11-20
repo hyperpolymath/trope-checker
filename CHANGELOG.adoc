@@ -8,7 +8,237 @@ https://semver.org/spec/v2.0.0.html[Semantic Versioning].
 
 === [Unreleased]
 
+==== Added
+
+* *L4 in full and A2 (Fate is a chain) proved, and rechecked in Rocq and
+core Lean (2026-11-17).*
++
+The owner ruled to prove, not narrow. `+TB/Monotone.agda+` proves bond and merge
+monotonicity and the lifting to the grade composition (one argument at a time, and
+both at once as `+▷-mono+`). `+TB/OrderLaws.agda+` proves that `+fateLte+` is
+transitive, antisymmetric and total (`+fate-isTotalOrder : IsTotalOrder _≡_ _≤F_+`),
+and that `+⊑+` is a decidable preorder. No existing definition changed.
++
+The repository's first Rocq development, `+verification/proofs/rocq/RatifiedOrder.v+`
+(Coq 8.18.0, no `+Require+`), and a core-Lean file with no import,
+`+verification/proofs/lean4/ratified-order/RatifiedOrder.lean+` (Lean 4.16.0, no
+Mathlib), re-prove all of it. `+TB/Bridge.agda+` pins six restated definitions to
+the Agda on a fixed sample (exhaustive for Bond and Merge), and each leg proves the
+same six literals. A planted one-clause drift that keeps every theorem true is
+caught only by the bridge, in both legs. `+scripts/check-recheck-legs.sh+` is the
+gate. It asserts the prover version, audits every declaration for axioms, fails
+on an empty audit, and runs six planted controls. CI runs it as the new
+`+recheck-legs+` job.
++
+Ledger: `+L4-bond-merge+`, `+L4-lifting+`, `+A2-chain+` and `+retention-order+` gain
+`+PROVEN+` Agda legs. All seven L4/A2/retention rows gain `+RECONCILED+` Rocq and
+Lean legs, with receipts from CI run 44006871652 on `+d5234b1+`. The census moves
+from 28 obligations (`+PWG-3+` 18, ungraded 10) to 28 (`+PWG-3+` 15, `+PWG-2ii+` 7,
+ungraded 6). The derivation does not reach `+PWG-1+`, because the receipts are not at
+the ledger's source commit. The core-Lean leg counts by owner ruling of 2026-11-17,
+which ADR 0005 records in its amendment: the 2026-11-09 ruling ("Lean is a
+generator, not a leg") covers the Mathlib development only.
+
 ==== Fixed
+
+* *Eight gate defects from review of #120, and the Hypatia scan pin (2026-11-17).*
++
+_Idris2 comment rules._ The comment stripper read Idris2 files with every
+language's block forms at once. An Idris2 documentation line carrying `+(*+`
+opened a Coq comment that hid a banned construct until a later `+*)+`, and the
+scan passed; a documentation line that only named a banned construct failed.
+The stripper takes `+-v lang=idris+` (`+{- -}+`, `+--+` and `+|||+` only), and the
+aspect scan and the Idris2 step of `+trope-check.yml+` pass it. Without the
+variable its behaviour is unchanged.
++
+_Grade derivation._ No published grade moves. An `+agda+` command behind a
+wrapper (`+env agda …+`) was dropped from the canonical-invocation test and is now
+refused. `+foundation-diverse+` now also requires every receipt of the witness to
+name a checker outside the dependent-type-theory family (§8.3); a reconciled
+Agda receipt used to earn it.
++
+_Canaries that passed for the wrong reason._ The Lean-reconciliation canary
+was rejected on a changed table cell, not a changed grade, because the flipped
+leg had no axiom dispositions and did not count; its fixture now records them,
+and a control reads the derived grade (`+2i+`). The nested-comment canary treated
+a stripper that failed as one that stripped.
++
+_Recheck legs_ (`+scripts/check-recheck-legs.sh+`). The Rocq inventory knew only
+a bare `+Theorem+` or `+Lemma+`, so `+Local Lemma x : False. Admitted.+` was not
+audited; it now takes every statement keyword behind locality words and
+attributes, with a seventh planted control. Each mode compiles, audits and
+checksums one snapshot of the source. Run here on Coq 8.18.0 and Lean 4.16.0:
+both legs 49 of 49, 7 controls caught; the new control is not caught by the
+previous inventory.
++
+_Hypatia scan._ The scan segfaulted on this tree. The cause is the Erlang VM
+on OTP 28.x (`+sweep_off_heap+`, hypatia#1061), which the pinned revision of the
+reusable workflow installed. Both callers move to a revision that installs OTP
+27.3.4.19.
++
+Five new canaries; the four that are not controls fail against the code before
+them. The suite stands at *48/48*.
++
+_README._ It said "`Rust` (Haec) is the first front-end that lowers to the IR".
+Haec is not Rust and has no compiler; its examples are lowered by hand. The
+sentence now says that, and names the two producers that emit the IR today.
+Found by the stack coherence gate (workbench#83).
+
+* *The aspect lane runs, grades stand only on what the policy admits, and four
+status claims are narrowed (2026-11-17).*
++
+_Aspect lane._ `+just aspect+` was the mint template: it ran nothing and printed
+"Aspect tests passed!", and `+test-all+` depends on it. `+tests/aspect_tests.sh+` was
+invoked by nothing, so the hardening of it recorded further down this file was to
+a script no lane ran. Its Idris2 scan read `+src/interface/Abi/+` only (3 of 16
+files) and dropped every hit containing "test". The recipe and the quality
+workflow now run the script; the scan reads every Idris2 source through the
+comment stripper, adds `+assert_smaller+`, `+unsafePerformIO+`, `+idris_crash+` and
+`+postulate+`, and fails when it finds no Idris2 file. Canaries 32–34.
++
+_Grade derivation_ (`+scripts/pwg-derive.sh+`). No published grade moves; the
+census stays `+PWG-3+` 18, `+ungraded+` 10 of 28. (a) A leg whose current receipt
+reports an axiom counts only when each axiom has disposition `+c+`, recorded on
+the receipt as `+axiom_dispositions+`; none recorded means inadmissible (§8.4
+rule 6, §8.5.1). No disposition is recorded on the live Lean receipts: that is a
+trusted-base decision for the owner, and those legs are `+BRIDGE-PENDING+` either
+way. (b) The derived axiom list is the union over every witness the grade stands
+on, where it was the Agda receipt's alone. (c) Each `+agda+` command in a recorded
+invocation must be exactly the three §2.1 flags and one module, where one
+canonical command used to vouch for a second with no flags. (d)
+`+foundation-diverse+` needs an accepted, `+RECONCILED+`, receipted witness, where
+any non-null value used to publish it (§8.3). `+scripts/pwg-check.sh+` rejects a
+disposition outside `+c|b|debt+` and one for an axiom the receipt does not report.
+Canaries 35–43; each fails against the code before it. The suite stood at
+*43/43* at that point (48/48 after the entry above).
++
+_Status claims._ `+deceptiveDuals+` is a tuple value and is no longer cited as
+evidence for "exactly three". `+verdictSound+` is stated over a grade-shaped floor,
+as its source says, not over the use-model floor. The tier-2 row names the
+ratified iff. The README no longer says `+PROOF-STATUS.adoc+` and `+pwg.json+` "agree
+row for row": the gate checks the grade table and census, not the prose rows.
+In `+grade-factorisation+`, the README verdict is marked as the pre-ratification
+result and lists `+GradeFactorisationR.lean+`, and `+REPORT.adoc+` states the measured
+axiom bound (`+propext+` and `+Quot.sound+` over 184 declarations, CI run
+43981767344) where it had quoted the audit's allowlist.
+
+* *The comment stripper nests where the languages nest, and `+psiBond+` separation
+is stated in general (2026-11-16).* Lean `+/- -/+`, Agda and Idris2 `+{- -}+` and Coq
+`+(* *)+` block comments nest; `+tests/lib/strip-proof-comments.awk+` closed on the
+first close token, so a forbidden word inside a nested comment leaked into the
+dangerous-construct scan, and an unterminated nested comment exited `+0+` (a
+truncated scan reported as complete). A depth counter per open token fixes both;
+C-style `+/* */+` stays flat, and over all 38 tracked sources the output is
+unchanged. Canaries 30–31 plant both cases and fail against the old stripper; the
+suite stood at *31/31* at that point (43/43 after the entry above). Separately, `+psiBond_separates_all_honest+`
+(`+GradeFactorisation.lean+`) states that every bond other than `+misbound+` is
+separated from it, by `+cases+` over `+Q_ne_unknown+` and `+total_ne_unknown+`, with a
+`+#print axioms+` line; its kernel check is the CI `+lean-build+` job.
+
+* *Every PWG witness name now resolves, the ladder's top two rungs are
+distinct, and L4 and A2 are graded by their parts (2026-11-16).*
++
+_Witness names._ Nothing read the ledger's `+declarations+`: 13 of 91 distinct
+witness names named nothing in the sources — ASCII transliterations
+(`+|>+` for `+▷+`, `+|=+` for `+⊑+`, `+beta-+` for `+β-+`, `+-r+` for `+ʳ+`),
+kebab-case spellings of camelCase lemmas, `+gmonoid-unit+` for the pair
+`+gmonoid-unitL+`/`+gmonoid-unitR+`, and a Lean name in the wrong namespace. L2's
+only Agda witness and all three veridicality-derivation witnesses were among them,
+on rows published `+PWG-3+`. `+scripts/pwg-names.sh+` inventories the declared
+names (through the comment stripper) and `+scripts/pwg-check.sh+` rule 6 resolves
+every Agda and Lean witness against it. The 13 are corrected; no grade moved.
+Canaries 25–26 fail against the pre-rule-6 gate. Review then found that a
+citation with a tab and text appended split into an extra field the resolver
+ignored, so the real prefix resolved; each field is now JSON-escaped before
+resolution, and canary 29 (which fails against the first version) plants it.
++
+_Ladder._ With both recheck legs counting, the derivation's `+PWG-1+` test
+re-checked conjuncts counting already implied, so `+PWG-2ii+` was unreachable and
+`+PWG-1+` was granted on `+PWG-2ii+` evidence (measured: receipts recording commit
+`+ffff…+` derived `+PWG-1+`). §8.2/§8.5.2 make `+PWG-1+` a question of which commit
+the receipts describe; the branch now requires each counted witness's receipt to
+record the ledger's source commit. Latent — no obligation has two counting legs.
+Canaries 27–28 read the derived grade; 28 fails against the pre-fix derivation.
+The suite stood at *29/29* at that point (*31/31* after the entry above).
++
+_L4 and A2, split (owner ruling 2026-11-16)._ "L4 (monotonicity), in full" and
+"Fate is a chain (A2)" derived `+PWG-3+` from Agda legs whose own notes conceded they
+covered only part of the statement. L4 is now four obligations — `+L4-fate+` and
+`+L4-fidelity+` (`+PWG-3+`), `+L4-bond-merge+` and `+L4-lifting+` (ungraded) — and A2
+two: `+A2-directions+` (`+PWG-3+`) and `+A2-chain+` (ungraded; Lean states only
+totality and reflexivity, transitivity is proved in Idris2 off the ladder, and
+antisymmetry is cited nowhere, so its Lean leg is `+OPEN+` too). The
+census moves from 24 theory obligations (`+PWG-3+` 17, ungraded 7) to 28
+(`+PWG-3+` 18, ungraded 10). The denominator changed because the obligations
+did; no evidence changed.
++
+_INTERFACE-REPORT._ It said `+fate-tier-meet-hom-fails+` "would be false under a
+commutative model"; the carrier is commutative (`+grade-comm+`) and the theorem
+holds on it. It named `+grade-not-comm+` and `+cut-symmetric-fails+` as live (both
+replaced), stated the retired clause `+dropped ▷f falsified = dropped+` as
+definitional (the ratified clause is `+= falsified+`), and gave
+`+GradeBoundary.lean+`'s axiom bound as `+propext+`/`+Quot.sound+` only, where the
+file's own footer names three. All corrected; prose only.
+
+* *Two prose claims narrowed to what the provers actually state (2026-11-16).*
+Both were raised in review on #114 and merged unaddressed.
++
+`+README.adoc+` said `+psiBond+` "separates honest from deceptive bonds". The Lean
+file states one pair: `+psiBond_separates_honest_deceptive+` is
+`+psiBond Bond.severed ≠ psiBond Bond.misbound+`, by `+total ≠ unknown+`. The
+general claim is believed and is a single `+cases+` away — `+psiBond intact+` and
+`+psiBond withheld+` are both `+Q 0+`, and `+Q_ne_unknown+` is already in the same
+file — but it is *not* a theorem today, so the README no longer asserts it. It is
+not added here because no Lean toolchain was available to check it, and an
+unverified theorem in a proof file is the thing these gates exist to stop.
++
+`+INTERFACE-REPORT.adoc+`'s F4 checklist said "the deceptive tier is
+forward-closed (L5)". The checklist refutes that two bullets above: the fate
+*tier* is not closed under `+▷+` on the right, and `+fate-tier-meet-hom-fails+` is
+the witness — `+dropped ▷f atten unknown+` reduces to `+dropped+`, which is
+`+honestLossy+`, although `+atten unknown+` is tier-deceptive. What Agda proves is
+`+deceptive-absorbs-▷+`: the grade-level *predicate*, closed in its *left*
+argument. Both qualifications now appear, with the distinction `+TB/Tier.agda+`
+already drew in a comment ("does not launder the GRADE-level deceptive
+predicate") lifted into the report.
+
+* *A receipt that records FAILURE no longer supports a grade (2026-11-16).*
+`+scripts/pwg-derive.sh+` read a receipt's `+state+` but never its `+result+`.
+Measured against `+main+` `+0dceab6+`: flipping this repository's Agda receipt to
+`+"result": "fail"+` while leaving `+"state": "current"+` left the derived census
+*byte-identical* — 17 `+PWG-3+` grades still published on a receipt recording the
+checker *rejecting* the development — and `+scripts/pwg-check.sh+` exited `+0+`.
+A grade may not outlive the run that earned it; a regressed run is §8.2 evidence
+of the opposite. `+usable_receipt+` and `+pwg3_receipt+` now both require
+`+result == "pass"+`, and rule 3 constrains `+result+` to the closed vocabulary
+`+pass|fail+` so an unrecognised value is an error rather than a silent
+non-pass. With the fix the same planted receipt collapses the census to
+`+PWG-3+` 0, `+ungraded+` 24. Canaries 20 and 21 plant exactly these two cases
+and were confirmed to FAIL against the pre-fix scripts. Canary 22 plants a
+`+result+` of `+"pass\n"+`: jq's `+$+` anchor matches before a final newline, so
+the rule-3 check admitted it. Rule 3 now compares `+result+` by exact equality.
++
+The same defect sat in the seven sibling anchors: the commit check in rule 3
+and in both derivation predicates, and the `+state+`, token, §2.2-state and route
+vocabularies. Measured: a 40-hex commit followed by a newline passed the *whole*
+gate, derivation included, so a malformed provenance field could carry a grade.
+All seven are now anchored with `+\A…\z+`. Canaries 23 and 24 plant a trailing newline on a
+commit and on a token; both FAIL against the pre-fix scripts and PASS against
+the fix. The suite is now *24/24*.
++
+Two things this change did *not* do are worth recording, because each was tried
+and rejected on evidence. The ShellCheck `+SC1112+` warning on `+pwg-derive.sh+`
+could not be fixed the obvious way: that comment sits inside the single-quoted
+`+jq+` program, so replacing the Unicode right-quote with a plain apostrophe
+*terminated the string* and broke the script — caught immediately by the suite's
+own live-ledger canary. The comment is reworded to contain no apostrophe at all,
+and the block now carries a warning saying why. And `+SC2030+`/`+SC2031+` were
+not silenced: the meta-canary shadowed `+PASS+`/`+FAIL+` inside a command
+substitution to discard the probe's deliberate failure, which tainted *ten*
+later reads of the real counters. It now reads the probe's verdict line instead,
+so the warnings go away by construction rather than by suppression.
+`+shellcheck 0.11.0 --severity=style+` — the version and severity CI pins — is
+clean over every tracked `+*.sh+`, with no disable added.
 
 * *A comment marker inside a string literal is no longer read as a comment
 (2026-11-09).* `+tests/lib/strip-proof-comments.awk+` tracked block comments with
@@ -65,7 +295,8 @@ count is now part of the claim.
 +
 Added canary 19, the *meta-canary*: it breaks one canary's own `+jq+` program and
 asserts the suite reports FAILURE. It fails against the pre-fix harness, which
-is what makes it evidence rather than decoration. The suite is *19/19*, and all
+is what makes it evidence rather than decoration. The suite stands at *24/24*
+once the receipt-result canaries recorded below are counted, and all
 four breakages — a corrupted transform, a no-op fixture, a dropped group, and a
 suite that cannot see its own breakage — were each confirmed to fail it.
 
@@ -102,7 +333,8 @@ Wired: `+just pwg+` (census and per-obligation grades), `+just pwg-render+`
 job in `+proofs.yml+` that needs no prover because the kernels already ran.
 +
 Falsified, not assumed: `+scripts/test-gate-falsifiability.sh+` gains seven PWG
-canaries plus a control, and the suite now runs 18/18. Two are load-bearing —
+canaries plus a control, taking the suite to 18 cases at that point (it stands at
+*24/24* after the later entries in this same block). Two are load-bearing —
 removing the import cone collapses all 17 `+PWG-3+` to `+ungraded+` (census
 `+ungraded+` 24), and flipping one Lean leg to `+RECONCILED+` lifts that
 obligation to `+PWG-2i+` — so they fire only if the published table really is
@@ -113,11 +345,17 @@ receipts, the derivation returns `+PWG-1+`.
 
 * *Proof Witness Grades recorded, and the proof records reconciled with the
 sources (2026-11-09).* `+docs/status/PROOF-STATUS.adoc+` gains the §8.5 PWG record
-that `+PROOF-POLICY.adoc+` §8 (owner ruling 2026-11-04) requires, with both theory
-groups derived as `+ungraded+` — Theorem B for want of a §2.1-conformant *receipt*
-(its flags in force already are §2.1), the Lean-witnessed results for want of an
-Agda *source* — plus the §1.1 import-cone record and a census in the form §8.4
-rule 7 allows. Four published rows narrowed to what the provers actually state: L3
+that `+PROOF-POLICY.adoc+` §8 (owner ruling 2026-11-04) requires, plus the §1.1
+import-cone record and a census in the form §8.4 rule 7 allows. *As first
+drafted this entry read "both theory groups derived as `+ungraded+`"; that
+reading was superseded within this same block* by the evidence ledger below,
+which records the §2.1-conformant Agda receipt the first reading treated as
+missing, and so derives `+PWG-3+` for 17 of the 24 theory obligations and
+`+ungraded+` for 7 — on three §8.1 grounds: no §2.1-conformant receipt, no
+Agda source at all, or an incomplete Agda leg. The last applies to
+`+retention-order+` and `+tier2-membership+`: their Agda token is `+OPEN+`
+despite a current, passing Agda receipt, as the ledger and breakdown above record.
+The published census is the derived one, and `+scripts/pwg-check.sh+` fails on any drift between them. Four published rows narrowed to what the provers actually state: L3
 (two-sidedness is stated only for `+Falsified+` in Agda), L4 (Agda covers fate and
 fidelity; Lean covers fate; bond, merge and the grade-level lifting have an Idris2
 leg only, which §8.1 excludes from the ladder), Target 3 (`+_↝_+` has two
