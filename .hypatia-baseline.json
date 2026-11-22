@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "_note": "TEMPORARY gate relaxation. Remove this entry when the real egress allowlist for instant-sync.yml lands. Format is UNVERIFIED against the standards repo: built from CI log evidence only.",
+  "entries": [
+    {
+      "rule": "RE002",
+      "file": ".github/workflows/instant-sync.yml",
+      "reason": "audit mode kept until instant-sync has a first successful run to observe"
+    }
+  ]
+}
