@@ -13,8 +13,9 @@ https://semver.org/spec/v2.0.0.html[Semantic Versioning].
 * *CI/gate caller (2026-11-23).* `+.github/workflows/ci-gate.yml+`, a thin caller
 of the estate gate in `+proven-cicd-and-workflows+` that publishes the commit
 status `+CI/gate+` required by the Branch-Floor ruleset. Listed in
-`+actions.lock+`. The suite pin is a placeholder until the repository profile is on
-the suite `+main+`; until then the gate fails closed.
+`+actions.lock+` as an empty file-level entry (`+[]+`, no leaf record). The caller
+pins suite `+main+` `+d28d73ef10c623b507e98ffddb040268e29b5443+`, which carries this
+repository's profile.
 
 ==== Fixed
 
