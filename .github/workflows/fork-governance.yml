@@ -78,7 +78,7 @@ jobs:
   # repository, so the reusable is allowed by the Actions policy.
   fleet:
     name: Fleet report-backs
-    uses: hyperpolymath/gitbot-fleet/.github/workflows/fleet-report-back-reusable.yml@8906f47f945d4675d7375eb78898ed0f1c48cc95
+    uses: hyperpolymath/gitbot-fleet/.github/workflows/fleet-report-back-reusable.yml@f1b14e2a352491ff7972f0dfd592bfbb28d2f32c
     permissions:
       contents: read
 
