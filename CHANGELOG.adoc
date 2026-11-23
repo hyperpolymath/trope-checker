@@ -8,6 +8,15 @@ https://semver.org/spec/v2.0.0.html[Semantic Versioning].
 
 === [Unreleased]
 
+==== Added
+
+* *CI/gate caller (2026-11-23).* `+.github/workflows/ci-gate.yml+`, a thin caller
+of the estate gate in `+proven-cicd-and-workflows+` that publishes the commit
+status `+CI/gate+` required by the Branch-Floor ruleset. De-onboarded from
+`+actions.lock+` on purpose (a cross-repository reusable startup-fails when
+onboarded). The suite pin is a placeholder until the repository profile is on
+the suite `+main+`; until then the gate fails closed.
+
 ==== Fixed
 
 * *A comment marker inside a string literal is no longer read as a comment
