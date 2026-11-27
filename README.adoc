@@ -74,8 +74,13 @@ rejects them at validation, naming the offending coordinate. The alternative
 | `verification/proofs/lean4/grade-boundary/` | The grade-algebra ground truth (Lean 4 + Mathlib): the three-tier honest/deceptive cancellation boundary. No `sorryAx` and no user axiom; the kernel reports `propext` and `Quot.sound`, and `Classical.choice` in three theorems.
 | `verification/proofs/lean4/grade-factorisation/` | The tropical factorisation probe (Lean 4 + Mathlib): imports the carrier and decides whether the grade admits a commutative cost-quotient. Verdict *(B) factors but veridicality-blind* on the *pre-ratification* carrier; re-run on the ratified carrier it becomes *(B′) sighted on the fate axis* — `piR`
 separates honest `Dropped` from deceptive `Falsified`, and reads the four fate slots
-only; `psiBond` separates honest from deceptive bonds
-(`GradeFactorisation.lean`). A precondition only; does not address recursion (CO-1).
+only; on the bond axis `psiBond` is proved to separate the honest `severed` from
+the deceptive `misbound` (`psiBond_separates_honest_deceptive`, via
+`total ≠ unknown`, in `GradeFactorisation.lean`). That is the *one pair* the file
+states; the general "separates every honest bond from every deceptive one" is
+believed and is a single `cases` away — `psiBond intact = psiBond withheld = Q 0`
+and `Q_ne_unknown` is already in the file — but it is not currently a theorem,
+so it is not claimed here. A precondition only; does not address recursion (CO-1).
 | `verification/proofs/agda/theorem-b/` | Theorem B — the deferred calculus metatheory (Agda `--safe --without-K --cubical-compatible`, the PROOF-POLICY §2.1 invocation; zero postulates): intrinsic graded calculus, value-substitution, subject reduction (β/let; `fix` open), Honest Generation.
 | `verification/proofs/INTEGRATION-REPORT.adoc` | How the three streams reconcile: the unified R-id ↔ Lean ↔ Agda ↔ status table, the convergence (central open problem), and the divergence adjudication.
 | `docs/CONTRIBUTING-A-FRONTEND.adoc` | How a new front-end targets the IR (the portability contract).
