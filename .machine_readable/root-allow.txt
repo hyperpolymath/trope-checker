@@ -36,6 +36,7 @@ abi.ipkg                   # Idris2 package for the ABI seam; sourcedir=src/inte
 .gitattributes
 .gitignore
 .mise.toml                 # toolchain pins (rust, idris2) read by mise; replaces the retired .tool-versions
+.hypatia-baseline.json    # Hypatia scanner baseline (RE002 temporary exemptions); read from root by the scan
 
 # ─── Directories ─────────────────────────────────────────────────────────────
 .devcontainer/             # VS Code dev container spec; tool-required at root
