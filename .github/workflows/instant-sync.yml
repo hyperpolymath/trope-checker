@@ -18,14 +18,18 @@ jobs:
     env:
       HAS_DISPATCH_TOKEN: ${{ secrets.FARM_DISPATCH_TOKEN != '' }}
     steps:
-      # This job holds FARM_DISPATCH_TOKEN; monitor its outbound egress
-      # (Hypatia RE001). Audit mode first: record every endpoint without
-      # risking the dispatch; tighten to block+allowlist once a main run
-      # shows the observed set.
-      - name: Harden runner (egress audit)
+      # This job holds FARM_DISPATCH_TOKEN, so its egress is contained, not
+      # only monitored (Hypatia RE001/RE002). The one network call after this
+      # step is repository-dispatch POSTing to the GitHub REST API; the action
+      # itself is fetched at job set-up, before harden-runner starts. Any other
+      # outbound host is blocked. If a dispatch fails with a blocked-egress
+      # annotation, add exactly the host it names.
+      - name: Harden runner (egress block)
         uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
         with:
-          egress-policy: audit
+          egress-policy: block
+          allowed-endpoints: >
+            api.github.com:443
       - name: Trigger Propagation
         if: env.HAS_DISPATCH_TOKEN == 'true'
         uses: peter-evans/repository-dispatch@v4.0.1
