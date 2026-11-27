@@ -16,7 +16,9 @@
 #      fields 8.2 requires, including a full 40-character commit;
 #   4. every section 5 token and every 2.2 state comes from its closed vocabulary;
 #   5. the table and census published in docs/status/PROOF-STATUS.adoc are
-#      byte-identical to what scripts/pwg-derive.sh produces.
+#      byte-identical to what scripts/pwg-derive.sh produces;
+#   6. every agda and lean witness name the ledger cites resolves to a
+#      declaration in the sources (scripts/pwg-names.sh).
 #
 # Fails loudly and says which rule broke. Usage: pwg-check.sh [REPO_ROOT]
 set -uo pipefail
@@ -74,14 +76,14 @@ missing=$(jq -r '
 badr=$(jq -r '
   .receipts | to_entries[]
   | .key as $k | .value as $v
-  | [ (if ($v.commit // "" | test("^[0-9a-f]{40}$")) then empty else "\($k): commit is not a full 40-char sha" end),
+  | [ (if ($v.commit // "" | test("\\A[0-9a-f]{40}\\z")) then empty else "\($k): commit is not a full 40-char sha" end),
       (if ($v.checker // "" | length) > 0 then empty else "\($k): no checker" end),
       (if ($v.checker_version // "" | length) > 0 then empty else "\($k): no checker_version (8.2)" end),
       (if ($v.invocation // "" | length) > 0 then empty else "\($k): no invocation (8.2)" end),
       (if ($v.inputs_digest // "" | length) > 0 then empty else "\($k): no inputs_digest (8.2)" end),
-      (if ($v.result // "" | length) > 0 then empty else "\($k): no result (8.2)" end),
+      (if ($v.result == "pass" or $v.result == "fail") then empty else "\($k): result must be pass|fail (8.2 -- the derivation reads it; an unrecognised value must not be treated as a pass)" end),
       (if ($v.evidence // "" | length) > 0 then empty else "\($k): no evidence pointer" end),
-      (if ($v.state // "" | test("^(current|superseded|regressed)$")) then empty else "\($k): state must be current|superseded|regressed (8.4 rule 5)" end),
+      (if ($v.state // "" | test("\\A(current|superseded|regressed)\\z")) then empty else "\($k): state must be current|superseded|regressed (8.4 rule 5)" end),
       (if ($v | has("axioms")) then empty else "\($k): no axioms list (8.4 rule 6 — axioms travel with the grade)" end) ]
   | .[]' "$LEDGER") \
   || die "rule 3 (receipt completeness) could not be evaluated over this ledger: malformed theorem/leg/receipt shape"
@@ -93,7 +95,7 @@ badr=$(jq -r '
 badtok=$(jq -r '
   [ .theorems[] as $t
     | ($t.legs | to_entries[])
-    | select((.value.token // "") | test("^(PROVEN|PROVEN-WITH-AXIOMS|TESTED|ASSUMED|OPEN)$") | not)
+    | select((.value.token // "") | test("\\A(PROVEN|PROVEN-WITH-AXIOMS|TESTED|ASSUMED|OPEN)\\z") | not)
     | "\($t.id)/\(.key): token \(.value.token)" ]
   | .[]' "$LEDGER") \
   || die "rule 4 (section 5 tokens) could not be evaluated over this ledger: malformed theorem/leg/receipt shape"
@@ -102,7 +104,7 @@ badtok=$(jq -r '
 badstate=$(jq -r '
   [ .theorems[] as $t
     | ($t.legs | to_entries[])
-    | select((.value.state // "") | test("^(AGDA-PENDING|AGDA-VERIFIED|COQ-CHECKED|LEAN-CHECKED|BRIDGE-PENDING|RECONCILED|COUNTEREXAMPLE|QUARANTINED|NOT-INVENTORIED)$") | not)
+    | select((.value.state // "") | test("\\A(AGDA-PENDING|AGDA-VERIFIED|COQ-CHECKED|LEAN-CHECKED|BRIDGE-PENDING|RECONCILED|COUNTEREXAMPLE|QUARANTINED|NOT-INVENTORIED)\\z") | not)
     | "\($t.id)/\(.key): state \(.value.state)" ]
   | .[]' "$LEDGER") \
   || die "rule 4 (2.2 states) could not be evaluated over this ledger: malformed theorem/leg/receipt shape"
@@ -111,7 +113,7 @@ badstate=$(jq -r '
 badroute=$(jq -r '
   [ .theorems[] as $t
     | ($t.legs | to_entries[])
-    | select((.value.route // "") | test("^(transported|re-proved|waived|unavailable)$") | not)
+    | select((.value.route // "") | test("\\A(transported|re-proved|waived|unavailable)\\z") | not)
     | "\($t.id)/\(.key): route \(.value.route)" ]
   | .[]' "$LEDGER") \
   || die "rule 4 (8.5 routes) could not be evaluated over this ledger: malformed theorem/leg/receipt shape"
@@ -138,8 +140,55 @@ else
   fi
 fi
 
+# --- 6. every cited witness names a declaration that exists ----------------
+# Measured 2026-11-16 against main 0dceab6: 13 of the ledger's 91 distinct
+# witness names resolved to nothing in the sources -- ASCII transliterations
+# (`|>` for `▷`, `beta-` for `β-`), a kebab-case spelling of a camelCase name, a
+# lemma split in two (`gmonoid-unit` vs `gmonoid-unitL`/`-unitR`), a wrong Lean
+# namespace -- including L2's ONLY Agda witness, on a row published PWG-3. The
+# grade was derived from tokens and receipts; nothing checked that the token's
+# witness existed. scripts/pwg-names.sh inventories the declared names; this rule
+# resolves every agda and lean leg's `declarations` against it. Agda names must
+# match exactly (a module name is also a valid citation); a Lean name may omit a
+# leading namespace prefix, so it resolves if some declaration equals it or ends
+# with `.<name>`. Name resolution, not proof: the receipt still carries that.
+NAMES="$ROOT/scripts/pwg-names.sh"
+if [ ! -f "$NAMES" ]; then
+  die "scripts/pwg-names.sh is missing -- rule 6 (witness names resolve) cannot be checked"
+elif ! inventory=$(bash "$NAMES" "$ROOT" 2>&1); then
+  die "rule 6 could not build the declaration inventory:"$'\n'"$inventory"
+else
+  dangling=$(jq -r '
+      .theorems[] as $t
+      | ($t.legs | to_entries[]) | select(.key == "agda" or .key == "lean")
+      | .key as $l | (.value.declarations // [])[]
+      # Lossless: each field is JSON-escaped (quotes dropped), so a tab or
+      # newline inside a citation stays INSIDE its field as a visible \t / \n
+      # and the name then matches nothing. Interpolating raw let a citation
+      # with "\tjunk" appended split into an extra field the resolver ignored,
+      # and the original name resolved. Ordinary names, Unicode included,
+      # come through @json unchanged.
+      | [$l, $t.id, .] | map(@json | .[1:-1]) | join("\t")' "$LEDGER" \
+    | INV="$inventory" awk -F'\t' '
+        BEGIN {
+          n = split(ENVIRON["INV"], rows, "\n")
+          for (i = 1; i <= n; i++) { split(rows[i], f, "\t"); have[f[1] "\t" f[2]] = 1; if (f[1] == "lean") lean[++ln] = f[2] }
+        }
+        NF != 3 { print "malformed citation record: " $0; next }
+        {
+          ok = (($1 "\t" $3) in have)
+          if (!ok && $1 == "lean")
+            for (i = 1; i <= ln && !ok; i++) {
+              L = lean[i]; m = length($3)
+              if (length(L) > m && substr(L, length(L) - m) == "." $3) ok = 1
+            }
+          if (!ok) print $2 "/" $1 ": " $3
+        }') || die "rule 6 (witness names resolve) could not be evaluated over this ledger"
+  [ -n "$dangling" ] && die "witness name(s) that resolve to no declaration in the sources:"$'\n'"$dangling"
+fi
+
 if [ "$fail" -eq 0 ]; then
   n=$(jq -e '.theorems | length' "$LEDGER") || die "the ledger has no .theorems array"
-  echo "PASS: PWG ledger well-formed, no asserted grades, $n obligation(s) derived, published table and census match"
+  echo "PASS: PWG ledger well-formed, no asserted grades, every witness name resolves, $n obligation(s) derived, published table and census match"
 fi
 exit "$fail"
