@@ -147,18 +147,11 @@ test-smoke:
 e2e: trope-build
     bash tests/e2e.sh
 
-# Run aspect tests (cross-cutting concern validation)
+# Run aspect tests (cross-cutting concern validation): SPDX headers and the
+# banned-construct scans over every Idris2 and proof source. The recipe used
+# to be the mint template: it ran nothing and printed "Aspect tests passed!".
 aspect:
-    @echo "Running aspect tests..."
-    # TODO: Replace with your aspect test command. Examples:
-    #   bash tests/aspect_tests.sh           # Shell-based aspect tests
-    #   cargo test --test aspects             # Rust aspect tests
-    # Aspect tests validate architectural invariants:
-    #   - Thread safety (mutex in FFI modules)
-    #   - ABI/FFI contract (declarations match exports)
-    #   - SPDX compliance (all files have license headers)
-    #   - No dangerous patterns (believe_me, assert_total, etc.)
-    @echo "Aspect tests passed!"
+    bash tests/aspect_tests.sh
 
 # Run benchmarks (performance regression detection)
 bench:

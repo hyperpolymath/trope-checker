@@ -22,7 +22,23 @@ permissions:
   security-events: write
 
 jobs:
+  # The same producer fork-governance.yml runs on PRs. Without it this lane's
+  # reusable downloads `fleet-report-backs` (its default), finds no such
+  # artifact, and renders every enrolled fleet row 🟠 indeterminate — on
+  # every push and scheduled run, permanently. The reusable checks out
+  # `github.event.pull_request.head.sha || github.sha`, so it serves
+  # push/schedule unchanged. Same pin as fork-governance.yml.
+  fleet:
+    name: Fleet report-backs
+    uses: hyperpolymath/gitbot-fleet/.github/workflows/fleet-report-back-reusable.yml@8906f47f945d4675d7375eb78898ed0f1c48cc95
+    permissions:
+      contents: read
+
   scan:
+    # After the fleet job whatever its result: a dead fleet job renders as
+    # orange fleet rows, never as a missing gate.
+    needs: [fleet]
+    if: ${{ !cancelled() }}
     # Explicit on the calling job (a job-level block replaces, never merges
     # with, the workflow-level one). The previous pin (cc58c0c…) no longer
     # exists in standards, so this gate failed at startup with zero jobs —
@@ -34,7 +50,7 @@ jobs:
       actions: read
       contents: read
       security-events: write
-    uses: metadatastician/standards/.github/workflows/hypatia-scan-reusable.yml@857ff096af11451841fb10488fed1438523973a1
+    uses: metadatastician/standards/.github/workflows/hypatia-scan-reusable.yml@58362c24cf225694b388fc660b3525d8207b7c61
     secrets:
       # Same declared-secret shape as the PR lane: without it the alert
       # meta-rules fall back to the built-in token, which cannot read

@@ -36,8 +36,8 @@ toc::[]
 | Agda `TB.Grade.{falsified-absorbL,falsified-absorbR,misbound-absorbL,conflated-absorbL,unknown-absorbL,total-absorb-Q}`, `TB.Tier.deceptive-absorbs-▷`; Lean `FateA.falsified_two_sided_zero`, `GradeR.gBotR_two_sided_zero`.
 
 | L4 (monotonicity), in full
-| stem:[\triangleright] is monotone in both arguments w.r.t. stem:[\sqsubseteq] on every coordinate of the ratified carrier. Coverage differs by prover: the Agda covers the fate coordinate (`fateL4Mono{R,L}`) and the fidelity dimension (`dplusMono{R,L}`) only; the bond and merge coordinates have an Idris2 restatement only. Idris2 establishes coordinate-level monotonicity only; the grade-level lifting for `gradeCompose` that spec §7's Knaster–Tarski argument invokes is not mechanised in Idris2. Per PROOF-POLICY §8.1 Idris2 is an engineering prover and is not on the PWG ladder, so bond, merge and the grade-level lifting currently have no gradeable theory leg.
-| Idris2 `Trope.Soundness.{fateL4MonoR,fateL4MonoL}`, `Trope.Order.{bondComposeMono,mergeComposeMono}`; Agda `TB.Order.{fateL4MonoR,fateL4MonoL}`; Lean `FateA.{comp_mono_right,comp_mono_left}` (fate coordinate only; `FateA.le` is defined on `Fate` alone and the Lean tree carries no `Bond`, `Merge` or `GradeR` order).
+| stem:[\triangleright] is monotone in both arguments w.r.t. stem:[\sqsubseteq] on every coordinate of the ratified carrier, and the grade composition is too. *Proved in full in Agda since 2026-11-17* (owner ruling: prove, not narrow): fate (`TB.Order.fateL4Mono{R,L}`), fidelity (`TB.Order.dplusMono{R,L}`), bond and merge (`TB.Monotone.{bondL4Mono,mergeL4Mono}{R,L}`), and the grade-level lifting for `gradeCompose` that spec §7 invokes (`TB.Monotone.gradeL4Mono{R,L}`, and `TB.Monotone.▷-mono` for both arguments at once). Each part is rechecked in Rocq and in core Lean (see *Recheck legs of the order laws and L4* below). The PWG ledger grades L4 as four obligations, `L4-fate`, `L4-fidelity`, `L4-bond-merge` and `L4-lifting` (owner ruling 2026-11-16); L4 in full is their conjunction. Spec §7 also uses that each coordinate is a *complete* chain; completeness is not part of L4 or A2 and is proved in no prover.
+| Agda `TB.Order.{fateL4MonoR,fateL4MonoL,dplusMonoR,dplusMonoL}`, `TB.Monotone.{bondL4MonoR,bondL4MonoL,mergeL4MonoR,mergeL4MonoL,gradeL4MonoR,gradeL4MonoL,▷-mono}`; Rocq (`verification/proofs/rocq/RatifiedOrder.v`) and core Lean (`TropeRatified.*`, `verification/proofs/lean4/ratified-order/`) the same names (`▷-mono` is `gcomp_mono`); Idris2 `Trope.Soundness.{fateL4MonoR,fateL4MonoL}`, `Trope.Order.{bondComposeMono,mergeComposeMono}` (reference, §8.1); Mathlib Lean `FateA.{comp_mono_right,comp_mono_left}` (fate only, `BRIDGE-PENDING`).
 
 | L5 (deception infectiousness)
 | Once a coordinate is at its deceptive bottom no composition restores an honest value; applying any further effect to a deceptive term keeps it deceptive. A corollary of L3.
@@ -48,16 +48,16 @@ toc::[]
 | Lean `GradeR.instCommMonoid`, `FateA.comp_comm`; Agda `TB.Grade.grade-comm`.
 
 | Retention order is a decidable preorder
-| stem:[\sqsubseteq] is decidable, reflexive and transitive on grades.
-| Idris2 `Trope.Laws.decGradeLte`, `Trope.Coords.{fateLteRefl,bondLteRefl,mergeLteRefl}`, `Trope.Fidelity.dLteRefl`, `Trope.Order.{fateLteTrans,bondLteTrans,mergeLteTrans,dLteTrans}`, `Trope.Soundness.gradeLteTrans`.
+| stem:[\sqsubseteq] is decidable, reflexive and transitive on grades. Proved in Agda since 2026-11-17, and rechecked in Rocq and core Lean.
+| Agda `TB.Order.⊑-refl`, `TB.OrderLaws.{⊑-trans,⊑-dec,⊑-isPreorder}`; Rocq and core Lean `gle_refl`, `gle_trans`, `gle_dec`; Idris2 (reference) `Trope.Laws.decGradeLte`, `Trope.Coords.{fateLteRefl,bondLteRefl,mergeLteRefl}`, `Trope.Fidelity.dLteRefl`, `Trope.Order.{fateLteTrans,bondLteTrans,mergeLteTrans,dLteTrans}`, `Trope.Soundness.gradeLteTrans`.
 
 | Fate is a chain (A2)
-| `Dropped ⊑ Predicated` and `Predicated ⋢ Dropped`; the v0.1 antichain is dissolved in the stated direction only.
-| Idris2 `Trope.Soundness.{fateDroppedLtePredicated,fatePredicatedNotLteDropped}`; Agda `TB.Order.{fateDroppedLtePredicated,fatePredicatedNotLteDropped}`.
+| `Fate` is a chain: stem:[\sqsubseteq] on `Fate` is reflexive, transitive, antisymmetric and total, ordered Falsified ⊏ Dropped ⊏ Predicated ⊏ Atten(unknown) ⊏ Atten(total) ⊏ … ⊏ Atten(Q 0) ⊏ Present. In particular `Dropped ⊑ Predicated` and `Predicated ⋢ Dropped`, which dissolve the v0.1 antichain. Proved in Agda since 2026-11-17 as `fate-isTotalOrder : IsTotalOrder _≡_ _≤F_` (owner ruling: prove, not narrow); the fidelity order is a chain as well. The PWG ledger grades the two directional facts (`A2-directions`) and the chain (`A2-chain`) separately (owner ruling 2026-11-16). Completeness of the chain is not claimed here and is proved in no prover.
+| Agda `TB.OrderLaws.{fate-isTotalOrder,fateLte-trans,fateLte-antisym,fateLte-total,dLte-isTotalOrder}`, `TB.Order.{fateLte-refl,fateDroppedLtePredicated,fatePredicatedNotLteDropped}`; Rocq and core Lean `fate_isTotalOrder`, `fateLte_{refl,trans,antisym,total}` and the two directional facts; Idris2 (reference) `Trope.Soundness.{fateDroppedLtePredicated,fatePredicatedNotLteDropped}`, `Trope.Order.fateLteTrans`; Mathlib Lean `FateA.{le_total,le_refl}` (`BRIDGE-PENDING`).
 
 | Veridicality Derivation
-| Exactly three deceptive duals, one per coordinate kind (`Falsified`, `Misbound`, `Conflated`), each the unique deceptive inhabitant of its coordinate.
-| Idris2 `Trope.Veridicality.{fateDeceptiveUnique,bondDeceptiveUnique,mergeDeceptiveUnique,deceptiveDuals}`; Agda `TB.Honest.{fateDeceptiveUnique,bondDeceptiveUnique,mergeDeceptiveUnique,deceptiveDuals}`.
+| Exactly three deceptive duals, one per coordinate kind (`Falsified`, `Misbound`, `Conflated`), each the unique deceptive inhabitant of its coordinate. The uniqueness of each is a theorem. "Exactly three" is not stated as one proposition: it follows from the three uniqueness lemmas and the construction of `Grade` as their product. `deceptiveDuals` in both provers is a tuple value, states no proposition, and is not cited as evidence.
+| Idris2 `Trope.Veridicality.{fateDeceptiveUnique,bondDeceptiveUnique,mergeDeceptiveUnique}`; Agda `TB.Honest.{fateDeceptiveUnique,bondDeceptiveUnique,mergeDeceptiveUnique}`.
 
 | Honest Generation
 | The five atoms `attenuate`, `predicate`, `drop`, `sever`, `fuse` with stem:[\varepsilon] generate exactly the honest fragment of each coordinate and never produce a deceptive dual; honesty is closed under stem:[\triangleright].
@@ -79,7 +79,7 @@ toc::[]
 
 | Tier-2 membership, exhaustive
 | In the unquotiented model, every honest-but-lossy element is individually witnessed non-cancellative (finite attenuation regains cancellation on A3 normal forms), `Withheld` and `Fused` included; the per-element witnesses feed the iff.
-| Lean `TierTwoComplete.lean`: `Bond.withheld_honest_not_cancel`, `Merge.fused_honest_not_cancel`, `Fate.atten_not_cancel`, the `*.leftCancelWitness` family, `Grade.grade_leftCancel_iff`. Agda states six of the per-element witnesses and the positive right-cancellation, all in `TB.Tier`: `unknown-not-cancel`, `total-honest-not-cancel`, `falsified-not-cancel`, `dropped-honest-not-cancel`, `predicated-honest-not-cancel`, `severed-honest-not-cancel`, `Q-cancelʳ`. What Agda does *not* state is the exhaustive step: there is no Agda counterpart of `grade_leftCancel_iff`, and no Agda witness on the merge coordinate, which is why the ledger's Agda token for this row is `OPEN` rather than the row being Lean-only.
+| Lean `TierTwoComplete.lean`: `Bond.withheld_honest_not_cancel`, `Merge.fused_honest_not_cancel`, `Fate.atten_not_cancel`, the `*.leftCancelWitness` family (`FateA.leftCancelWitness` on the ratified fate), and the exhaustive iff, `GradeR.gradeR_leftCancel_iff` on the ratified carrier (`Grade.grade_leftCancel_iff` is the same statement over the historical pre-ratification carrier, kept as history). Agda states six of the per-element witnesses and the positive right-cancellation, all in `TB.Tier`: `unknown-not-cancel`, `total-honest-not-cancel`, `falsified-not-cancel`, `dropped-honest-not-cancel`, `predicated-honest-not-cancel`, `severed-honest-not-cancel`, `Q-cancelʳ`. What Agda does *not* state is the exhaustive step: there is no Agda counterpart of `grade_leftCancel_iff`, and no Agda witness on the merge coordinate, which is why the ledger's Agda token for this row is `OPEN` rather than the row being Lean-only.
 
 | C3 (partition; tier closure is not a homomorphism)
 | `Dropped`, `Total`, `Severed`, `Predicated`, `Withheld`, `Fused` are honest non-cancellative elements; `Falsified`, `Misbound`, `Conflated`, `Unknown` are the deceptive ones. `tierOf (g ▷ h) = tierOf g ⊓ tierOf h` is false on fate; tier preservation is closure.
@@ -124,7 +124,7 @@ toc::[]
 | Idris2 `Trope.Soundness.subSound`.
 
 | Verdict soundness (corollary)
-| stem:[\mathrm{floor}(U) \sqsubseteq g \wedge g \sqsubseteq \rho \Rightarrow \mathrm{floor}(U) \sqsubseteq \rho].
+| stem:[f \sqsubseteq g \wedge g \sqsubseteq \rho \Rightarrow f \sqsubseteq \rho] for a *grade-shaped* floor stem:[f], which is how the source states it. It is not a statement about the use-model floor stem:[\mathrm{floor}(U)]: the shipped checker's floor is a partial per-coordinate demand, a different type decided by a different predicate, and no lemma connects the two (see _Modelling notes_).
 | Idris2 `Trope.Soundness.verdictSound`.
 
 | Grade soundness, β/let core
@@ -181,10 +181,25 @@ leg, so they can neither raise nor lower a grade.
 | 0 of 2
 | re-proved · `PROVEN` · `AGDA-VERIFIED` · unavailable · `OPEN` · `NOT-INVENTORIED` · re-proved · `PROVEN-WITH-AXIOMS` · `BRIDGE-PENDING`
 
-| L4 (monotonicity), in full
-| `3`
-| 0 of 2
-| re-proved · `PROVEN` · `AGDA-VERIFIED` · unavailable · `OPEN` · `NOT-INVENTORIED` · re-proved · `PROVEN-WITH-AXIOMS` · `BRIDGE-PENDING`
+| L4 (monotonicity): fate coordinate
+| `2ii`
+| 2 of 2
+| re-proved · `PROVEN` · `AGDA-VERIFIED` · re-proved · `PROVEN` · `RECONCILED` · re-proved · `PROVEN` · `RECONCILED`
+
+| L4 (monotonicity): fidelity dimension
+| `2ii`
+| 2 of 2
+| re-proved · `PROVEN` · `AGDA-VERIFIED` · re-proved · `PROVEN` · `RECONCILED` · re-proved · `PROVEN` · `RECONCILED`
+
+| L4 (monotonicity): bond and merge coordinates
+| `2ii`
+| 2 of 2
+| re-proved · `PROVEN` · `AGDA-VERIFIED` · re-proved · `PROVEN` · `RECONCILED` · re-proved · `PROVEN` · `RECONCILED`
+
+| L4 (monotonicity): grade-level lifting for gradeCompose
+| `2ii`
+| 2 of 2
+| re-proved · `PROVEN` · `AGDA-VERIFIED` · re-proved · `PROVEN` · `RECONCILED` · re-proved · `PROVEN` · `RECONCILED`
 
 | L5 (deception infectiousness)
 | `3`
@@ -197,14 +212,19 @@ leg, so they can neither raise nor lower a grade.
 | re-proved · `PROVEN` · `AGDA-VERIFIED` · unavailable · `OPEN` · `NOT-INVENTORIED` · re-proved · `PROVEN-WITH-AXIOMS` · `BRIDGE-PENDING`
 
 | Retention order is a decidable preorder
-| `ungraded`
-| 0 of 2
-| re-proved · `OPEN` · `AGDA-PENDING` · unavailable · `OPEN` · `NOT-INVENTORIED` · unavailable · `OPEN` · `NOT-INVENTORIED`
+| `2ii`
+| 2 of 2
+| re-proved · `PROVEN` · `AGDA-VERIFIED` · re-proved · `PROVEN` · `RECONCILED` · re-proved · `PROVEN` · `RECONCILED`
+
+| A2 directional facts: Dropped below Predicated, not conversely
+| `2ii`
+| 2 of 2
+| re-proved · `PROVEN` · `AGDA-VERIFIED` · re-proved · `PROVEN` · `RECONCILED` · re-proved · `PROVEN` · `RECONCILED`
 
 | Fate is a chain (A2)
-| `3`
-| 0 of 2
-| re-proved · `PROVEN` · `AGDA-VERIFIED` · unavailable · `OPEN` · `NOT-INVENTORIED` · re-proved · `PROVEN-WITH-AXIOMS` · `BRIDGE-PENDING`
+| `2ii`
+| 2 of 2
+| re-proved · `PROVEN` · `AGDA-VERIFIED` · re-proved · `PROVEN` · `RECONCILED` · re-proved · `PROVEN` · `RECONCILED`
 
 | Veridicality Derivation
 | `3`
@@ -293,28 +313,79 @@ leg, so they can neither raise nor lower a grade.
 |===
 // PWG-TABLE:END
 
-*Census* (PROOF-POLICY §8.4 rule 7, never a percentage): of 24 theory obligations in this repository, `PWG-3` 17, `PWG-2i` 0, `PWG-2ii` 0, `PWG-1` 0, `ungraded` 7. No obligation here carries `+foundation-diverse` (§8.3).
+*Census* (PROOF-POLICY §8.4 rule 7, never a percentage): of 28 theory obligations in this repository, `PWG-3` 15, `PWG-2i` 0, `PWG-2ii` 7, `PWG-1` 0, `ungraded` 6. No obligation here carries `+foundation-diverse` (§8.3).
 
-Read the census as the policy intends: seventeen obligations have a kernel-checked
-Agda witness with a complete §8.2 receipt at the current commit, and *none* has a
-counting recheck leg. `PWG-3` is not a discharge (§8.4 rule 1) — every one of the
-seventeen still owes both its §2 legs. The seven `ungraded` rows split three ways,
-and the distinction is the useful part. *Two* are Lean-only with no Agda source at
-all: the O1 atom factorisation and the tropical (B′) sighting. *Three* are
-Idris2-only, where an engineering restatement is not a leg (§8.1). *Two* have a
-real but incomplete Agda leg, so the Agda token is `OPEN`: the retention order
-proves reflexivity but neither transitivity nor decidability, and tier-2 membership
-proves six of the non-cancellativity witnesses (`TB.Tier`, fate and bond) plus the
-positive `Q-cancelʳ`, but not the exhaustive characterisation — there is no Agda
-counterpart of `grade_leftCancel_iff`, and no Agda witness on the merge coordinate.
-§8.1 makes all three causes `ungraded` alike; only the second is about engineering
-provers. A missing Agda source and a partial one are different debts, and the
-ledger records which one each row carries rather than flattening both to
-"Lean-only".
+Read the census as the policy intends. *Seven* obligations are at `PWG-2ii`:
+the four parts of L4, both parts of A2, and the retention order. Each has a
+kernel-checked Agda witness and two counting recheck legs, a Rocq leg and a
+core-Lean leg (`verification/proofs/rocq/RatifiedOrder.v`,
+`verification/proofs/lean4/ratified-order/RatifiedOrder.lean`, both
+`RECONCILED`; see *Recheck legs of the order laws and L4*). None of them is
+`PWG-1`: their receipts are from CI run 44006871652 on `d5234b1`, not from the
+ledger's source commit, and the derivation (§8.2, §8.5.2) does not carry a grade
+across commits. *Fifteen* obligations are at `PWG-3`: a kernel-checked Agda
+witness with a complete §8.2 receipt and no counting recheck leg. `PWG-3` is not a
+discharge (§8.4 rule 1); each of the fifteen still owes both its §2 legs.
 
-Nothing can reach `PWG-2i`, `PWG-2ii` or `PWG-1` from where this tree stands: no
-Rocq development exists in this repository at all, so the ladder has a missing
-rung that is independent of any Agda work.
+The six `ungraded` rows split three ways. *Two* are Lean-only with no Agda source
+at all: the O1 atom factorisation and the tropical (B′) sighting. *Three* are
+Idris2-only, where an engineering restatement is not a leg (§8.1): HC-4
+coherence, exact grade soundness and T-Sub soundness. *One* has a real but
+incomplete Agda leg, so its Agda token is `OPEN`: tier-2 membership proves six of
+the non-cancellativity witnesses (`TB.Tier`, fate and bond) plus the positive
+`Q-cancelʳ`, but not the exhaustive characterisation. There is no Agda
+counterpart of `grade_leftCancel_iff`, and no Agda witness on the merge
+coordinate. §8.1 makes all three causes `ungraded` alike; only the Idris2-only
+group is about engineering provers. A missing Agda source and a partial one are
+different debts, and the ledger records which one each row carries rather than
+flattening both to "Lean-only".
+
+Until 2026-11-17 nothing here could reach `PWG-2i` or above, because no Rocq
+development existed. The recheck legs above are the first, and they cover only
+the seven rows named. The other fifteen `PWG-3` rows have no Rocq or counting
+Lean leg yet.
+
+[[recheck-legs]]
+=== Recheck legs of the order laws and L4 (§2, §2.2)
+
+*Owner rulings.* On 2026-11-17 the owner ruled that L4 and A2 are proved as
+their titles state, and that theory "goes in Agda, rechecked in Rocq and Lean",
+with no Mathlib. The 2026-11-09 ruling below ("Lean is a generator, not a leg")
+was given about the Mathlib development, for the Mathlib reason. The Lean leg here
+is a separate file with no import at all. It is recorded `RECONCILED` and it
+counts. Asked on 2026-11-17, the owner confirmed that reading. The 2026-11-09
+ruling covers the Mathlib development only, and a core-Lean leg is a §2 recheck
+leg. ADR 0005 records both rulings in its amendment of 2026-11-17.
+
+[cols="1,3"]
+|===
+| Item | Record
+
+| Source (Agda)
+| `TB.Order`, `TB.OrderLaws`, `TB.Monotone` (`verification/proofs/agda/theorem-b/`), and `TB.Bridge` for the definitions.
+
+| Rocq leg
+| `verification/proofs/rocq/RatifiedOrder.v`, route `re-proved`. Coq 8.18.0, no `Require` (prelude only). Gate: `bash scripts/check-recheck-legs.sh rocq`. Receipt `rocq-ratified-order-d5234b1`, CI run 44006871652: `Print Assumptions` closed under the global context for 49 of 49 declarations.
+
+| Lean leg
+| `verification/proofs/lean4/ratified-order/RatifiedOrder.lean`, route `re-proved`. Lean 4.16.0 core: no import, no Mathlib, no `simp`, `omega` or `decide`. Gate: `bash scripts/check-recheck-legs.sh lean`. Receipt `lean-ratified-order-d5234b1`, CI run 44006871652: no axiom for 49 of 49 declared theorems, nor for any definition they use.
+
+| Why re-proved, not transported
+| The Agda→Dedukti→Rocq/Lean transport of §2 is not wired in this repository, and no released Lambdapi Lean exporter exists (PROOF-POLICY §2, item 2).
+
+| Statement correspondence
+a| Compared by reading, item by item, and checked mechanically for the definitions:
+
+* *Definitions.* Each leg restates `Δ`, `Fate`, `Bond`, `Merge`, `Grade`, `_⊕d_`, `_▷f_`, `_▷b_`, `_▷m_`, `_▷_`, `lteb`, `dLte`, `fateLte`, `bondLte`, `mergeLte` and `gradeLte` with the same constructors and the same clauses. `TB.Bridge` states the values of `fateLte`, `_▷f_`, `bondLte`, `_▷b_`, `mergeLte` and `_▷m_` on a fixed sample, as six numeral lists. Each leg proves the *same six literals* about its own restatement by computation (`bridge_*`). Bond (16 pairs) and Merge (9 pairs) are covered exhaustively; Fate is covered on 9 points (81 pairs), including Δ addition. A planted one-clause drift (`withheld ▷b intact` set to `intact`) leaves every theorem provable and is caught only by `bridge_bcomp`, in both legs. That is a CI control.
+* *Theorems.* Each leg states every theorem above with the same hypotheses and conclusion as the Agda. `⊑` is `gle g h := gradeLte g h = true` (Agda: `gradeLte g h ≡ true`). `IsTotalOrder _≡_ _≤F_` is stated as its four laws (`fate_isTotalOrder`). `⊑-dec : Dec (g ⊑ h)` is `gle_dec` (Rocq `{gle g h} + {~ gle g h}`, Lean `Decidable (gle g h)`), and in Lean also the theorem `gle_decides`.
+* *Encoding only.* Agda `ℕ`/`Bool`/`_∧_`/`_≡_`/`_⊎_` are `nat`/`bool`/`andb`/`eq`/`or` (Rocq) and `Nat`/`Bool`/`&&`/`=`/`Or` (Lean). Conjunctions are parenthesised right-nested, because Agda's `_∧_` is right-associative while Rocq's `&&` and Lean's `&&` are left-associative. Infix operators become named functions, and hyphens become underscores.
+
+| Residual assumptions
+| None in any leg: the Agda is `--safe` with no postulate in its cone (receipt `agda-d5234b1`), and each recheck leg reports no axiom.
+
+| Planted controls (CI)
+| `bash scripts/check-recheck-legs.sh controls`: a Rocq `Admitted`, a Lean `sorry`, a Lean user axiom, an empty Lean audit domain, and the definition drift in each leg. Each must be caught, and in run 44006871652 all 6 were.
+|===
 
 === Import cone (§1.1)
 
@@ -352,16 +423,19 @@ Owner ruling 2026-11-09: **Lean is a generator, not a leg.** The Lean developmen
 keeps Mathlib and keeps its purpose — finding and stress-testing theorems — and
 its results are then restated in core Agda, which is what becomes gradeable. The
 Mathlib cone therefore never enters the trusted base, and no Lean row here is or
-will be a §2 recheck leg. The ledger records every Lean leg as
-`route: re-proved, state: BRIDGE-PENDING`, which does not count (§2.2, §8.2). The
+will be a §2 recheck leg. The ledger records every Lean leg of the Mathlib
+development as `route: re-proved, state: BRIDGE-PENDING`, which does not count
+(§2.2, §8.2). (The core-Lean legs added on 2026-11-17 for the seven order and L4
+rows import nothing, Mathlib included, and are recorded `RECONCILED`. The owner
+ruled on 2026-11-17 that this ruling does not cover them: see <<recheck-legs>>
+and ADR 0005, amendment of 2026-11-17.) The
 two Lean-only obligations — the O1 atom factorisation and the tropical (B′)
 sighting — stay `ungraded` until an Agda statement of them exists at all; tier-2
 membership has its Agda witnesses already and stays `ungraded` only until the
 exhaustive step joins them. The census at the head of this section is the
 authoritative split.
-The amendment to ADR 0005 D4 implementing this is tracked separately; until it
-lands, the ADR and the policy disagree on paper and this paragraph is the
-operative reading.
+ADR 0005 records this ruling, and the 2026-11-17 one, in its amendment of
+2026-11-17 (D4 and D5, the §2 recheck legs).
 
 One measurable cost of the dependency, worth keeping in view: `Trope.nine_families`
 is proved by `rfl` yet reports `[propext, Classical.choice, Quot.sound]`, reaching

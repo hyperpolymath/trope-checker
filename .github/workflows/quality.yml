@@ -74,6 +74,8 @@ jobs:
         uses: editorconfig-checker/action-editorconfig-checker@v3.0.0
       - name: Gate falsifiability canaries (R10)
         run: bash scripts/test-gate-falsifiability.sh
+      - name: Aspect tests (SPDX and banned-construct scans)
+        run: bash tests/aspect_tests.sh
       - name: Workflow and gate regression tests
         run: |
           bash tests/workflows/review_regressions_test.sh

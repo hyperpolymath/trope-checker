@@ -346,6 +346,17 @@ specific to the fate axis. -/
 theorem psiBond_separates_honest_deceptive :
     psiBond Bond.severed ≠ psiBond Bond.misbound := total_ne_unknown
 
+/-- The general form: `psiBond` separates *every* honest bond from the deceptive
+`misbound`. `intact` and `withheld` cost `Q 0` (`Q_ne_unknown`), `severed` costs
+`total` (`total_ne_unknown`); the `misbound` case is excluded by hypothesis. -/
+theorem psiBond_separates_all_honest (b : Bond) (h : b ≠ Bond.misbound) :
+    psiBond b ≠ psiBond Bond.misbound := by
+  cases b with
+  | intact   => exact Q_ne_unknown 0
+  | withheld => exact Q_ne_unknown 0
+  | severed  => exact total_ne_unknown
+  | misbound => exact absurd rfl h
+
 /-! # Deliverable 5 — the complement: F2 non-commutativity lives entirely in `ker`-direction
 
 Because the target is commutative, `π` is blind to **all** non-commutativity, the F2
@@ -427,6 +438,7 @@ open Trope.Factorisation
 -- D4 localisation: bond-veridicality IS tropically separable
 #print axioms psiBond_hom
 #print axioms psiBond_separates_honest_deceptive
+#print axioms psiBond_separates_all_honest
 -- D5: complement / F2 confinement
 #print axioms pi_blind_to_noncomm
 #print axioms grade_F2_noncomm

@@ -327,9 +327,14 @@ exactly what was impossible for the fate axis before.
 
 === Axiom audit
 
-All re-run theorems depend on at most `propext`, `Classical.choice`,
-`Quot.sound` — no `sorryAx`, no user axiom, no `native`-evaluator `decide`
-bypass. `just falsify` additionally asserts `piR_sighted` and `phiId_not_hom`
+All re-run theorems depend on at most `propext` and `Quot.sound` — no
+`sorryAx`, no `Classical.choice`, no user axiom, no `native`-evaluator `decide`
+bypass. This is the same bound as the audit above, and it is measured: the CI
+axiom audit over both modules of this package reported exactly `propext` and
+`Quot.sound` across 184 declarations (trope-checker run 43981767344, commit
+`7b71c31`). The allowlist that audit enforces also admits `Classical.choice`,
+because it is shared with `grade-boundary`, where three theorems use it; an
+earlier version of this paragraph quoted the allowlist as if it were the result. `just falsify` additionally asserts `piR_sighted` and `phiId_not_hom`
 are live verified theorems.
 
 === Reproduction

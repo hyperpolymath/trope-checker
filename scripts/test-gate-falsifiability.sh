@@ -156,6 +156,15 @@ pwg_case() {
   cp "$ROOT/scripts/pwg-derive.sh" "$d/scripts/" 2>/dev/null || { rm -rf "$d"; bad "$label (no pwg-derive.sh to copy)"; return; }
   cp "$ROOT/scripts/pwg-check.sh"  "$d/scripts/" 2>/dev/null || { rm -rf "$d"; bad "$label (no pwg-check.sh to copy)"; return; }
   cp "$ROOT/docs/status/PROOF-STATUS.adoc" "$d/docs/status/" 2>/dev/null || { rm -rf "$d"; bad "$label (no PROOF-STATUS.adoc to copy — rule 5 would be untested)"; return; }
+  # Rule 6 resolves witness names against the real sources: carry the inventory
+  # script, the comment stripper it reads through, and the Agda/Lean sources.
+  cp "$ROOT/scripts/pwg-names.sh" "$d/scripts/" 2>/dev/null || { rm -rf "$d"; bad "$label (no pwg-names.sh to copy — rule 6 would be untested)"; return; }
+  mkdir -p "$d/tests/lib" "$d/verification/proofs/agda/theorem-b"
+  if ! { cp "$ROOT/tests/lib/strip-proof-comments.awk" "$d/tests/lib/" \
+         && cp -r "$ROOT/verification/proofs/agda/theorem-b/TB" "$d/verification/proofs/agda/theorem-b/" \
+         && (cd "$ROOT/verification/proofs" && find lean4 -name '*.lean' -not -path '*/.lake/*' -print0 | xargs -0 cp --parents -t "$d/verification/proofs/"); }; then
+    rm -rf "$d"; bad "$label (could not copy the sources rule 6 resolves against)"; return
+  fi
   if [ "$jqprog" = "IDENTITY" ]; then
     cp "$ROOT/verification/pwg.json" "$d/verification/pwg.json"
   elif [ "$jqprog" = "PRETTY" ]; then
@@ -223,8 +232,239 @@ pwg_canaries() {
   #    and it starts to count, lifting that obligation to PWG-2i. The published
   #    table must stop matching.
   pwg_case reject "flipping a Lean leg to RECONCILED changes the grade and is rejected" \
-    '(.theorems[] | select(.id == "L1") | .legs.lean.state) |= "RECONCILED"' \
+    '(.theorems[] | select(.id == "L1") | .legs.lean.state) |= "RECONCILED"
+     | .receipts["lean-boundary-c0eb4f1"] |= (. + {axiom_dispositions: (.axioms | map({key: ., value: "c"}) | from_entries)})' \
     "not the derived one"
+  # R11. A grade may not outlive the run that earned it. Measured against main
+  # 0dceab6 these two PASSED the gate: the derivation read .state but never
+  # .result, so a receipt recording the checker REJECTING the development still
+  # carried 17 PWG-3 grades, and an unrecognised result was not a pass but was
+  # not an error either. Both canaries FAIL against the pre-fix scripts.
+  # "fail" is a LEGITIMATE recorded value, so rule 3 admits it; the rejection
+  # must come from the grades themselves collapsing. Measured 2026-11-16: with
+  # the Agda receipt at result=fail the census goes PWG-3 17 -> 0 and ungraded
+  # 7 -> 24, so the published table is no longer the derived one. Against the
+  # pre-fix scripts the census was byte-identical and this canary did not fire.
+  pwg_case reject "a receipt that records result=fail cannot support a grade" \
+    '.receipts["agda-c0eb4f1"].result = "fail"' \
+    "not the derived one"
+  pwg_case reject "a receipt result outside the closed vocabulary is rejected" \
+    '.receipts["agda-c0eb4f1"].result = "probably-fine"' \
+    "result must be pass|fail"
+  # `$` in a regex can match before a final newline. Require the vocabulary
+  # diagnostic so rejection for derived-table drift cannot mask this defect.
+  pwg_case reject "a receipt result with a trailing newline is rejected" \
+    '.receipts["agda-c0eb4f1"].result = "pass\n"' \
+    "result must be pass[|]fail"
+  # The same defect in the seven sibling anchors: jq's $ accepts a final
+  # newline, so a 40-hex commit + "\n" and a token + "\n" were admitted. The
+  # anchors are now \\A...\\z. Both canaries FAIL against the pre-fix scripts.
+  pwg_case reject "a receipt commit with a trailing newline is rejected" \
+    '.receipts["agda-c0eb4f1"].commit += "\n"' \
+    "not a full 40-char sha"
+  pwg_case reject "a section 5 token with a trailing newline is rejected" \
+    '.theorems[0].legs.agda.token += "\n"' \
+    "section 5 closed vocabulary"
+  # R12. A witness must name something. Measured against main 0dceab6: 13 of 91
+  # distinct witness names resolved to no declaration (L2's only Agda witness
+  # among them) and the gate passed, because nothing read `declarations`. Both
+  # canaries FAIL against the pre-rule-6 gate. The first plants the exact ASCII
+  # transliteration that was live on main; the second a Lean name whose
+  # namespace exists but holds no such declaration.
+  pwg_case reject "an Agda witness spelled in ASCII (|> for ▷) does not resolve" \
+    '(.theorems[] | select(.id == "L3") | .legs.agda.declarations) |= map(sub("▷"; "|>"))' \
+    "resolve to no declaration"
+  pwg_case reject "a Lean witness in the wrong namespace does not resolve" \
+    '(.theorems[] | select(.id == "L1") | .legs.lean.declarations) = ["Trope.Bond.comp_assoc"]' \
+    "resolve to no declaration"
+  # A real name with a tab and text appended. The first rule-6 version split
+  # the citation on the tab and resolved the real prefix, ignoring the rest;
+  # this canary FAILS against it. Review on #119.
+  pwg_case reject "a witness with a tab-joined suffix does not resolve" \
+    '(.theorems[] | select(.id == "L1") | .legs.agda.declarations) |= map(. + "\tjunk")' \
+    "resolve to no declaration"
+
+  # 8.5.1: a disposition is c, b or debt. The derivation treats anything but c
+  # as inadmissible, so a typo would silently stop a leg counting; the gate must
+  # name it instead. Both FAIL against the gate before these checks existed.
+  pwg_case reject "an axiom disposition outside c|b|debt is rejected" \
+    '.receipts["lean-boundary-c0eb4f1"].axiom_dispositions = {"propext": "C"}' \
+    "must be c|b|debt"
+  pwg_case reject "a disposition for an axiom the receipt does not report is rejected" \
+    '.receipts["lean-boundary-c0eb4f1"].axiom_dispositions = {"funext": "c"}' \
+    "does not report as an axiom"
+}
+
+# --- the top of the ladder: PWG-2ii and PWG-1 are different rungs ----------
+# The table-drift gate cannot tell 1 from 2ii (either way the published row stops
+# matching), so these canaries read the DERIVED grade directly. Both legs of L1
+# are made to count; the only variable is the commit the receipts record.
+# Measured 2026-11-16: against the pre-fix derivation a receipt commit of all
+# f's derived PWG-1 -- "2ii" was unreachable, because the branch tested only
+# conjuncts that counting had already implied. The 2ii canary FAILS against it.
+derive_case() {
+  local want="$1" label="$2" commit="$3" d got
+  d=$(scratch)
+  if ! jq -cS --arg c "$commit" '
+      (.receipts["lean-boundary-c0eb4f1"]
+         |= (. + {commit: $c, axiom_dispositions: (.axioms | map({key: ., value: "c"}) | from_entries)}))
+      | .receipts["rocq-canary"] = .receipts["lean-boundary-c0eb4f1"]
+      | (.theorems[] | select(.id == "L1") | .legs) |=
+          (.lean.state = "RECONCILED"
+           | .rocq = {declarations: [], receipts: ["rocq-canary"], route: "re-proved", state: "RECONCILED", token: "PROVEN"})' \
+      "$ROOT/verification/pwg.json" > "$d/pwg.json" 2>/dev/null; then
+    rm -rf "$d"; bad "$label (the canary's OWN jq transform failed)"; return
+  fi
+  got=$(bash "$ROOT/scripts/pwg-derive.sh" --ledger "$d/pwg.json" --json 2>/dev/null | jq -r '.[] | select(.id == "L1") | .pwg')
+  rm -rf "$d"
+  if [ "$got" = "$want" ]; then ok "$label"; else bad "$label (derived PWG-$got, expected PWG-$want)"; fi
+}
+ladder_canaries() {
+  local src
+  src=$(jq -r '.commit' "$ROOT/verification/pwg.json")
+  derive_case 1 "both legs counting, receipts on the source commit, derive PWG-1 (control)" "$src"
+  derive_case 2ii "both legs counting, receipts on another commit, derive PWG-2ii, not PWG-1" \
+    "$(printf '%040d' 0 | tr 0 f)"
+}
+
+# --- what a grade stands on: axioms, the invocation, the diversity tag ------
+# Each canary edits the live ledger and reads one DERIVED field of L1. Measured
+# 2026-11-17 against the pre-fix derivation: a leg reporting axioms with no
+# recorded disposition counted (PWG-1); the derived axiom list was the Agda
+# list alone; a second entrypoint with no flags, and an extra option, both kept
+# PWG-3; and any non-null value published +foundation-diverse. The five
+# non-control canaries FAIL against it.
+field_case() {
+  # $1 = expected JSON value, $2 = label, $3 = jq edit of the ledger, $4 = jq read of the L1 row
+  local want="$1" label="$2" edit="$3" read="$4" d got
+  d=$(scratch)
+  if ! jq -cS "$edit" "$ROOT/verification/pwg.json" > "$d/pwg.json" 2>/dev/null; then
+    rm -rf "$d"; bad "$label (the canary's OWN jq transform failed)"; return
+  fi
+  got=$(bash "$ROOT/scripts/pwg-derive.sh" --ledger "$d/pwg.json" --json 2>/dev/null | jq -c ".[] | select(.id == \"L1\") | $read")
+  rm -rf "$d"
+  if [ "$got" = "$want" ]; then ok "$label"; else bad "$label (derived $got, expected $want)"; fi
+}
+standing_canaries() {
+  local both disp
+  # Both recheck legs of L1 made to count, receipts on the source commit.
+  both='(.theorems[] | select(.id == "L1") | .legs) |=
+          (.lean.state = "RECONCILED"
+           | .rocq = {declarations: [], receipts: ["lean-boundary-c0eb4f1"], route: "re-proved", state: "RECONCILED", token: "PROVEN-WITH-AXIOMS"})
+        | .receipts["lean-boundary-c0eb4f1"].commit = .commit'
+  disp='.receipts["lean-boundary-c0eb4f1"] |= (. + {axiom_dispositions: (.axioms | map({key: ., value: "c"}) | from_entries)})'
+  field_case '"3"' "a leg whose receipt reports axioms with no disposition does not count" \
+    "$both" '.pwg'
+  field_case '"3"' "a leg whose receipt reports an axiom of disposition debt does not count" \
+    "$both | $disp | .receipts[\"lean-boundary-c0eb4f1\"].axiom_dispositions[\"Classical.choice\"] = \"debt\"" '.pwg'
+  field_case '["Classical.choice","Quot.sound","propext"]' "the derived axioms include those of every counting leg" \
+    "$both | $disp" '.axioms'
+  field_case '"ungraded"' "an Agda entrypoint without the canonical flags ungrades the row" \
+    '.receipts["agda-c0eb4f1"].invocation = "agda --safe --without-K --cubical-compatible All.agda ; agda Smoke.agda"' '.pwg'
+  field_case '"ungraded"' "an Agda entrypoint carrying an option outside the canonical three ungrades the row" \
+    '.receipts["agda-c0eb4f1"].invocation = "agda --safe --without-K --cubical-compatible --allow-unsolved-metas All.agda"' '.pwg'
+  field_case 'false' "a foundation-diverse field that is not a checked witness earns no tag" \
+    '(.theorems[] | select(.id == "L1")).foundation_diverse_witness = "Isabelle/HOL, planned"' '.foundation_diverse'
+  field_case 'false' "a reconciled, receipted witness checked by a DTT prover earns no tag" \
+    '(.theorems[] | select(.id == "L1")).foundation_diverse_witness = {token: "PROVEN", state: "RECONCILED", receipts: ["agda-c0eb4f1"]}' '.foundation_diverse'
+  field_case 'true' "a reconciled, receipted non-DTT witness earns the tag (control)" \
+    '.receipts["isabelle-fixture"] = (.receipts["agda-c0eb4f1"] + {checker: "isabelle"})
+     | (.theorems[] | select(.id == "L1")).foundation_diverse_witness = {token: "PROVEN", state: "RECONCILED", receipts: ["isabelle-fixture"]}' '.foundation_diverse'
+  field_case '"ungraded"' "an Agda entrypoint behind a wrapper command ungrades the row" \
+    '.receipts["agda-c0eb4f1"].invocation = "agda --safe --without-K --cubical-compatible All.agda ; env agda Smoke.agda"' '.pwg'
+  field_case '"2i"' "a reconciled Lean leg whose axioms all have disposition c lifts the grade (control for canary 7)" \
+    "(.theorems[] | select(.id == \"L1\") | .legs.lean.state) |= \"RECONCILED\" | $disp" '.pwg'
+}
+
+# --- the comment stripper every dangerous-construct gate reads through ------
+# Lean /- -/, Agda/Idris2 {- -} and Coq (* *) block comments NEST. Measured
+# 2026-11-16 against the pre-fix stripper: a forbidden word inside a nested
+# comment leaked into the scan (fail-loud), and an unterminated NESTED comment
+# exited 0 -- a truncated scan reported as complete. Both canaries FAIL against
+# the pre-fix stripper. The fixture words are assembled at runtime (see the
+# header: a literal would trip the very scanners these canaries guard).
+strip_canaries() {
+  local d out strip="$ROOT/tests/lib/strip-proof-comments.awk" w
+  w="so""rry"
+  d=$(scratch)
+  printf '/- outer /- inner -/ %s stays inside -/\ntheorem t : True := trivial\n' "$w" > "$d/nested.lean"
+  # The stripper must SUCCEED on this closed comment before its output means
+  # anything: a stripper that rejected it would also print no forbidden word.
+  if ! out=$(awk -f "$strip" "$d/nested.lean" 2>/dev/null); then
+    bad "the stripper rejects a closed NESTED Lean comment"
+  elif printf '%s\n' "$out" | grep -qw "$w"; then
+    bad "a word inside a NESTED Lean comment leaks into the scan"
+  else
+    ok "a word inside a NESTED Lean comment is stripped"
+  fi
+  printf '{- a {- b -} c\nx : Set\n' > "$d/open.agda"
+  if awk -f "$strip" "$d/open.agda" >/dev/null 2>&1; then
+    bad "an unterminated NESTED Agda comment was reported as a complete scan"
+  else
+    ok "an unterminated NESTED Agda comment fails the stripper loudly"
+  fi
+  rm -rf "$d"
+}
+
+# --- the aspect lane (`just aspect`, tests/aspect_tests.sh) --------------------
+# Measured 2026-11-17 against the pre-fix tree: the Idris2 scan read
+# src/interface/Abi/ only and dropped every hit containing "test", so a banned
+# construct in src/idris2/Checker/ passed; a tree with no Idris2 at all passed;
+# and the `aspect` recipe ran nothing and printed a pass. All three canaries
+# FAIL against the pre-fix tree. The fixture word is assembled at runtime.
+aspect_case() {
+  # $1 = scratch root already holding src/; copies the scan in and runs it.
+  mkdir -p "$1/tests/lib"
+  cp "$ROOT/tests/aspect_tests.sh" "$1/tests/"
+  cp "$ROOT/tests/lib/strip-proof-comments.awk" "$1/tests/lib/"
+  bash "$1/tests/aspect_tests.sh" >/dev/null 2>&1
+}
+aspect_canaries() {
+  local d w body
+  w="believe""_me"
+  d=$(scratch); mkdir -p "$d/src/idris2/Checker"
+  printf -- '-- SPDX-License-Identifier: MPL-2.0\nmodule Checker.Selftest\nbad : a -> b\nbad = %s\n' "$w" > "$d/src/idris2/Checker/Selftest.idr"
+  if aspect_case "$d"; then
+    bad "a banned Idris2 construct outside src/interface/Abi, in a path containing 'test', passes the aspect scan"
+  else
+    ok "a banned Idris2 construct in any Idris2 source fails the aspect scan"
+  fi
+  rm -rf "$d"
+  # Idris2 comment rules, not Coq ones. The banned word sits between two
+  # documentation lines that carry a balanced Coq-style pair; read with Coq
+  # rules, the pair hides it and the scan passes.
+  d=$(scratch); mkdir -p "$d/src/idris2/Checker"
+  printf -- '-- SPDX-License-Identifier: MPL-2.0\nmodule Checker.Hidden\n||| Operator example: (*)\nbad : a -> b\nbad = %s\n||| End operator example: *)\nok : ()\nok = ()\n' "$w" > "$d/src/idris2/Checker/Hidden.idr"
+  if aspect_case "$d"; then
+    bad "a banned Idris2 construct between documentation lines carrying a Coq-style comment pair passes the aspect scan"
+  else
+    ok "Coq-style delimiters in Idris2 documentation do not hide a banned construct"
+  fi
+  rm -rf "$d"
+  # A documentation line that only NAMES a banned construct is not a use of it.
+  d=$(scratch); mkdir -p "$d/src/idris2/Checker"
+  printf -- '-- SPDX-License-Identifier: MPL-2.0\nmodule Checker.Documented\n||| This function does not use %s.\nok : ()\nok = ()\n' "$w" > "$d/src/idris2/Checker/Documented.idr"
+  if aspect_case "$d"; then
+    ok "an Idris2 documentation line naming a banned construct does not fail the aspect scan"
+  else
+    bad "an Idris2 documentation line that only names a banned construct fails the aspect scan"
+  fi
+  rm -rf "$d"
+  d=$(scratch); mkdir -p "$d/src"
+  if aspect_case "$d"; then
+    bad "an aspect scan that read no Idris2 file reported a pass"
+  else
+    ok "an aspect scan that finds no Idris2 file fails"
+  fi
+  rm -rf "$d"
+  # The recipe body: every line after `aspect:` up to the next blank line.
+  body=$(awk '/^aspect:/{on=1; next} on && /^$/{exit} on' "$ROOT/Justfile")
+  if printf '%s\n' "$body" | grep -q 'tests/aspect_tests\.sh' \
+     && ! printf '%s\n' "$body" | grep -qi 'echo.*passed'; then
+    ok "the aspect recipe runs the scan and prints no unconditional pass"
+  else
+    bad "the aspect recipe does not run tests/aspect_tests.sh, or prints a pass it did not earn"
+  fi
 }
 
 # --- META (R10 applied to R10): the suite must detect breakage in ITS OWN fixtures.
@@ -234,10 +474,17 @@ pwg_canaries() {
 # reports FAILURE. Measured: this canary FAILS against the pre-fix harness.
 meta_canary() {
   local out
-  out=$( PASS=0; FAIL=0
-         pwg_case reject "meta-probe (expected to be reported as FAILING)" '.theorems[0].pwg = ' >/dev/null 2>&1
-         printf 'FAILCOUNT=%s' "$FAIL" )
-  if printf '%s' "$out" | grep -q 'FAILCOUNT=1'; then
+  # Isolation by subshell is the POINT: the meta-probe is MEANT to fail, and its
+  # failure must not reach the suite tally. Read its VERDICT LINE rather than a
+  # counter. An earlier version shadowed PASS/FAIL inside the substitution to
+  # discard them; that worked, but ShellCheck then marked every later read of
+  # those names SC2031 across the whole tally block, and silencing ten warnings
+  # on the real counters to keep one deliberate shadow is a bad trade -- it
+  # blinds the check where it would do genuine work. Nothing is assigned here
+  # that the outer shell reads, so the warnings go away by construction instead
+  # of by suppression.
+  out=$( pwg_case reject "meta-probe (expected to be reported as FAILING)" '.theorems[0].pwg = ' 2>&1 )
+  if printf '%s\n' "$out" | grep -q '^FAIL '; then
     ok "a canary whose own jq program is broken is reported as FAILURE (meta-canary)"
   else
     bad "a BROKEN canary still reported PASS — the suite cannot detect its own breakage"
@@ -246,12 +493,13 @@ meta_canary() {
 
 wellknown_canaries; valid_canary; live_canary
 c_weak_crypto; c_plaintext_http; c_secret
-pwg_canaries
+pwg_canaries; ladder_canaries; standing_canaries; strip_canaries
+aspect_canaries
 meta_canary
 echo
 # A canary group that silently stops running used to report "10/10" and exit 0.
 # The count is part of the claim.
-EXPECTED_CASES=19
+EXPECTED_CASES=48
 if [ "$((PASS+FAIL))" -ne "$EXPECTED_CASES" ]; then
   echo "gate falsifiability canaries: $((PASS+FAIL)) cases ran, $EXPECTED_CASES expected — a canary group did not run"
   exit 1
